@@ -1,0 +1,14 @@
+#
+# ENCRYPT IC driver Kconfig
+#
+
+menu "ENCRYPT IC support"
+
+config XS508
+	tristate "XS508 i2c driver"
+	help
+		Say Y here if you want to use XS508 on the Arkmicro
+		platform.
+
+endmenu
+

@@ -1,0 +1,5 @@
+config BR2_PACKAGE_ARK1668EFT
+	bool "ark1668eft"
+	select BR2_PACKAGE_HX170DEC
+	help
+		ark1668 final test app

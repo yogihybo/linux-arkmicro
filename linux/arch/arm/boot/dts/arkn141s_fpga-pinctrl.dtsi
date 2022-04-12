@@ -1,0 +1,87 @@
+#include <dt-bindings/pinctrl/ark-pinfunc.h>
+
+&pinctrl0 {
+    i2c0 {
+        pinctrl_i2c0: i2c0-0 {
+            ark,pins =
+                <ARK_PBANK_1 8 ARK_PVAL_1		/* i2c0 scl */
+                    ARK_PBANK_1 9 ARK_PVAL_1>;	/* i2c0 sda */
+        };
+    };
+
+	isp {
+		pinctrl_sen_mclk: sen-mclk {
+			ark,pins =
+                <ARK_PBANK_0 1 ARK_PVAL_1>;
+		};
+
+		pinctrl_sen_itu: sen-itu {
+			ark,pins =
+                <ARK_PBANK_0 12 ARK_PVAL_1		/* clk */
+                    ARK_PBANK_0 14 ARK_PVAL_1		/* vsync */
+                    ARK_PBANK_0 13 ARK_PVAL_1		/* hsync */
+                    ARK_PBANK_1 14 ARK_PVAL_1		/* d0 */
+                    ARK_PBANK_1 15 ARK_PVAL_1		/* d1 */
+                    ARK_PBANK_1 16 ARK_PVAL_1		/* d2 */
+                    ARK_PBANK_1 17 ARK_PVAL_1		/* d3 */
+                    ARK_PBANK_0 16 ARK_PVAL_1		/* d4 */
+                    ARK_PBANK_0 22 ARK_PVAL_1		/* d5 */
+                    ARK_PBANK_0 25 ARK_PVAL_1		/* d6 */
+                    ARK_PBANK_0 7 ARK_PVAL_1		/* d7 */
+                    ARK_PBANK_0 8 ARK_PVAL_1		/* d8 */
+                    ARK_PBANK_0 9 ARK_PVAL_1		/* d9 */
+                    ARK_PBANK_0 10 ARK_PVAL_1		/* d10 */
+                    ARK_PBANK_0 11 ARK_PVAL_1>;		/* d11 */
+		};
+	};
+
+
+	spi {
+        	pinctrl_ecspi: ecspi {
+            		ark,pins =
+                <ARK_PBANK_0 17 ARK_PVAL_1		/* clk */
+                    ARK_PBANK_0 19 ARK_PVAL_1	/* rxd */
+                    ARK_PBANK_0 18 ARK_PVAL_1>;	/* txd */
+                    //ARK_PBANK_3 5 ARK_PVAL_2>;	/* cs */
+       		 };
+
+        	pinctrl_dwssi: dwssi {
+           		 ark,pins =
+                <ARK_PBANK_0 23 ARK_PVAL_1		/*clk*/
+                    ARK_PBANK_0 21 ARK_PVAL_1	/*rxd*/
+                    ARK_PBANK_0 24 ARK_PVAL_1	/*txd*/
+                    /* ARK_PBANK_3 5 ARK_PVAL_1	[>cs<] */
+                    ARK_PBANK_0 5 ARK_PVAL_1	/*d2*/
+                    ARK_PBANK_0 6 ARK_PVAL_1>;	/*d3*/
+        };
+	};
+
+
+
+
+
+    uart0 {
+        pinctrl_uart0: uart0-0 {
+            ark,pins =
+            <ARK_PBANK_1 12 ARK_PVAL_1      /* uart0 rx */
+            ARK_PBANK_1 13 ARK_PVAL_1>;     /* uart0 tx */
+        };
+    };
+
+	uart1 {
+        pinctrl_uart1: uart1-0 {
+            ark,pins =
+                <ARK_PBANK_1 10 ARK_PVAL_1      /* uart1 rx */
+                    ARK_PBANK_1 11 ARK_PVAL_1>; /* uart1 tx */
+            };
+    };
+
+    uart2 {
+        pinctrl_uart2: uart2-0 {
+            ark,pins =
+                <ARK_PBANK_0 0 ARK_PVAL_1       /* uart2 rx */
+                    ARK_PBANK_0 1 ARK_PVAL_1>;  /* uart2 tx */
+        };
+    };
+
+};

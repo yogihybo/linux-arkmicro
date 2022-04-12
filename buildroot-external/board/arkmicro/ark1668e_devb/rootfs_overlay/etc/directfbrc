@@ -1,0 +1,18 @@
+# directfbrc begin
+#system=egl
+system=fbdev
+#mode=1920x720 # display size (change to fit your needs)
+depth=32
+pixelformat=ARGB
+no-vt
+vsync-after
+no-cursor
+no-layers-clear
+no-surface-clear
+no-sighandler 
+#bg-color=00000000
+#quiet
+#debug
+smooth-upscale
+smooth-downscale
+# directfbrc end

@@ -1,0 +1,25 @@
+menuconfig BR2_PACKAGE_LIBARKAPI
+	bool "libarkapi"
+	select BR2_PACKAGE_HX170DEC
+	select BR2_PACKAGE_LIBGAL if BR2_LIBARKAPI_ARK1668
+	help
+		libarkapi library
+
+if BR2_PACKAGE_LIBARKAPI
+
+choice
+	prompt "Libarkapi Target Platform"
+	default BR2_LIBARKAPI_ARK1668
+
+config BR2_LIBARKAPI_ARK1668
+	bool "ark1668 libarkapi"
+
+config BR2_LIBARKAPI_ARKN141
+	bool "arkn141 libarkapi"
+
+config BR2_LIBARKAPI_ARK1668E
+	bool "ark1668e libarkapi"
+
+endchoice
+
+endif

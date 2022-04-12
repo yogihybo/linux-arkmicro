@@ -1,0 +1,12 @@
+if TARGET_ARKN141S_FPGA
+
+config SYS_BOARD
+	default "arkn141s_fpga"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "arkn141s_fpga"
+
+endif

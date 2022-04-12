@@ -1,0 +1,1092 @@
+#ifndef _RN6752_H_
+#define _RN6752_H_
+
+enum {
+	RN6752_MODE_NONE,
+	//CVBS mode
+	RN6752_MODE_CVBS_PAL,
+	RN6752_MODE_CVBS_NTSC,
+	//add other mode
+	
+	//720P mode
+	RN6752_MODE_720P_PAL,
+	RN6752_MODE_720P_NTSC,
+	RN6752_MODE_1080P_25FPS,
+	RN6752_MODE_1080P_30FPS,
+	RN6752_MODE_END,
+};
+
+enum {
+	RN6752_BRIGHTNESS_ADDR	= 0x01,
+	RN6752_CONTRAST_ADDR	= 0x02,
+	RN6752_SATURATION_ADDR	= 0x03,
+	RN6752_HUE_ADDR 		= 0x04,
+	RN6752_SHARPNESS_ADDR	= 0x05
+};
+
+enum {
+	RN675X_ID_UNKNOWN,
+	RN675X_ID_RN6752,
+	RN675X_ID_RN6752M,
+	RN675X_ID_END
+};
+
+struct dvr_rn6752{
+	struct i2c_client *client;
+	int gpio_irq;
+	int gpio_reset;
+	int gpio_pdn;
+	int mode;
+	int curr_channel;
+	int itu601in;
+	int id;
+#ifdef RN6752_USE_TIMER
+	struct timer_list timer;
+	bool timer_start;
+	volatile int timer_timeout;
+#endif
+	int enter_carback;
+	struct workqueue_struct *eq_queue;
+	struct work_struct eq_work;
+	//struct mutex mutex_lock;
+    spinlock_t spin_lock;
+};
+
+
+/*************************** for rn6752 ********************************/
+const char rn6752_tiu656_cvbs_pal[] = {
+	// 720H@50, 27MHz, BT656 output
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN675x is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x00, // enable 72MHz sampling
+	0xDB, 0x8F, // internal use*
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x2C, 0x30, // select sync slice points
+	0x50, 0x00, // 720H resolution select for BT.601
+	0x56, 0x00, // disable SAV & EAV for BT601; 0x00 enable SAV & EAV for BT656
+	0x63, 0x09, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x00, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x07, 0x22, // PAL format
+	0x2F, 0x14, // internal use
+	0x5E, 0x03, // disable H-scaling control
+	0x5B, 0x00, //
+	0x3A, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x3E, 0x32, // AVID & VBLK out for BT.601
+	0x40, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x46, 0x23, // AVID & VBLK out for BT.601
+	0x28, 0x92, // cropping
+	0x00, 0x00, // internal use*
+	0x2D, 0xF2, // cagc adjust
+	0x0D, 0x20, // cagc initial value 
+//	0x05, 0x00, // sharpness
+//	0x04, 0x80, // hue
+	0x11, 0x03,
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	0xDF, 0xFF, // enable 720H format
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x00, // 720H mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x00, // select 27MHz for SCLK
+	0x88, 0xC1, // enable SCLK out
+	0x81, 0x01, // turn on video decoder
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00, // video timing pin status
+};
+
+const char rn6752_tiu656_cvbs_ntsc[] = {
+	// 720H@60, 27MHz, BT656 output
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN675x is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	 
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x00, // enable 72MHz sampling
+	0xDB, 0x8F, // internal use*
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x2C, 0x30, // select sync slice points
+	0x50, 0x00, // 720H resolution select for BT.601
+	0x56, 0x00, // disable SAV & EAV for BT601; 0x00 enable SAV & EAV for BT656
+	0x63, 0x09, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x00, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x07, 0x23, // NTSC format
+	0x2F, 0x14, // internal use
+	0x5E, 0x03, // disable H-scaling control
+	0x5B, 0x00, //
+	0x3A, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x3E, 0x32, // AVID & VBLK out for BT.601
+	0x40, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x46, 0x23, // AVID & VBLK out for BT.601
+	0x28, 0x92, // cropping
+	0x00, 0x00, // internal use*
+	0x2D, 0xF2, // cagc adjust
+	0x0D, 0x20, // cagc initial value 
+//	0x05, 0x00, // sharpness
+//	0x04, 0x80, // hue
+	0x11, 0x03,
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	0xDF, 0xFF, // enable 720H format
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x00, // 720H mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x00, // select 27MHz for SCLK
+	0x88, 0xC1, // enable SCLK out
+	0x81, 0x01, // turn on video decoder
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00, // video timing pin status
+};
+
+const char rn6752_tiu656_720p_pal[]=
+{
+	// 720P@25, 72MHz, BT656 output
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04, // enable 72MHz sampling
+	0xDB, 0x8F, // internal use*
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x2C, 0x30, // select sync slice points
+	0x50, 0x02, // 720p resolution select for BT.601
+	0x56, 0x00, // disable SAV & EAV for BT601; 0x00 enable SAV & EAV for BT656
+	0x63, 0xBD, // filter control
+	0x59, 0x00, // extended register access	
+	0x5A, 0x02, // data for extended register	:Pal
+	0x58, 0x01, // enable extended register write
+	0x07, 0x23, // 720p format
+	0x2F, 0x04, // internal use*
+	0x5E, 0x0B, // enable H-scaling control
+	0x51, 0x44, // scale factor1
+	0x52, 0x86, // scale factor2
+	0x53, 0x22, // scale factor3
+	0x3A, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x3E, 0x32, // AVID & VBLK out for BT.601
+	0x40, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x46, 0x23, // AVID & VBLK out for BT.601
+	0x28, 0x92, // cropping
+	0x00, 0x20, // internal use*
+	0x2D, 0xF2, // cagc adjust
+	0x0D, 0x20, // cagc initial value 
+//	0x05, 0x00, // sharpness
+//	0x04, 0x80, // hue
+	0x11, 0x84,
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	0xDF, 0xFE, // enable 720p format
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0xC1, // enable SCLK out
+	0x81, 0x01, // turn on video decoder
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00, // video timing pin status
+};
+
+const char rn6752_tiu656_720p_ntsc[] = {
+	// 720P@30, 72MHz, BT656 output
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN675x is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04, // enable 72MHz sampling
+	0xDB, 0x8F, // internal use*
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x2C, 0x30, // select sync slice points
+	0x50, 0x02, // 720p resolution select for BT.601
+	0x56, 0x00, // disable SAV & EAV for BT601; 0x00 enable SAV & EAV for BT656
+	0x63, 0xBD, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x04, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x07, 0x23, // 720p format
+	0x2F, 0x04, // internal use*
+	0x5E, 0x0B, // enable H-scaling control
+	0x51, 0x44, // scale factor1
+	0x52, 0x86, // scale factor2
+	0x53, 0x22, // scale factor3
+	0x3A, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x3E, 0x32, // AVID & VBLK out for BT.601
+	0x40, 0x04, // no channel information insertion; invert VBLK for frame valid
+	0x46, 0x23, // AVID & VBLK out for BT.601
+	0x28, 0x92, // cropping
+	0x00, 0x20, // internal use*
+	0x2D, 0xF2, // cagc adjust
+	0x0D, 0x20, // cagc initial value 
+//	0x05, 0x00, // sharpness
+//	0x04, 0x80, // hue
+	0x11, 0x84,
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	0xDF, 0xFE, // enable 720p format
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0xC1, // enable SCLK out
+	0x81, 0x01, // turn on video decoder
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00, // video timing pin status
+};
+
+/*************************** end RN6752 ********************************/
+
+/*************************** for RN6752M ********************************/
+const unsigned char rn6752m_bt601_720p_25pfs[] = {
+	// 720P@25 BT601
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	0x49,0x01,//0x01 
+	0x19,0x07,
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0xFE, // enable HD format
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x02, // 720p resolution
+	0x56, 0x05, // BT 72M mode and BT601 mode
+	0x5F, 0x40, // blank level
+	0x63, 0xF5, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x42, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xE1, // scale factor1
+	0x52, 0x88, // scale factor2
+	0x53, 0x12, // scale factor3
+	0x5B, 0x07, // H-scaling control
+	0x5E, 0x0B, // enable H-scaling control
+	0x6A, 0x82, // H-scaling control
+	0x28, 0x92, // cropping
+	0x01, 0x10, // brightness 
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x00, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x32, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+
+	//0XD3,0X00,//channel 0  0x00   channel 1 0X01
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+const unsigned char rn6752m_bt601_720p_30pfs[] = {
+	// 720P@30 BT601
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	0x49,0x01,
+	0x19,0x07,
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0xFE, // enable HD format
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x02, // 720p resolution
+	0x56, 0x05, // BT 72M mode and BT601 mode
+	0x5F, 0x40, // blank level
+	0x63, 0xF5, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x44, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xE1, // scale factor1
+	0x52, 0x88, // scale factor2
+	0x53, 0x12, // scale factor3
+	0x5B, 0x07, // H-scaling control
+	0x5E, 0x0B, // enable H-scaling control
+	0x6A, 0x82, // H-scaling control
+	0x28, 0x92, // cropping
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x00, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x32, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+
+	//0XD3,0X00,//channel 0  0x00   channel 1 0X01
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+const unsigned char rn6752m_bt601_1080p_25pfs[] = {
+	// 1080P@25 BT601
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	0x49,0x01,// 
+	0x19,0x07,
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0xFE, // enable HD format
+	0xF0, 0xC0, // 144MHz output
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x20, // Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x03, // 1080p resolution
+	0x56, 0x06, // 144M and BT601 mode
+	0x5F, 0x44, // blank level
+	0x63, 0xF8, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x48, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xF4, // scale factor1
+	0x52, 0x29, // scale factor2
+	0x53, 0x15, // scale factor3
+	0x5B, 0x01, // H-scaling control
+	0x5E, 0x0F, // enable H-scaling control
+	0x6A, 0x87, // H-scaling control
+	0x28, 0x92, // cropping
+	0x01, 0xEF, // brightness
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x04, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x00, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 1080p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x0A, // select 144MHz for SCLK
+	0x88, 0x41, // enable SCLK out // CLK inv  bit1
+
+	//0XD3,0X00,//channel 0  0x00   channel 1 0X01
+
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+const unsigned char rn6752m_bt601_1080p_30pfs[] = {
+	// 1080P@30 BT601
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	0x49,0x01,
+	0x19,0x07,
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0xFE, // enable HD format
+	0xF0, 0xC0, // 144MHz output
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x20, // Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x03, // 1080p resolution
+	0x56, 0x06, // 144M and BT601 mode
+	0x5F, 0x44, // blank level
+	0x63, 0xF8, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x49, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xF4, // scale factor1
+	0x52, 0x29, // scale factor2
+	0x53, 0x15, // scale factor3
+	0x5B, 0x01, // H-scaling control
+	0x5E, 0x0F, // enable H-scaling control
+	0x6A, 0x87, // H-scaling control
+	0x28, 0x92, // cropping
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x04, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x00, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 1080p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x0A, // select 144MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+
+	//0XD3,0X00,//channel 0  0x00   channel 1 0X01
+
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+const unsigned char rn6752m_bt601_cvbs_ntsc[] =
+{
+	// cvbs@30 BT601
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	0x49, 0x01,
+	0x19, 0x07,
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0x0F, // enable CVBS format
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x00, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x81, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x00, // sync control
+	0x50, 0x00, // 720p resolution
+	0x56, 0x05, // 72M mode and BT601 mode
+	0x5F, 0x00, // blank level
+	0x63, 0x75, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x00, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x02, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x5B, 0x00, // H-scaling control
+	0x5E, 0x01, // enable H-scaling control
+	0x6A, 0x00, // H-scaling control
+	0x28, 0xB2, // cropping
+	0x20, 0x24,
+	0x23, 0x11,
+	0x24, 0x05,
+	0x25, 0x11,
+	0x26, 0x00,
+	0x42, 0x00,
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x03, // sharpness
+	0x57, 0x20, // black/white stretch
+	0x68, 0x32, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+
+const unsigned char rn6752m_bt601_cvbs_pal[]=
+{
+	// cvbs@25 BT601
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	0x49,0x01,
+	0x19,0x07,
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0x0F, // enable CVBS format
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x00, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x62, // HD format
+	0x2A, 0x81, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x00, // sync control
+	0x50, 0x00, // 720p resolution
+	0x56, 0x05, // 72M mode and BT601 mode
+	0x5F, 0x00, // blank level
+	0x63, 0x75, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x00, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x02, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x5B, 0x00, // H-scaling control
+	0x5E, 0x01, // enable H-scaling control
+	0x6A, 0x00, // H-scaling control
+	0x28, 0xB2, // cropping
+	0x20, 0x24,
+	0x23, 0x17,
+	0x24, 0x37,
+	0x25, 0x17,
+	0x26, 0x00,
+	0x42, 0x00,
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x03, // sharpness
+	0x57, 0x20, // black/white stretch
+	0x68, 0x32, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status	
+};
+/*************************** end RN6752M ********************************/
+
+const unsigned char rn6752m_bt656_cvbs_ntsc[]=
+{
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0x0F, // enable CVBS format
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x00, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x81, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x00, // sync control
+	0x50, 0x00, // 720p resolution
+	0x56, 0x05, // 72M mode and BT601 mode
+	0x5F, 0x00, // blank level
+	0x63, 0x75, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x00, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x02, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x5B, 0x00, // H-scaling control
+	0x5E, 0x01, // enable H-scaling control
+	0x6A, 0x00, // H-scaling control
+	0x28, 0xB2, // cropping
+	0x20, 0x24,
+	0x23, 0x11,
+	0x24, 0x05,
+	0x25, 0x11,
+	0x26, 0x00,
+	0x42, 0x00,
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x03, // sharpness
+	0x57, 0x20, // black/white stretch
+	0x68, 0x32, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+	
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+	
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+
+const unsigned char rn6752m_bt656_cvbs_pal[]=
+{
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04,
+	0xDF, 0x0F, // enable CVBS format
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+	
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x00, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x62, // HD format
+	0x2A, 0x81, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x00, // sync control
+	0x50, 0x00, // 720p resolution
+	0x56, 0x05, // 72M mode and BT601 mode
+	0x5F, 0x00, // blank level
+	0x63, 0x75, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x00, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x02, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x5B, 0x00, // H-scaling control
+	0x5E, 0x01, // enable H-scaling control
+	0x6A, 0x00, // H-scaling control
+	0x28, 0xB2, // cropping
+	0x20, 0x24,
+	0x23, 0x17,
+	0x24, 0x37,
+	0x25, 0x17,
+	0x26, 0x00,
+	0x42, 0x00,
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x03, // sharpness
+	0x57, 0x20, // black/white stretch
+	0x68, 0x32, // coring
+	0x3A, 0x04,
+	0x3E, 0x32,
+	0x40, 0x04,
+	0x46, 0x23,
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 720p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41, // enable SCLK out
+	0x96, 0x00, // select AVID & VBLK as status indicator
+	0x97, 0x0B, // enable status indicator out on AVID,VBLK & VSYNC 
+	0x98, 0x00, // video timing pin status
+	0x9A, 0x40, // select AVID & VBLK as status indicator 
+	0x9B, 0xE1, // enable status indicator out on HSYNC
+	0x9C, 0x00 // video timing pin status
+};
+
+
+const unsigned char rn6752m_bt656_720p_25pfs[] = {
+	// 720P@25 BT656
+	// Slave address is 0x58
+	// Register, data
+	
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+	
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04, // enable 72MHz sampling
+	0xDF, 0xFE, // enable HD format
+	
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+	
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x02, // 720p resolution
+	0x56, 0x01, // BT 72M mode
+	0x5F, 0x40, // blank level
+	0x63, 0xF5, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x42, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xE1, // scale factor1
+	0x52, 0x88, // scale factor2
+	0x53, 0x12, // scale factor3
+	0x5B, 0x07, // H-scaling control
+	0x5E, 0x08, // enable H-scaling control
+	0x6A, 0x82, // H-scaling control
+	0x28, 0x92, // cropping
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x00, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x32, // coring
+	0x37, 0x33,
+	0x61, 0x6C,
+	
+	// VP1
+	0x8E, 0x00, // single channel output for VP1
+	0x8F, 0x80, // 720p mode for VP1
+	0x8D, 0x31, // enable VP1 out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41 // enable SCLK out
+};
+
+const unsigned char rn6752m_bt656_720p_30pfs[] = {
+	// 720P@30 BT656
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04, // enable 72MHz sampling
+	0xDF, 0xFE, // enable HD format
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x02, // 720p resolution
+	0x56, 0x01, // 72M mode and BT656 mode
+	0x5F, 0x40, // blank level
+	0x63, 0xF5, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x44, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0x4E, // scale factor1
+	0x52, 0x87, // scale factor2
+	0x53, 0x12, // scale factor3
+	0x5B, 0x07, // H-scaling control
+	0x5E, 0x08, // enable H-scaling control
+	0x6A, 0x82, // H-scaling control
+	0x28, 0x92, // cropping
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x00, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x32, // coring
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	// VP1
+	0x8E, 0x00, // single channel output for VP1
+	0x8F, 0x80, // 720p mode for VP1
+	0x8D, 0x31, // enable VP1 out
+	0x89, 0x09, // select 72MHz for SCLK
+	0x88, 0x41 // enable SCLK out
+};
+
+const unsigned char rn6752m_bt656_1080p_25pfs[] = {
+	// 1080P@25 BT656
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04, //
+	0xDF, 0xFE, // enable HD format
+	0xF0, 0xC0,
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x03, // 1080p resolution
+	0x56, 0x02, // 144M and BT656 mode
+	0x5F, 0x44, // blank level
+	0x63, 0xF8, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x48, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xF4, // scale factor1
+	0x52, 0x29, // scale factor2
+	0x53, 0x15, // scale factor3
+	0x5B, 0x01, // H-scaling control
+	0x5E, 0x08, // enable H-scaling control
+	0x6A, 0x87, // H-scaling control
+	0x28, 0x92, // cropping
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x04, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x00, // coring
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 1080p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x0A, // select 144MHz for SCLK
+	0x88, 0x41 // enable SCLK out
+};
+
+const unsigned char rn6752m_bt656_1080p_30pfs[] = {
+	// 1080P@30 BT656
+	// Slave address is 0x58
+	// Register, data
+
+	// if clock source(Xin) of RN6752 is 26MHz, please add these procedures marked first
+	//0xD2, 0x85, // disable auto clock detect
+	//0xD6, 0x37, // 27MHz default
+	//0xD8, 0x18, // switch to 26MHz clock
+	//delay(100), // delay 100ms
+
+	0x81, 0x01, // turn on video decoder
+	0xA3, 0x04, //
+	0xDF, 0xFE, // enable HD format
+	0xF0, 0xC0,
+
+	0x88, 0x40, // disable SCLK0B out
+	0xF6, 0x40, // disable SCLK3A out
+
+	// ch0
+	0xFF, 0x00, // switch to ch0 (default; optional)
+	0x00, 0x20, // internal use*
+	0x06, 0x08, // internal use*
+	0x07, 0x63, // HD format
+	0x2A, 0x01, // filter control
+	0x3A, 0x00, // No Insert Channel ID in SAV/EAV code
+	0x3F, 0x10, // channel ID
+	0x4C, 0x37, // equalizer
+	0x4F, 0x03, // sync control
+	0x50, 0x03, // 1080p resolution
+	0x56, 0x02, // 144M and BT656 mode
+	0x5F, 0x44, // blank level
+	0x63, 0xF8, // filter control
+	0x59, 0x00, // extended register access
+	0x5A, 0x49, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x59, 0x33, // extended register access
+	0x5A, 0x23, // data for extended register
+	0x58, 0x01, // enable extended register write
+	0x51, 0xF4, // scale factor1
+	0x52, 0x29, // scale factor2
+	0x53, 0x15, // scale factor3
+	0x5B, 0x01, // H-scaling control
+	0x5E, 0x08, // enable H-scaling control
+	0x6A, 0x87, // H-scaling control
+	0x28, 0x92, // cropping
+	0x03, 0x80, // saturation
+	0x04, 0x80, // hue
+	0x05, 0x04, // sharpness
+	0x57, 0x23, // black/white stretch
+	0x68, 0x00, // coring
+	0x37, 0x33,
+	0x61, 0x6C,
+
+	0x8E, 0x00, // single channel output for VP
+	0x8F, 0x80, // 1080p mode for VP
+	0x8D, 0x31, // enable VP out
+	0x89, 0x0A, // select 144MHz for SCLK
+	0x88, 0x41 // enable SCLK out
+};
+#endif
+

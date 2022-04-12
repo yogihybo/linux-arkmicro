@@ -1,0 +1,12 @@
+diff -Nur old/debian/makefiles/adbd.mk new/debian/makefiles/adbd.mk
+--- old/debian/makefiles/adbd.mk	2022-01-14 16:35:13.387682000 +0800
++++ new/debian/makefiles/adbd.mk	2022-01-14 16:32:26.503177000 +0800
+@@ -44,7 +44,7 @@
+ CPPFLAGS+= -I$(SRCDIR)/core/adbd
+ CPPFLAGS+= -I$(SRCDIR)/core/include
+ 
+-LIBS+= -lc -lpthread -lz `pkg-config --libs libcrypto` -lcrypt
++LIBS+= -lc -lz `pkg-config --libs libcrypto` -lcrypt -ldl -lpthread 
+ 
+ OBJS= $(patsubst %, %.o, $(basename $(SRCS)))
+ 

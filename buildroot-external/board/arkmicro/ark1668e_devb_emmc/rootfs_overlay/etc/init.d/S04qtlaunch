@@ -1,0 +1,17 @@
+insmod /lib/modules/mali.ko
+
+export QTDIR=/usr
+export QT_QPA_FONTDIR=$QTDIR/lib/qt/fonts
+#export QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0
+export QT_QPA_PLATFORM=eglfs
+export QT_QPA_EGLFS_INTEGRATION=eglfs_mali
+export QT_QPA_EGLFS_DEBUG=1
+export QT_QPA_EGLFS_FORCEVSYNC=1
+#export QT_QPA_EGLFS_FORCE888=1
+export QT_QPA_PLATFORM_PLUGIN_PATH=$QTDIR/lib/qt/plugins
+export QT_QPA_GENERIC_PLUGINS=evdevtouch:/dev/input/event0
+export LD_LIBRARY_PATH=$QTDIR/lib:$LD_LIBRARY_PATH
+export MALI_NOCLEAR=1
+
+eval `dbus-launch --auto-syntax`
+DashBoard &

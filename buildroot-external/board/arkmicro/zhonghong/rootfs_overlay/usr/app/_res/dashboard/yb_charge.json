@@ -1,0 +1,94 @@
+{
+	"attribute" : {
+		"pos" : "0,0,1024,600",
+		"effect" : 0,
+		"hastitle" : 0
+	},
+	"win100-alphaarea" : {
+		"name" : "4alpha",
+		"pos" : "0,327,800,153"
+	},	
+	"win001-backgd" : {
+		"name" : "m01bg",
+		"pos" : "0,0,1024,600",
+	  	"imgall" : "dashboard/charge_bg.png"
+	},
+	"win017-button" : {
+		"name" : "u017charge",
+		"pos" : "913,131,44,44",
+		"imgnor" : "dashboard/charge.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win018-button" : {
+		"name" : "u018link",
+		"pos" : "957,166,44,44",
+		"imgnor" : "dashboard/link.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win091-iconstate" : {
+		"name" : "u091smallchargeicon",
+		"pos" : "469,211,105,48",
+		"imgall" : "dashboard/null.png"
+	},
+	"win092-label" : {
+		"name" : "u092curcharge",
+		"pos" : "473,175,110,30",
+		"text" : "0",
+		"textheight" : 24,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win093-iconstate" : {
+		"name" : "u093bigchargeicon",
+		"pos" : "210,224,153,221",
+		"imgall" : "dashboard/null.png"
+	},
+	"win094-label" : {
+		"name" : "u094voltage",
+		"pos" : "235,195,50,20",
+		"text" : "0",
+		"textheight" : 18,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win095-label" : {
+		"name" : "u095current",
+		"pos" : "287,195,50,20",
+		"text" : "0",
+		"textheight" : 18,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win096-button" : {
+		"name" : "u096chargecar",
+		"pos" : "619,177,196,307",
+		"imgnor" : "dashboard/chargecar.png",
+		"imgpush" : "dashboard/chargecar.png"
+	},
+	"win097-label" : {
+		"name" : "u097chargetime",
+		"pos" : "512,30,200,30",
+		"text" : "0",
+		"textheight" : 24,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win098-iconstate" : {
+		"name" : "u098chargearrow",
+		"pos" : "336,130,433,183",
+		"imgall" : "dashboard/chargearrow0.png"
+	},
+	"win113-label" : {
+		"name" : "u113totaltime",
+		"pos" : "300,30,200,30",
+		"text" : "0",
+		"textheight" : 24,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	}
+}

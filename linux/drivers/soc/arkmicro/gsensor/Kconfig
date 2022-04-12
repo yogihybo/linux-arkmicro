@@ -1,0 +1,22 @@
+# ArkMicro on-chip g_sensor control driver configuration
+#
+
+config ARK_G_SENSOR
+	tristate "ArkMicro G_Sensor Control Support"
+	#depends on SOC_ARKN141
+	help
+	  Say y here to enable ArkMicro  G_Sensor.
+
+if ARK_G_SENSOR	
+	choice
+		prompt "G_Sensor"
+		default G_SENSOR_DA380
+
+	config G_SENSOR_DA380
+		bool "DA380"
+	
+      	#config G_SENSOR_SC7A20
+	#	bool "SC7A20"
+
+	endchoice  
+endif

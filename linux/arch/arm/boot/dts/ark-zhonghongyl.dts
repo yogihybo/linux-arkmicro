@@ -1,0 +1,119 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668.dtsi"
+#include "ark1668-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    carback: carback@0 {
+        compatible = "arkmicro,ark-carback";
+        interrupt-parent = <&gpio0>;
+        interrupts = <0 IRQ_TYPE_EDGE_BOTH>;
+        detect-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+        debounce-detect = <20>;
+		//status = "disabled";
+    };
+
+	mcu_serial: mcu-serial@0 {
+		compatible = "arkmicro,ark-mcu-serial";
+	};
+	
+	tool_serial: tool-serial@0 {
+		compatible = "arkmicro,ark-tool-serial";
+	};	
+	
+	i2c-gpio-0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gpio0 3 0		/* SDA */
+			&gpio0 2 0		/* SCL */
+		>;
+		i2c-gpio,delay-us = <6>;	/* clk freq = 500/delay KHz */
+		i2c-gpio,scl-output-only;
+		//i2c-gpio,sda-open-drain;
+		//i2c-gpio,scl-open-drain;
+
+		dvr_ark7116: dvr_ark7116@B2 {
+			compatible = "arkmicro,ark1668_ark7116";
+			reset-gpio = <&gpio3 25 0>;
+			reg = <0x59>; /* i2c address(7 bits) */
+			//default-channel = <0>;
+			carback-config = <1>;
+		};
+	};
+};
+
+&usb0_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb1_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb0 {
+     status = "okay";
+};
+
+&usb1 {
+     status = "okay";
+};
+
+&uart0 {
+	use-in-kernel;
+	use-for-tool;
+};
+
+&uart2 {
+	use-in-kernel;
+	use-for-mcu;
+};
+
+&lcdc {
+	display = <&display0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_lvds &pinctrl_pwm1>;
+
+	display0: display@0 {
+		interface-type = "LVDS";
+		lvds-con = <0x160fd>;
+		bits-per-pixel = <32>;
+		power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+		lcd-wiring-mode = "BGR";
+		//lcdcon-backlight;
+		pwms = <&pwm0 1 50000>;
+		pwm-names = "backlight";
+		backlight-value = <20>;
+		backlight-delay = <200>;
+		dithering-con = <0x408000>;
+		osd1-vp = <0x005d7581>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <48000000>;
+				hactive = <1024>;
+				vactive = <600>;
+				hback-porch = <50>;
+				hfront-porch = <50>;
+				vback-porch = <8>;
+				vfront-porch = <8>;
+				hsync-len = <10>;
+				vsync-len = <10>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};
+
+&vdec0 {
+     status = "okay";
+};

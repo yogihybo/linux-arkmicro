@@ -1,0 +1,12 @@
+if TARGET_XINSHIYU
+
+config SYS_BOARD
+	default "xinshiyu"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "xinshiyu"
+
+endif

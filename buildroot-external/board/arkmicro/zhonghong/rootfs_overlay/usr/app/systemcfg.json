@@ -1,0 +1,15 @@
+{
+   "screenw" : 1024,
+   "screenh" : 600,
+   "touchw" : 1024,
+   "touchh" : 600,
+   "logenable" : 0,
+   "mcurate" : 115200,
+   "mcuversion" : 1,
+   "haswayland" : 1,
+   "cfgpath" : "/usr/app",
+   "appver" : "APP: 20190814 v1.0.4",
+   "osver" : "ZO7249  V8.40" ,
+   "iosver" : "2019/4/15 19:40:07" ,
+   "iappver" : "2019/4/16 09:59:43" 
+}

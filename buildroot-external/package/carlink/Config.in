@@ -1,0 +1,4 @@
+config BR2_PACKAGE_CARLINK
+	bool "Carlink libs"
+	help
+		carlink libs

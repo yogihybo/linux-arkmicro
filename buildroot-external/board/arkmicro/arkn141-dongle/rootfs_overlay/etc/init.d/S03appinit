@@ -1,0 +1,9 @@
+#!/bin/sh
+
+mkdir -p /tmp/dev
+ln -s /dev/memalloc /tmp/dev/memalloc
+#/etc/hx170dec_load.sh
+/etc/hx280enc_load.sh
+ifconfig lo up
+/etc/hostapd.sh
+H264VideoStreamer&

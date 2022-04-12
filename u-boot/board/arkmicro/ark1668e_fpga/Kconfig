@@ -1,0 +1,12 @@
+if TARGET_ARK1668E_FPGA
+
+config SYS_BOARD
+	default "ark1668e_fpga"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "ark1668e_fpga"
+
+endif

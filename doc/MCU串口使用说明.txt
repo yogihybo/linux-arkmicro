@@ -1,0 +1,44 @@
+1. uboot中使用串口和MCU进行通讯需要make menuconfig进行配置
+	cd linux-arkmicro/output/board/$(BOARD_TYPE)/u-boot
+	source ../../../../env.source
+	make menuconfig
+	之后可以设置下面选项，mcu serial port表示mcu使用的串口号，mcu serial baud rate为通信波特率
+	ARM architecture  --->
+		(2) mcu serial port
+		(115200) mcu serial baud rate
+	配置完成后
+	make savedefconfig
+	cp defconfig ../../../../u-boot/configs/xxx_defconfig
+	其中xxx_defconfig文件为linux-arkmicro/build/$(BOARD_TYPE).config文件内UBOOT_CONFIG_FILE变量的值。
+
+2. uboot中使用MCU串口通信接口
+	包含头文件
+	#include <asm/arch/ark-common.h>
+	相关接口
+	int mcu_serial_init(void);
+	void mcu_serial_putc(const char c);
+	void mcu_serial_puts(const char *s);
+	int mcu_serial_getc(void);
+	void mcu_serial_send(const unsigned char *buf, int len);
+	int mcu_serial_read(unsigned char *buf);
+	接收数据前一定要调用mcu_serial_init进行初始化。
+
+3. kernel中使用串口和MCU进行通讯需要修改设备树文件
+	如果linux-arkmicro/build/$(BOARD_TYPE).config文件内DTB_FILE_NAME变量的值为xxx.dtb文件，
+	则需要修改linux-arkmicro/linux/arch/arm/boot/dts/xxx.dts文件。例如，如果使用串口2作为
+	MCU通讯串口的话可以参考下面修改
+	/ {
+		...
+
+		mcu_serial: mcu-serial@0 {
+			compatible = "arkmicro,ark-mcu-serial";
+		};
+	};
+
+	&uart2 {
+		use-in-kernel;
+		use-for-mcu;
+	};
+
+4. kernel中使用串口和MCU进行通讯可以查看linux-arkmicro/linux/drivers/tty/serial/ark_mcu_serial.c文件
+   数据接收在mcu_serial_rx_task中处理，数据发送调用mcu_serial_send接口。

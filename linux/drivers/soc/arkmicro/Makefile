@@ -1,0 +1,14 @@
+obj-$(CONFIG_ARK_CARBACK) += ark-carback.o
+obj-$(CONFIG_ARK_MEMALLOC) += memalloc.o
+obj-$(CONFIG_ARK_PWMTEST) += pwmtest.o
+obj-y += carback/
+obj-y += camera/
+obj-y += hx170dec/
+obj-y += hx280enc/
+obj-y += isp_scale/
+obj-y += scale/
+obj-y += gsensor/
+obj-y += jpeg/
+obj-y += itu656/
+obj-y += encrypt/
+obj-y += power/

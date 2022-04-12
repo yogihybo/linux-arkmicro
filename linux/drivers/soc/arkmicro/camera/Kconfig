@@ -1,0 +1,26 @@
+# ArkMicro on-chip Camera control driver configuration
+#
+
+config ARK_CAMERA
+	tristate "ArkMicro Camera Control Support"
+	depends on SOC_ARKN141
+	help
+	  Say y here to enable ArkMicro camera control driver.
+
+if ARK_CAMERA	
+	choice
+		prompt "Camera Sensor"
+		default SENSOR_IMX322
+
+	config SENSOR_JX_H65
+		bool "JX H65"
+
+	config SENSOR_IMX322
+		bool "IMX322/323"
+
+	config SENSOR_GC2053
+		bool "GC2053"
+      
+	endchoice  
+endif
+

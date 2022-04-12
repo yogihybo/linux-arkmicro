@@ -1,0 +1,173 @@
+﻿
+ark1668芯片USB使用说明：
+
+
+一、uboot中配置支持USB升级
+
+     uboot配置添加usb：
+	1、ARM architecture  --->
+		[*] usb support
+			(0)   usb dev part 	//0:usb0; 1:usb1（必选）
+			(127) usb power gpio	//配置usb复位引脚（必选，usb0和usb1的复位脚不同，切换usb升级时注意切换此IO（未使用或内部接死则配置-1））
+			(76)  usb id gpio	//配置usb id引脚（必选，usb0和us1b的id脚不同，切换usb升级时注意切换此IO（未使用或内部接死则配置-1））
+			(-1)  usb sw gpio	//配置usb sw引脚（可选：没有配置-1）
+
+	2、Command line interface  --->
+		Device access commands  --->
+			[*] usb
+
+	3、
+		情形1:使用SPL(1668基本都是用)
+			SPL / TPL  --->
+				[ ]   Support new Mentor Graphics USB	//选择新版本usb驱动（暂不支持）
+				[*]   Support old Mentor Graphics USB	//选择旧版本usb驱动（已OK）
+
+			Device Drivers  --->
+				[*] USB support  --->
+					[*]   Legacy MUSB Host Controller
+					[*]   Legacy MUSB Arkmicro
+					//[*]   Disable DMA (always use PIO) //旧版本驱动没有此选项
+					[*]   USB Mass Storage support
+		情形2：不使用SPL（141暂时未使用）
+			SPL / TPL  ----		//未使用
+
+			Device Drivers  --->
+				[*] USB support  --->
+					MUSB Controller Driver Select (Old MUSB Controller Driver)  --->
+						 (X) Old MUSB Controller Driver					
+					[*]   Legacy MUSB Host Controller
+					[*]   Legacy MUSB Arkmicro
+					//[*]   Disable DMA (always use PIO) //旧版本驱动没有此选项
+					[*]   USB Mass Storage support
+
+			
+	【注】：升级操作参考 "doc/升级说明.txt"。
+
+
+二、内核中配置USB
+	linux内核配置支持USB：
+		Device Drivers
+			[*] USB support  --->
+				<*>   Support for Host-side USB
+				[*]   Enable USB persist by default
+				[*]   Dynamic USB minor allocation
+				...
+				<*>   USB Mass Storage support
+				<*>     USB Attached SCSI
+				<M>   Inventra Highspeed Dual Role Controller (TI, ADI, AW, ...)
+					MUSB Mode Selection (Dual Role mode)  --->
+						(X) Dual Role mode
+				<M>     ArkMicro musb
+				[*]       Inventra dma
+				USB Physical Layer drivers  --->
+					<*> NOP USB Transceiver Driver
+				<*>   USB Gadget Support  --->
+					(500) Maximum VBUS Power usage (2-500 mA)
+					(4)   Number of storage pipeline buffers
+				<M>   USB Gadget precomposed configurations
+					...
+				<M>     Network Control Model (NCM) support
+	【注】：
+		上述配置会编译出USB内核模块（musb_hdrc.ko和musb_ark.ko），系统启动后需要自行加载。
+		如果要直接编译进内核，则上述两项<M>改为<*>
+
+	如果上面配置中没有 < > USB Attached SCSI选项，则需要配置SCSI,如下：
+		Device Drivers  --->
+			SCSI device support  --->
+				[*] legacy /proc/scsi/ support
+				<*> SCSI disk support
+				//<*> SCSI CDROM support
+				//<*> SCSI generic support
+				//[*] Asynchronous SCSI scanning
+				[*] SCSI low-level drivers  ---> 
+
+	【注】：具体配置可以参考ark169里面的配置。
+
+
+三、配置设备树文件
+	参考linux/arch/arm/boot/dts/ark169.dts文件里的usb和usb phy的配置，添加到自己对应的dts文件里。
+
+	添加部分如下：
+
+	&usb0_phy {
+		compatible = "usb-nop-xceiv";
+		#phy-cells = <0>;
+		status = "okay";
+	};
+
+	&usb1_phy {
+		compatible = "usb-nop-xceiv";
+		#phy-cells = <0>;
+		status = "okay";
+	};
+
+	&usb0 {
+		status = "okay";	//使用USB0则配置“okay”,屏蔽USB0则配置“disabled”
+	};
+
+	&usb1 {
+		status = "okay";	//使用USB1则配置“okay”,屏蔽USB1则配置“disabled”
+	};
+
+
+四、编译并升级系统
+	升级操作参考 "doc/升级说明.txt"。
+
+
+五、进入系统后加载驱动并挂在U盘
+
+	第一步：加载驱动(USB编译成内核模块是才需要加载)
+		//先加载
+			insmod lib/modules/4.14.88/kernel/drivers/usb/musb/musb_hdrc.ko
+		//后加载
+			insmod lib/modules/4.14.88/kernel/drivers/usb/musb/musb_ark.ko
+
+	第二步：置otg
+		使用usb0时需要先置usb0的otg模式：
+			echo otg > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
+		使用usb1时需要先置usb1的otg模式：
+			echo otg > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
+
+		【注】：切换usb0和usb1做U盘时，需要置对应的otg。
+
+		此时插拔U盘，在/dev/目录下会有节点生成：/dev/sd*
+
+		插入U盘log参考如下：
+			/ # dmesg -c
+			usb 1-1: new high-speed USB device number 5 using musb-hdrc
+			usb-storage 1-1:1.0: USB Mass Storage device detected
+			scsi host1: usb-storage 1-1:1.0
+		拔掉U盘log参考如下：
+			/ # dmesg -c
+			scsi 1:0:0:0: Direct-Access              SD Card Reader   1.00 PQ: 0 ANSI: 6
+			sd 1:0:0:0: Attached scsi generic sg0 type 0
+			sd 1:0:0:0: [sdb] 15126528 512-byte logical blocks: (7.74 GB/7.21 GiB)
+			sd 1:0:0:0: [sdb] Write Protect is off
+			sd 1:0:0:0: [sdb] Mode Sense: 03 00 00 00
+			sd 1:0:0:0: [sdb] No Caching mode page found
+			sd 1:0:0:0: [sdb] Assuming drive cache: write through
+			sdb: sdb1
+			sd 1:0:0:0: [sdb] Attached SCSI removable disk
+			usb 1-1: USB disconnect, device number 5
+
+	第三步：手动挂载测试（按照上述参考节点：/dev/sdb1）
+		命令：mount /dev/sdb1 /mnt
+
+		挂在成功后可以看到U盘下的文件。
+
+六、启动ncm模式
+	加载ncm驱动：
+		在第五步中加载完成musb_hdrc.ko和musb_ark.ko后，再加载ncm驱动，如下：
+		insmod lib/modules/4.14.88/kernel/drivers/usb/gadget/g_ncm.ko
+	切换为device模式：
+		usb0:
+			echo peripheral > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
+		usb1:
+			echo peripheral > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
+	切换回host模式：
+		usb0:
+			echo otg > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
+		usb1:
+			echo otg > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
+		
+

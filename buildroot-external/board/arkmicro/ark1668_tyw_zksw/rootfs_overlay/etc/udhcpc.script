@@ -1,0 +1,4 @@
+#!/bin/sh
+
+/sbin/ifconfig $interface $ip up
+route add default gw $router dev $interface

@@ -1,0 +1,71 @@
+menuconfig ARCH_ARKMICRO
+	bool "Arkmicro SoCs"
+	depends on ARCH_MULTI_V4T || ARCH_MULTI_V5 || ARCH_MULTI_V7 || ARM_SINGLE_ARMV7M
+	select ARM_CPU_SUSPEND if PM && ARCH_MULTI_V7
+	select GPIOLIB
+	select PINCTRL
+	select SOC_BUS
+
+if ARCH_ARKMICRO
+
+config SOC_ARK1668
+	bool "Arkmicro ark1668"
+	depends on ARCH_MULTI_V7
+	select ARM_VIC
+	select ARKMICRO_TIMER
+	select ARM_AMBA
+	select GENERIC_IRQ_CHIP
+	help
+	  Select this if you are using Arkmicro ark1668 SoC.
+
+config SOC_ARKN141
+	bool "Arkmicro arkn141"
+	depends on ARCH_MULTI_V7
+	select GENERIC_IRQ_CHIP
+	help
+	  Select this if you are using Arkmicro arkn141 SoC.
+
+
+menuconfig SOC_ARK1668E
+	bool "Arkmicro ark1668e"
+	depends on ARCH_MULTI_V7
+	select ARM_GIC
+	select HAVE_ARM_ARCH_TIMER
+	select DW_APB_TIMER_OF
+	select ARM_AMBA
+	help
+	  Select this if you are using Arkmicro ark1668e SoC.
+
+if SOC_ARK1668E
+	config BOARD_ARK1668E_FPGA
+		bool "Ark1668e fpga board"
+
+	config BOARD_ARK1668E_DEVB
+		bool "Ark1668e development board"
+endif
+
+
+menuconfig SOC_ARKN141S
+	bool "Arkmicro arkn141s"
+	depends on ARCH_MULTI_V7
+	select GENERIC_IRQ_CHIP
+	select DW_APB_TIMER_OF
+	help
+	  Select this if you are using Arkmicro arkn141s SoC.
+
+if SOC_ARKN141S
+	config BOARD_ARKN141S_FPGA
+		bool "Arkn141s fpga board"
+
+endif
+
+config SOC_AMT630H
+	bool "Arkmicro amt630h"
+	depends on ARCH_MULTI_V7
+	select GENERIC_IRQ_CHIP
+	select DW_APB_TIMER_OF
+	help
+	  Select this if you are using Arkmicro amt630h SoC.
+
+
+endif

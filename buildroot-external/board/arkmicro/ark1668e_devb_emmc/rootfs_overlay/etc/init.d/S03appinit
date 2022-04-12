@@ -1,0 +1,22 @@
+#!/bin/sh
+
+ubiattach /dev/ubi_ctrl -m 6
+if  [ ! -d /data ];  then
+mkdir -p /data
+fi
+mount -o sync -t ubifs ubi1_0 /data
+
+mkdir -p /tmp/dev
+#ln -s /dev/memalloc /tmp/dev/memalloc
+#/etc/hx170dec_load.sh
+#/etc/hx280enc_load.sh
+ifconfig lo up
+ulimit -c unlimited
+#hostname CarPlay
+mdnsd&
+if  [ ! -f /data/carplay.ini ];  then
+cp -rf /etc/carplay.ini /data
+fi
+if  [ ! -f /data/auto.ini ];  then
+cp -rf /etc/auto.ini /data
+fi

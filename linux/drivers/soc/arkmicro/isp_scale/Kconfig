@@ -1,0 +1,9 @@
+# ArkMicro on-chip Camera control driver configuration
+#
+
+config ARK_ISP_SCALE
+	tristate "ArkMicro ISP Scale Support"
+	depends on SOC_ARKN141
+	help
+	  Say y here to enable ArkMicro ISP Scale driver.
+

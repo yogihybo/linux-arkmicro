@@ -1,0 +1,12 @@
+if TARGET_ARKN141_DONGLE
+
+config SYS_BOARD
+	default "arkn141-dongle"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "arkn141-dongle"
+
+endif

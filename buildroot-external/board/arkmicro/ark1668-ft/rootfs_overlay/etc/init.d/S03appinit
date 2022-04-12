@@ -1,0 +1,13 @@
+#!/bin/sh
+
+mkdir /tmp/dev
+ln -s /dev/memalloc /tmp/dev/memalloc
+insmod  /lib/modules/galcore.ko registerMemBase=0xe0f00000 irqLine=48 contiguousSize=0x1000000 physSize=0x10000000 powerManagement=0
+insmod /lib/modules/4.14.88/kernel/drivers/usb/musb/musb_hdrc.ko 
+insmod /lib/modules/4.14.88/kernel/drivers/usb/musb/musb_ark.ko
+date -s "2020-01-01 00:00:00"
+hwclock -w
+#echo 84 > /sys/class/gpio/export
+#echo out > /sys/class/gpio/gpio84/direction
+#echo 0 > /sys/class/gpio/gpio84/value
+ark1668ft&

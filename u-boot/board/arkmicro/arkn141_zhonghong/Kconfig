@@ -1,0 +1,12 @@
+if TARGET_ARKN141_ZHONGHONG
+
+config SYS_BOARD
+	default "arkn141_zhonghong"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "arkn141_zhonghong"
+
+endif

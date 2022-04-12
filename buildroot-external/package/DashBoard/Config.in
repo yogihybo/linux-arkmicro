@@ -1,0 +1,8 @@
+config BR2_PACKAGE_DASHBOARD
+	bool "DashBoard"
+	select BR2_PACKAGE_QT5BASE
+	select BR2_PACKAGE_HX170DEC
+	select BR2_PACKAGE_LIBARKAPI
+	select BR2_PACKAGE_CARLINK
+	help
+		ark1668e Qt demo

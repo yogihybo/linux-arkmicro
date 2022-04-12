@@ -1,0 +1,163 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+/include/ "skeleton.dtsi"
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/clock/ark-clk.h>
+
+/ {
+	model = "ARM Arkmicro amt630h SoC";
+	compatible = "arkmicro,amt630h";
+
+	interrupt-parent = <&intc>;
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk loglevel=8 clk_ignore_unused";
+		stdout-path = "serial0:115200n8";
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a5";
+			reg = <0>;
+			//next-level-cache = <&L2>;
+		};
+	};
+
+	memory {
+		reg = <0x20000000 0x2000000>;	//32MB
+	};
+
+
+	sregs@40408000 {
+		compatible = "arkmicro,ark-sregs";
+		reg = <0x60000000 0x1000>;
+
+		clocks {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			xtal32k: xtal32k@32K {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <32768>;
+			};
+
+			xtal24mhz: xtal24mhz@24M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24000000>;
+			};
+
+			clk240mhz: clk240mhz@240M {
+				#clock-cells = <0>;
+				compatible = "fixed-factor-clock";
+				clock-div = <1>;
+				clock-mult = <10>;
+				clocks = <&xtal24mhz>;
+			};
+
+			clk12mhz: clk12mhz@12M {
+				#clock-cells = <0>;
+				compatible = "fixed-factor-clock";
+				clock-div = <2>;
+				clock-mult = <1>;
+				clocks = <&xtal24mhz>;
+			};
+
+			clk6mhz: clk6mhz@6M {
+				#clock-cells = <0>;
+				compatible = "fixed-factor-clock";
+				clock-div = <4>;
+				clock-mult = <1>;
+				clocks = <&xtal24mhz>;
+			};
+
+			apbclk: apbclk@120M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <120000000>;		
+			};
+		};
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		intc: interrupt-controller@61400000 {
+			compatible = "arkmicro,ark-intc";
+			interrupt-controller;
+			reg = <0x61400000 0x1000>;
+			#interrupt-cells = <1>;
+		};
+
+		uart0: uart@60500000 {
+			compatible = "arkmicro,ark-uart";
+			reg = <0x60500000 0x1000>;
+			interrupts = <11>;
+			current-speed = <115200>;
+			clocks = <&xtal24mhz>;
+		};
+
+		timer0: timer@60a000000 {
+			compatible = "snps,dw-apb-timer-osc";
+			reg = <0x60a00000 0x14>;
+			interrupts = <19>;
+			clocks = <&xtal24mhz>, <&apbclk>;
+		    clock-names = "timer", "pclk";
+		};
+
+		timer1: timer@60a000014 {
+			compatible = "snps,dw-apb-timer-osc";
+			reg = <0x60a00014 0x14>;
+			interrupts = <20>;
+			clocks = <&xtal24mhz>, <&apbclk>;
+		    clock-names = "timer", "pclk";
+		};
+
+		mmc0: mmc@70400000 {
+			compatible = "snps,dw-mshc";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x70400000 0x1000>;
+			interrupts = <6>;
+			fifo-depth = <32>;
+			bus-width = <4>;
+			card-detect-delay = <200>;
+			clocks = <&xtal24mhz>;
+			clock-names = "ciu";
+		};
+
+		usb0_phy: usb0-phy {
+		    compatible = "usb-nop-xceiv";
+		    #phy-cells = <0>;
+		    //status = "disabled";
+		};
+
+
+		usb0: usb@700C0000 {
+			compatible = "snps,dwc2";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x70300000 0x40000>;
+			interrupt-parent = <&intc>;
+		    	interrupts = <3>;
+			phys = <&usb0_phy>;
+			phy-names = "usb0-phy";
+			dr_mode = "host";
+			//status = "disabled";
+		};
+	};
+};

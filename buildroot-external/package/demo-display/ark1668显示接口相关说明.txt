@@ -1,0 +1,146 @@
+ark1668显示接口相关说明：
+
+
+---------------------------------------------------------------------------------------------
+一、显示层说明
+---------------------------------------------------------------------------------------------
+ark1668一共有5个显示层，各显示层功能分配如下：
+
+enum ark1668_disp_layer {
+    PRIMARY_LAYER,      //UI显示
+    VIDEO_LAYER,        //多媒体视频，手机互联carlife carplay等
+    OVER_LAYER,         //overlay for UI，比如倒车轨迹，倒车警告画面等
+    TVOUT_LAYER,        //tvout  输出
+    AUX_LAYER,          //倒车， auxin
+};
+
+对于app开发者来说主要涉及到需要处理的显示层是PRIMARY_LAYER，OVER_LAYER，VIDEO_LAYER。
+TVOUT_LAYER， AUX_LAYER一般由底层处理，一般情况下不要关心。
+
+
+---------------------------------------------------------------------------------------------
+二、显示层优先级
+---------------------------------------------------------------------------------------------
+
+
+
+VIDEO_LAYER    AUX_LAYER    PRIMARY_LAYER      OVER_LAYER  
+    0               1            2                  3      
+--------------------------------------------------------->
+显示层按以上次序从上往下叠加，数字越大，显示就在越上面。
+
+
+
+---------------------------------------------------------------------------------------------
+三、相关显示接口说明
+---------------------------------------------------------------------------------------------
+
+1、打开关闭显示层
+int arkapi_display_open_layer(enum ark1668_disp_layer layer);
+void arkapi_display_close_layer(int fd);
+int arkapi_display_recycle_layer(enum ark1668_disp_layer layer);
+
+arkapi_display_open_layer如果返回值为-EBUSY表示该层已经在使用，可以延长一段时间
+等待对方close后再申请或者调用arkapi_display_recycle_layer强制关闭并释放该显示层。
+
+2、显示隐藏显示层
+int arkapi_display_show_layer(int fd);
+int arkapi_display_hide_layer(int fd);
+int arkapi_display_force_show_layer(enum ark1668_disp_layer layer);
+int arkapi_display_force_hide_layer(enum ark1668_disp_layer layer);
+
+应用有的时候需要强制关闭某层，比如倒车时可以关闭视频层显示来降低带宽，调用
+arkapi_display_force_hide_layer后，可以强制该层进行隐藏，该层之前的拥有者调用
+arkapi_display_show_layer不再会显示该层，只是纪录状态，等到调用arkapi_display_force_show_layer
+后会根据该层拥有者设置的显示状态来决定是否需要重新显示。
+
+3、显示层窗口参数设置立刻生效接口
+int arkapi_display_set_layer_pos(int fd, int x, int y);
+int arkapi_display_set_layer_size(int fd, int width, int height);
+int arkapi_display_set_layer_format(int fd, enum ark1668_disp_format format);
+//int arkapi_display_set_layer_addr(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr);
+int arkapi_display_set_layer_scaler(int fd, struct ark1668_disp_scaler* spara);
+
+注意：PRIMARY_LAYER，OVER_LAYER，VIDEO_LAYER这三层是没有arkapi_display_set_layer_scaler功能
+只有TVOUT_LAYER， AUX_LAYER这两层才有。
+
+4、显示层窗口参数设置统一生效接口
+int arkapi_display_set_layer_pos_atomic(int fd, int x, int y);
+int arkapi_display_set_layer_size_atomic(int fd, int width, int height);
+int arkapi_display_set_layer_format_atomic(int fd, enum ark1668_disp_format format);
+int arkapi_display_set_layer_addr_atomic(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr);
+int arkapi_display_set_layer_scaler_atomic(int fd, struct ark1668_disp_scaler* spara);
+int arkapi_display_layer_update_commit(int fd);
+
+以上xxx_atomic 函数设置时不会马上生效(根据需要调用相关的接口)，需要调用
+arkapi_display_layer_update_commit后才统一生效，主要用于避免视频播放过程中改变显示分辨率造成的花屏。
+
+注意：PRIMARY_LAYER，OVER_LAYER，VIDEO_LAYER这三层是没有arkapi_display_set_layer_scaler_atomic功能
+只有TVOUT_LAYER， AUX_LAYER这两层才有。
+
+5、显示层内存申请
+
+unsigned int arkapi_display_request_buffer(int fd, unsigned int size);
+显示层内存申请返回是申请到的内存的虚拟地址，这块size的大小的内存在物理上是连续的，
+申请的size的大小由用户自定义。如果返回0，则申请不成功。
+
+注意： PRIMARY_LAYER的addr默认情况下示已经设置好的，该地址和申请到的基地址一样。
+	该层实现了标准的fb相关功能，没有特殊要求的情况下可以不需要申请内存之类的操作。
+
+6、显示层内存使用方法
+如果OVER_LAYER的需求是需要两个块buffer，一块处理数据，一块显示，两buffer功能不停的切换。可以按如下方法实现:
+(1)申请size = buffer_size * 2，内存申请成功后会返回虚拟地址virt_base
+(2)设置两个buffer的基地址
+   buffer_addr[0] = virt_base;
+   buffer_addr[1] = virt_base + buffer_size;
+(3)填充好bufffer中的数据后显示
+arkapi_display_set_layer_addr(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr)
+arkapi_display_set_layer_addr_atomic(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr);
+											
+pyrgbaddr------------------------对应buffer的基地址
+pcbaddr--------------------------0(rgb格式) 或者 buffer的基地址的偏移(yuv数据格式)
+pcraddr--------------------------0(rgb格式) 或者 buffer的基地址的偏移(yuv数据格式)
+
+
+---------------------------------------------------------------------------------------------
+四、app与倒车交互
+---------------------------------------------------------------------------------------------
+1、app启动后首先打开carback驱动，同时需要告诉carback驱动，app已经启动。
+static int carback_open(void)
+{
+    int fd, ret;
+    
+    fd = open("/dev/carback", O_RDWR);
+    if (fd < 0) {
+        printf("open /dev/carback failed.\n");
+        return -ENOENT;
+    } 
+
+    ret = ioctl(fd, CARBACK_IOCTL_SET_APP_READY, NULL);
+    if (ret != 0) {
+        printf("%s: ioctl error.\n",__func__);
+    }
+
+    return fd;
+}
+
+2、通过poll监听当前倒车状态是否变化，如果倒车状态有变化，读取倒车状态。
+
+3、如果倒车状态发生变化，carback驱动最多会有500ms时间让app处理相关事项
+（包括隐藏或显示ui和overlay显示）准备进入或退出倒车。
+
+4、app准备好进入倒车后，调用
+ioctl(fd, CARBACK_IOCTL_APP_ENTER_DONE, NULL);carback驱动开始进入倒车。
+
+app准备好退出倒车后，调用
+ioctl(fd, CARBACK_IOCTL_APP_EXIT_DONE, NULL);carback驱动开始退出倒车
+
+---------------------------------------------------------------------------------------------
+五、其他
+---------------------------------------------------------------------------------------------
+
+1、增加libarkdisp.so，存放路径/usr/lib
+
+2、以上相关接口调用可以参考demo-display
+
+

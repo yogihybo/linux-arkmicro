@@ -1,0 +1,26 @@
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "arkn141-audio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		simple-audio-card,dai-link@0 {		/* I2S - adc */
+			reg = <0>;
+			format = "i2s";
+			cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			codec {
+				sound-dai = <&sdadc>;
+			};
+		};
+
+		simple-audio-card,dai-link@1 {		/* I2S - dac */
+			reg = <1>;
+			cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			codec {
+				sound-dai = <&sddac>;
+			};
+		};

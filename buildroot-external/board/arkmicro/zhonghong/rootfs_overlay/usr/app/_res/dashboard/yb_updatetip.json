@@ -1,0 +1,25 @@
+{
+	"attribute" : {
+		"pos" : "0,0,1024,600",
+		"effect" : 0,
+		"hastitle" : 0
+	},
+	"win100-alphaarea" : {
+		"name" : "4alpha",
+		"pos" : "0,327,800,153"
+	},	
+	"win001-backgd" : {
+		"name" : "m01bg",
+		"pos" : "0,0,1024,600",
+	  	"imgall" : "dashboard/igoff_bg.png"
+	},
+	"win100-label" : {
+		"name" : "u100updatetip",
+		"pos" : "360,120,300,30",
+		"text" : "0",
+		"textheight" : 22,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	}
+}

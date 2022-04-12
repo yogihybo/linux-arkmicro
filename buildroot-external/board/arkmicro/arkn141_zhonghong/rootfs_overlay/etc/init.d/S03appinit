@@ -1,0 +1,18 @@
+#!/bin/sh
+
+ubiattach /dev/ubi_ctrl -m 6
+mount -o sync -t ubifs ubi1_0 /data
+
+mkdir -p /tmp/dev
+ln -s /dev/memalloc /tmp/dev/memalloc
+#/etc/hx170dec_load.sh
+/etc/hx280enc_load.sh
+ifconfig lo up
+ulimit -c unlimited
+
+
+hostname CarPlaySim
+mdnsd&
+
+#/etc/build_apple.sh
+#carplaysim&

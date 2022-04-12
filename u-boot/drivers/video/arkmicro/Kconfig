@@ -1,0 +1,17 @@
+menuconfig VIDEO_ARKMICRO
+	bool "Enable ARKMICRO lcd support"
+	depends on DISPLAY
+
+choice
+	prompt "ARKMICRO lcd support"
+	depends on VIDEO_ARKMICRO
+
+config VIDEO_ARKMICRO_ARK1668E
+	bool "ARK1668E lcd support"
+	default y
+
+config VIDEO_ARKMICRO_ARK1668
+	bool "ARK1668 lcd support"
+
+endchoice
+

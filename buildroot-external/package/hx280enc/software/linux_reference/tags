@@ -1,0 +1,1766 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ABS	../inc/enccommon.h	139;"	d
+ABS	../source/camstab/vidstabalg.c	26;"	d	file:
+APITRACE	../source/camstab/vidstabapi.c	27;"	d	file:
+APITRACE	../source/camstab/vidstabapi.c	29;"	d	file:
+APITRACE	../source/h264/H264EncApi.c	83;"	d	file:
+APITRACE	../source/h264/H264EncApi.c	85;"	d	file:
+APITRACE	../source/jpeg/JpegEncApi.c	60;"	d	file:
+APITRACE	../source/jpeg/JpegEncApi.c	62;"	d	file:
+APP0	../source/jpeg/EncJpegMarkers.h	/^    APP0 = 0xFFE0,  \/* APP0 Marker                       *\/$/;"	e	enum:__anon77
+ASIC_H263	../source/common/encasiccontroller.h	/^    ASIC_H263 = 1,$/;"	e	enum:__anon47
+ASIC_H264	../source/common/encasiccontroller.h	/^    ASIC_H264 = 3$/;"	e	enum:__anon47
+ASIC_H264_BYTE_STREAM	../source/common/encasiccontroller.h	41;"	d
+ASIC_H264_NAL_UNIT	../source/common/encasiccontroller.h	42;"	d
+ASIC_INPUT_RGB101010	../inc/encswhwregisters.h	56;"	d
+ASIC_INPUT_RGB101010	../source/camstab/vidstabinternal.h	59;"	d
+ASIC_INPUT_RGB101010	../source/common/encasiccontroller.h	52;"	d
+ASIC_INPUT_RGB444	../inc/encswhwregisters.h	54;"	d
+ASIC_INPUT_RGB444	../source/camstab/vidstabinternal.h	57;"	d
+ASIC_INPUT_RGB444	../source/common/encasiccontroller.h	50;"	d
+ASIC_INPUT_RGB555	../inc/encswhwregisters.h	53;"	d
+ASIC_INPUT_RGB555	../source/camstab/vidstabinternal.h	56;"	d
+ASIC_INPUT_RGB555	../source/common/encasiccontroller.h	49;"	d
+ASIC_INPUT_RGB565	../inc/encswhwregisters.h	52;"	d
+ASIC_INPUT_RGB565	../source/camstab/vidstabinternal.h	55;"	d
+ASIC_INPUT_RGB565	../source/common/encasiccontroller.h	48;"	d
+ASIC_INPUT_RGB888	../inc/encswhwregisters.h	55;"	d
+ASIC_INPUT_RGB888	../source/camstab/vidstabinternal.h	58;"	d
+ASIC_INPUT_RGB888	../source/common/encasiccontroller.h	51;"	d
+ASIC_INPUT_UYVY422INTERLEAVED	../inc/encswhwregisters.h	51;"	d
+ASIC_INPUT_UYVY422INTERLEAVED	../source/camstab/vidstabinternal.h	54;"	d
+ASIC_INPUT_UYVY422INTERLEAVED	../source/common/encasiccontroller.h	47;"	d
+ASIC_INPUT_YUV420PLANAR	../inc/encswhwregisters.h	48;"	d
+ASIC_INPUT_YUV420PLANAR	../source/camstab/vidstabinternal.h	51;"	d
+ASIC_INPUT_YUV420PLANAR	../source/common/encasiccontroller.h	44;"	d
+ASIC_INPUT_YUV420SEMIPLANAR	../inc/encswhwregisters.h	49;"	d
+ASIC_INPUT_YUV420SEMIPLANAR	../source/camstab/vidstabinternal.h	52;"	d
+ASIC_INPUT_YUV420SEMIPLANAR	../source/common/encasiccontroller.h	45;"	d
+ASIC_INPUT_YUYV422INTERLEAVED	../inc/encswhwregisters.h	50;"	d
+ASIC_INPUT_YUYV422INTERLEAVED	../source/camstab/vidstabinternal.h	53;"	d
+ASIC_INPUT_YUYV422INTERLEAVED	../source/common/encasiccontroller.h	46;"	d
+ASIC_INPUT_YUYV422TILED	../source/common/encasiccontroller.h	53;"	d
+ASIC_INTER	../source/common/encasiccontroller.h	/^    ASIC_INTER = 0,$/;"	e	enum:__anon49
+ASIC_INTRA	../source/common/encasiccontroller.h	/^    ASIC_INTRA = 1,$/;"	e	enum:__anon49
+ASIC_IRQ_LINE	../source/camstab/vidstabinternal.h	44;"	d
+ASIC_IRQ_LINE	../source/common/encasiccontroller.h	37;"	d
+ASIC_I_16x16	../source/common/encasiccontroller.h	/^    ASIC_I_16x16 = 5$/;"	e	enum:__anon48
+ASIC_I_4x4	../source/common/encasiccontroller.h	/^    ASIC_I_4x4 = 4,$/;"	e	enum:__anon48
+ASIC_JPEG	../source/common/encasiccontroller.h	/^    ASIC_JPEG = 2,$/;"	e	enum:__anon47
+ASIC_MPEG4	../source/common/encasiccontroller.h	/^    ASIC_MPEG4 = 0,$/;"	e	enum:__anon47
+ASIC_MVC	../source/common/encasiccontroller.h	/^    ASIC_MVC = 2,$/;"	e	enum:__anon49
+ASIC_MVC_REF_MOD	../source/common/encasiccontroller.h	/^    ASIC_MVC_REF_MOD = 3$/;"	e	enum:__anon49
+ASIC_P_16x16	../source/common/encasiccontroller.h	/^    ASIC_P_16x16 = 0,$/;"	e	enum:__anon48
+ASIC_P_16x8	../source/common/encasiccontroller.h	/^    ASIC_P_16x8 = 1,$/;"	e	enum:__anon48
+ASIC_P_8x16	../source/common/encasiccontroller.h	/^    ASIC_P_8x16 = 2,$/;"	e	enum:__anon48
+ASIC_P_8x8	../source/common/encasiccontroller.h	/^    ASIC_P_8x8 = 3,$/;"	e	enum:__anon48
+ASIC_STATUS_ALL	../source/camstab/vidstabinternal.h	36;"	d
+ASIC_STATUS_ALL	../source/common/encasiccontroller.h	27;"	d
+ASIC_STATUS_BUFF_FULL	../source/camstab/vidstabinternal.h	31;"	d
+ASIC_STATUS_BUFF_FULL	../source/common/encasiccontroller.h	32;"	d
+ASIC_STATUS_ENABLE	../source/camstab/vidstabinternal.h	45;"	d
+ASIC_STATUS_ENABLE	../source/common/encasiccontroller.h	39;"	d
+ASIC_STATUS_ERROR	../source/camstab/vidstabinternal.h	33;"	d
+ASIC_STATUS_ERROR	../source/common/encasiccontroller.h	34;"	d
+ASIC_STATUS_FRAME_READY	../source/camstab/vidstabinternal.h	34;"	d
+ASIC_STATUS_FRAME_READY	../source/common/encasiccontroller.h	35;"	d
+ASIC_STATUS_HW_RESET	../source/camstab/vidstabinternal.h	32;"	d
+ASIC_STATUS_HW_RESET	../source/common/encasiccontroller.h	33;"	d
+ASIC_STATUS_IRQ_INTERVAL	../source/camstab/vidstabinternal.h	28;"	d
+ASIC_STATUS_SLICE_READY	../source/common/encasiccontroller.h	29;"	d
+ASIC_STATUS_TEST_IRQ1	../source/camstab/vidstabinternal.h	30;"	d
+ASIC_STATUS_TEST_IRQ1	../source/common/encasiccontroller.h	31;"	d
+ASIC_STATUS_TEST_IRQ2	../source/camstab/vidstabinternal.h	29;"	d
+ASIC_STATUS_TEST_IRQ2	../source/common/encasiccontroller.h	30;"	d
+ASIC_SWREG_AMOUNT	../inc/encswhwregisters.h	46;"	d
+ASIC_VS_MODE_ALONE	../source/camstab/vidstabinternal.h	48;"	d
+ASIC_VS_MODE_ENCODER	../source/camstab/vidstabinternal.h	49;"	d
+ASIC_VS_MODE_OFF	../source/camstab/vidstabinternal.h	47;"	d
+ASSERT	../inc/enccommon.h	72;"	d
+ASSERT	../source/camstab/vidstabcommon.h	28;"	d
+AcChromLi	../source/jpeg/EncJpegDhtTables.h	/^    u32 AcChromLi;$/;"	m	struct:JpegEncAcDhtTables_t
+AcChromVij	../source/jpeg/EncJpegDhtTables.h	/^    u32 AcChromVij;$/;"	m	struct:JpegEncAcVijTables_t
+AcLumLi	../source/jpeg/EncJpegDhtTables.h	/^    u32 AcLumLi;$/;"	m	struct:JpegEncAcDhtTables_t
+AcLumVij	../source/jpeg/EncJpegDhtTables.h	/^    u32 AcLumVij;$/;"	m	struct:JpegEncAcVijTables_t
+Ac_Li	../source/jpeg/EncJpegDhtTables.h	/^static const JpegEncAcDhtTables Ac_Li[16] = {$/;"	v
+AdaptiveModel	../source/h264/H264RateControl.c	/^void AdaptiveModel(h264RateControl_s * rc)$/;"	f
+BASETYPE_H_INCLUDED	../inc/basetype.h	21;"	d
+CHECK_POINTS_MAX	../source/h264/H264RateControl.h	33;"	d
+CLIP3	../source/h264/H264Cabac.c	25;"	d	file:
+CLIP3	../source/h264/H264RateControl.c	59;"	d	file:
+COM	../source/jpeg/EncJpegMarkers.h	/^    COM = 0xFFFE    \/* Comment marker                    *\/$/;"	e	enum:__anon77
+COMMENT	../inc/enccommon.h	74;"	d
+COMMENTMBTYPE	../inc/enccommon.h	75;"	d
+CTRL_LEVELS	../source/h264/H264RateControl.h	32;"	d
+CheckAsicStatus	../source/camstab/vidstabinternal.c	/^i32 CheckAsicStatus(u32 status)$/;"	f
+CheckFullSize	../source/jpeg/JpegEncApi.c	/^i32 CheckFullSize(const JpegEncCfg * pCfgFull)$/;"	f
+CheckJpegCfg	../source/jpeg/JpegEncApi.c	/^bool_e CheckJpegCfg(const JpegEncCfg * pEncCfg)$/;"	f
+CheckParameter	../source/h264/H264Init.c	/^bool_e CheckParameter(const h264Instance_s * inst)$/;"	f
+CheckRegisterValues	../source/common/encasiccontroller.c	/^void CheckRegisterValues(regValues_s * val)$/;"	f
+CheckThumbnailCfg	../source/jpeg/JpegEncApi.c	/^i32 CheckThumbnailCfg(const JpegEncThumb * pCfgThumb)$/;"	f
+Ci	../source/jpeg/EncJpeg.h	/^    u32 Ci[MAX_NUMBER_OF_COMPONENTS];$/;"	m	struct:JpegEncFrameHeader_t
+DBG	../source/h264/H264RateControl.c	51;"	d	file:
+DBG	../source/h264/H264RateControl.c	53;"	d	file:
+DBGOUTPUT	../source/h264/H264RateControl.c	48;"	d	file:
+DBG_LEVEL	../source/h264/H264RateControl.c	50;"	d	file:
+DEBUG_PRINT	../inc/enccommon.h	73;"	d
+DEBUG_PRINT	../source/camstab/vidstabcommon.h	31;"	d
+DHT	../source/jpeg/EncJpegMarkers.h	/^    DHT = 0xFFC4,   \/* Define Huffman Table(s)           *\/$/;"	e	enum:__anon77
+DIV	../source/h264/H264Mad.h	27;"	d
+DIV	../source/h264/H264RateControl.c	60;"	d	file:
+DONE	../source/common/encasiccontroller.h	/^    DONE$/;"	e	enum:__anon46
+DQT	../source/jpeg/EncJpegMarkers.h	/^    DQT = 0xFFDB,   \/* Define Quantization Table(s)      *\/$/;"	e	enum:__anon77
+DRI	../source/jpeg/EncJpegMarkers.h	/^    DRI = 0xFFDD,   \/* Define Restart Interval           *\/$/;"	e	enum:__anon77
+DSCY	../source/h264/H264Mad.h	25;"	d
+DSCY	../source/h264/H264RateControl.c	61;"	d	file:
+DcChromLi	../source/jpeg/EncJpegDhtTables.h	/^    u32 DcChromLi;$/;"	m	struct:JpegEncDcDhtTables_t
+DcChromVij	../source/jpeg/EncJpegDhtTables.h	/^    u32 DcChromVij;$/;"	m	struct:JpegEncDcVijTables_t
+DcLumLi	../source/jpeg/EncJpegDhtTables.h	/^    u32 DcLumLi;$/;"	m	struct:JpegEncDcDhtTables_t
+DcLumVij	../source/jpeg/EncJpegDhtTables.h	/^    u32 DcLumVij;$/;"	m	struct:JpegEncDcVijTables_t
+Dc_Li	../source/jpeg/EncJpegDhtTables.h	/^static const JpegEncDcDhtTables Dc_Li[16] = {$/;"	v
+ENC8290_ASIC_CLOCK_GATING_ENABLED	../source/common/enccfg.h	176;"	d
+ENC8290_AXI_READ_ID	../source/common/enccfg.h	165;"	d
+ENC8290_AXI_WRITE_ID	../source/common/enccfg.h	169;"	d
+ENC8290_BURST_DATA_DISCARD_ENABLED	../source/common/enccfg.h	160;"	d
+ENC8290_BURST_INCR_TYPE_ENABLED	../source/common/enccfg.h	151;"	d
+ENC8290_BURST_LENGTH	../source/common/enccfg.h	137;"	d
+ENC8290_BURST_SCMD_DISABLE	../source/common/enccfg.h	144;"	d
+ENC8290_INPUT_SWAP_16_RGB16	../source/common/enccfg.h	61;"	d
+ENC8290_INPUT_SWAP_16_RGB32	../source/common/enccfg.h	82;"	d
+ENC8290_INPUT_SWAP_16_YUV	../source/common/enccfg.h	40;"	d
+ENC8290_INPUT_SWAP_32_RGB16	../source/common/enccfg.h	54;"	d
+ENC8290_INPUT_SWAP_32_RGB32	../source/common/enccfg.h	75;"	d
+ENC8290_INPUT_SWAP_32_YUV	../source/common/enccfg.h	33;"	d
+ENC8290_INPUT_SWAP_8_RGB16	../source/common/enccfg.h	68;"	d
+ENC8290_INPUT_SWAP_8_RGB32	../source/common/enccfg.h	89;"	d
+ENC8290_INPUT_SWAP_8_YUV	../source/common/enccfg.h	47;"	d
+ENC8290_IRQ_DISABLE	../source/common/enccfg.h	124;"	d
+ENC8290_OUTPUT_SWAP_16	../source/common/enccfg.h	108;"	d
+ENC8290_OUTPUT_SWAP_32	../source/common/enccfg.h	101;"	d
+ENC8290_OUTPUT_SWAP_8	../source/common/enccfg.h	115;"	d
+ENC8290_SLICE_READY_INTERRUPT	../source/common/enccfg.h	189;"	d
+ENC8290_TIMEOUT_INTERRUPT	../source/common/enccfg.h	181;"	d
+ENCHW_NO	../inc/enccommon.h	/^    ENCHW_NO = 0,$/;"	e	enum:__anon2
+ENCHW_NOK	../inc/enccommon.h	/^    ENCHW_NOK = -1,$/;"	e	enum:__anon1
+ENCHW_OK	../inc/enccommon.h	/^    ENCHW_OK = 0$/;"	e	enum:__anon1
+ENCHW_YES	../inc/enccommon.h	/^    ENCHW_YES = 1$/;"	e	enum:__anon2
+ENCSTAT_ENCODE	../source/jpeg/EncJpegInstance.h	/^    ENCSTAT_ENCODE,$/;"	e	enum:JpegEncStatus
+ENCSTAT_ERROR	../source/jpeg/EncJpegInstance.h	/^    ENCSTAT_ERROR$/;"	e	enum:JpegEncStatus
+ENCSTAT_INIT	../source/jpeg/EncJpegInstance.h	/^    ENCSTAT_INIT = 0xA1,$/;"	e	enum:JpegEncStatus
+ENC_420_MODE	../source/jpeg/EncJpeg.h	/^    ENC_420_MODE,$/;"	e	enum:__anon71
+ENC_422_MODE	../source/jpeg/EncJpeg.h	/^    ENC_422_MODE$/;"	e	enum:__anon71
+ENC_DOTS_PER_CM	../source/jpeg/EncJpeg.h	/^    ENC_DOTS_PER_CM = 2$/;"	e	enum:__anon72
+ENC_DOTS_PER_INCH	../source/jpeg/EncJpeg.h	/^    ENC_DOTS_PER_INCH = 1,$/;"	e	enum:__anon72
+ENC_MULTI_MARKER	../source/jpeg/EncJpeg.h	/^    ENC_MULTI_MARKER$/;"	e	enum:__anon73
+ENC_NO_UNITS	../source/jpeg/EncJpeg.h	/^    ENC_NO_UNITS = 0,$/;"	e	enum:__anon72
+ENC_PARTIAL_FRAME	../source/jpeg/EncJpeg.h	/^    ENC_PARTIAL_FRAME,$/;"	e	enum:__anon71
+ENC_SINGLE_MARKER	../source/jpeg/EncJpeg.h	/^    ENC_SINGLE_MARKER,$/;"	e	enum:__anon73
+ENC_SWHWREGISTERS_H	../inc/encswhwregisters.h	30;"	d
+ENC_WHOLE_FRAME	../source/jpeg/EncJpeg.h	/^    ENC_WHOLE_FRAME,$/;"	e	enum:__anon71
+ENDOFSEQUENCE	../inc/enccommon.h	/^    ENDOFSEQUENCE = 10, \/* End of sequence *\/$/;"	e	enum:__anon3
+ENDOFSTREAM	../inc/enccommon.h	/^    ENDOFSTREAM = 11,   \/* End of stream *\/$/;"	e	enum:__anon3
+EOI	../source/jpeg/EncJpegMarkers.h	/^    EOI = 0xFFD9,   \/* End of Image                      *\/$/;"	e	enum:__anon77
+EWLHwConfig	../inc/ewl.h	/^    typedef struct EWLHwConfig$/;"	s
+EWLHwConfig_t	../inc/ewl.h	/^    } EWLHwConfig_t;$/;"	t	typeref:struct:EWLHwConfig
+EWLInitParam	../inc/ewl.h	/^    typedef struct EWLInitParam$/;"	s
+EWLInitParam_t	../inc/ewl.h	/^    } EWLInitParam_t;$/;"	t	typeref:struct:EWLInitParam
+EWLLinearMem	../inc/ewl.h	/^    typedef struct EWLLinearMem$/;"	s
+EWLLinearMem_t	../inc/ewl.h	/^    } EWLLinearMem_t;$/;"	t	typeref:struct:EWLLinearMem
+EWL_CLIENT_TYPE_H264_ENC	../inc/ewl.h	87;"	d
+EWL_CLIENT_TYPE_JPEG_ENC	../inc/ewl.h	89;"	d
+EWL_CLIENT_TYPE_MPEG4_ENC	../inc/ewl.h	88;"	d
+EWL_CLIENT_TYPE_VIDEOSTAB	../inc/ewl.h	90;"	d
+EWL_ERROR	../inc/ewl.h	32;"	d
+EWL_HW_BUS_TYPE_AHB	../inc/ewl.h	40;"	d
+EWL_HW_BUS_TYPE_AXI	../inc/ewl.h	42;"	d
+EWL_HW_BUS_TYPE_OCP	../inc/ewl.h	41;"	d
+EWL_HW_BUS_TYPE_PCI	../inc/ewl.h	43;"	d
+EWL_HW_BUS_TYPE_UNKNOWN	../inc/ewl.h	39;"	d
+EWL_HW_BUS_WIDTH_128BITS	../inc/ewl.h	48;"	d
+EWL_HW_BUS_WIDTH_32BITS	../inc/ewl.h	46;"	d
+EWL_HW_BUS_WIDTH_64BITS	../inc/ewl.h	47;"	d
+EWL_HW_BUS_WIDTH_UNKNOWN	../inc/ewl.h	45;"	d
+EWL_HW_CONFIG_ENABLED	../inc/ewl.h	55;"	d
+EWL_HW_CONFIG_NOT_SUPPORTED	../inc/ewl.h	54;"	d
+EWL_HW_SYNTHESIS_LANGUAGE_UNKNOWN	../inc/ewl.h	50;"	d
+EWL_HW_SYNTHESIS_LANGUAGE_VERILOG	../inc/ewl.h	52;"	d
+EWL_HW_SYNTHESIS_LANGUAGE_VHDL	../inc/ewl.h	51;"	d
+EWL_HW_WAIT_ERROR	../inc/ewl.h	35;"	d
+EWL_HW_WAIT_OK	../inc/ewl.h	34;"	d
+EWL_HW_WAIT_TIMEOUT	../inc/ewl.h	36;"	d
+EWL_OK	../inc/ewl.h	31;"	d
+EXTENDED_SAR	../source/h264/H264SequenceParameterSet.c	39;"	d	file:
+EncAppUnitsType	../source/jpeg/EncJpeg.h	/^} EncAppUnitsType;$/;"	t	typeref:enum:__anon72
+EncAsicCheckStatus_V2	../source/common/encasiccontroller_v2.c	/^i32 EncAsicCheckStatus_V2(asicData_s * asic)$/;"	f
+EncAsicControllerInit	../source/common/encasiccontroller.c	/^i32 EncAsicControllerInit(asicData_s * asic)$/;"	f
+EncAsicFrameContinue	../source/common/encasiccontroller.c	/^void EncAsicFrameContinue(const void *ewl, regValues_s * val)$/;"	f
+EncAsicFrameStart	../source/common/encasiccontroller.c	/^void EncAsicFrameStart(const void *ewl, regValues_s * val)$/;"	f
+EncAsicGetId	../source/common/encasiccontroller.c	/^u32 EncAsicGetId(const void *ewl)$/;"	f
+EncAsicGetRegisterValue	../source/common/encasiccontroller.c	/^u32 EncAsicGetRegisterValue(const void *ewl, u32 *regMirror, regName name)$/;"	f
+EncAsicGetRegisters	../source/common/encasiccontroller.c	/^void EncAsicGetRegisters(const void *ewl, regValues_s * val)$/;"	f
+EncAsicGetStatus	../source/common/encasiccontroller.c	/^u32 EncAsicGetStatus(const void *ewl)$/;"	f
+EncAsicMemAlloc_V2	../source/common/encasiccontroller_v2.c	/^i32 EncAsicMemAlloc_V2(asicData_s * asic, u32 width, u32 height,$/;"	f
+EncAsicMemFree_V2	../source/common/encasiccontroller_v2.c	/^void EncAsicMemFree_V2(asicData_s * asic)$/;"	f
+EncAsicRecycleInternalImage	../source/common/encasiccontroller.c	/^void EncAsicRecycleInternalImage(asicData_s *asic, u32 numViews, u32 viewId,$/;"	f
+EncAsicSetQuantTable	../source/common/encasiccontroller.c	/^void EncAsicSetQuantTable(asicData_s * asic,$/;"	f
+EncAsicSetRegisterValue	../source/common/encasiccontroller.c	/^void EncAsicSetRegisterValue(u32 *regMirror, regName name, u32 value)$/;"	f
+EncAsicStop	../source/common/encasiccontroller.c	/^void EncAsicStop(const void *ewl)$/;"	f
+EncJpegAPP0Header	../source/jpeg/EncJpeg.c	/^void EncJpegAPP0Header(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegBufferStatus	../source/jpeg/EncJpegPutBits.c	/^bool_e EncJpegBufferStatus(stream_s * stream)$/;"	f
+EncJpegCOMHeader	../source/jpeg/EncJpeg.c	/^void EncJpegCOMHeader(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegCodeFrame	../source/jpeg/EncJpegCodeFrame.c	/^jpegEncodeFrame_e EncJpegCodeFrame(jpegInstance_s * inst)$/;"	f
+EncJpegDHTHeader	../source/jpeg/EncJpeg.c	/^void EncJpegDHTHeader(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegDQTHeader	../source/jpeg/EncJpeg.c	/^void EncJpegDQTHeader(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegHdr	../source/jpeg/EncJpeg.c	/^u32 EncJpegHdr(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegHeaderPutBits	../source/jpeg/EncJpegPutBits.c	/^void EncJpegHeaderPutBits(stream_s * buffer, u32 value, u32 number)$/;"	f
+EncJpegInit	../source/jpeg/EncJpeg.c	/^void EncJpegInit(jpegData_s * jpeg)$/;"	f
+EncJpegNextByteAligned	../source/jpeg/EncJpegPutBits.c	/^void EncJpegNextByteAligned(stream_s * stream)$/;"	f
+EncJpegRestartInterval	../source/jpeg/EncJpeg.c	/^void EncJpegRestartInterval(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegSOFOHeader	../source/jpeg/EncJpeg.c	/^void EncJpegSOFOHeader(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegSOSHeader	../source/jpeg/EncJpeg.c	/^void EncJpegSOSHeader(stream_s * stream, jpegData_s * data)$/;"	f
+EncJpegSetBuffer	../source/jpeg/EncJpegPutBits.c	/^bool_e EncJpegSetBuffer(stream_s * buffer, u8 * stream, u32 size)$/;"	f
+EncPreProcess	../source/common/encpreprocess.c	/^void EncPreProcess(asicData_s * asic, const preProcess_s * preProcess)$/;"	f
+EncPreProcessCheck	../source/common/encpreprocess.c	/^i32 EncPreProcessCheck(const preProcess_s * preProcess)$/;"	f
+EncSetColorConversion	../source/common/encpreprocess.c	/^void EncSetColorConversion(preProcess_s * preProcess, asicData_s * asic)$/;"	f
+EndRi	../source/jpeg/EncJpegCodeFrame.c	/^void EndRi(stream_s * stream, jpegData_s * jpeg)$/;"	f
+FILLERDATA	../inc/enccommon.h	/^    FILLERDATA = 12, \/* Filler data *\/$/;"	e	enum:__anon3
+FIXED_POINT_QUANT	../inc/enccommon.h	46;"	d
+FilterMotion	../source/camstab/vidstabalg.c	/^void FilterMotion(SwStbData * data, i32 * minX, i32 * minY)$/;"	f
+GetAspectRatioIdc	../source/h264/H264SequenceParameterSet.c	/^static i32 GetAspectRatioIdc(i32 sarWidth, i32 sarHeight)$/;"	f	file:
+H264AddNaluSize	../source/h264/H264EncApi.c	/^void H264AddNaluSize(H264EncOut * pEncOut, u32 naluSizeBytes)$/;"	f
+H264AfterPicRc	../source/h264/H264RateControl.c	/^i32 H264AfterPicRc(h264RateControl_s * rc, u32 nonZeroCnt, u32 byteCnt,$/;"	f
+H264BeforePicRc	../source/h264/H264RateControl.c	/^void H264BeforePicRc(h264RateControl_s * rc, u32 timeInc, u32 sliceType)$/;"	f
+H264BufferStatus	../source/h264/H264PutBits.c	/^bool_e H264BufferStatus(stream_s * stream)$/;"	f
+H264BufferingSei	../source/h264/H264Sei.c	/^void H264BufferingSei(stream_s * sp, sei_s * sei)$/;"	f
+H264CabacInit	../source/h264/H264Cabac.c	/^u32 H264CabacInit(u32 * contextTable, u32 cabac_init_idc)$/;"	f
+H264Calculate	../source/h264/H264RateControl.c	/^i32 H264Calculate(i32 a, i32 b, i32 c)$/;"	f
+H264CheckCfg	../source/h264/H264Init.c	/^bool_e H264CheckCfg(const H264EncConfig * pEncCfg)$/;"	f
+H264CheckLevel	../source/h264/H264SequenceParameterSet.c	/^bool_e H264CheckLevel(sps_s * sps, i32 bitRate, i32 frameRateNum,$/;"	f
+H264CirTest	../source/h264/H264TestId.c	/^void H264CirTest(h264Instance_s *inst)$/;"	f
+H264CodeFrame	../source/h264/H264CodeFrame.c	/^h264EncodeFrame_e H264CodeFrame(h264Instance_s * inst)$/;"	f
+H264ConfigureTestBeforeFrame	../source/h264/H264TestId.c	/^void H264ConfigureTestBeforeFrame(h264Instance_s * inst)$/;"	f
+H264ConfigureTestBeforeStream	../source/h264/H264TestId.c	/^void H264ConfigureTestBeforeStream(h264Instance_s * inst)$/;"	f
+H264CroppingTest	../source/h264/H264TestId.c	/^void H264CroppingTest(h264Instance_s *inst)$/;"	f
+H264DMVPenaltyTest	../source/h264/H264TestId.c	/^void H264DMVPenaltyTest(h264Instance_s *inst)$/;"	f
+H264ENCODE_DATA_ERROR	../source/h264/H264CodeFrame.h	/^    H264ENCODE_DATA_ERROR = 2,$/;"	e	enum:__anon55
+H264ENCODE_HW_ERROR	../source/h264/H264CodeFrame.h	/^    H264ENCODE_HW_ERROR = 3,$/;"	e	enum:__anon55
+H264ENCODE_HW_RESET	../source/h264/H264CodeFrame.h	/^    H264ENCODE_HW_RESET = 5$/;"	e	enum:__anon55
+H264ENCODE_OK	../source/h264/H264CodeFrame.h	/^    H264ENCODE_OK = 0,$/;"	e	enum:__anon55
+H264ENCODE_SYSTEM_ERROR	../source/h264/H264CodeFrame.h	/^    H264ENCODE_SYSTEM_ERROR = 4,$/;"	e	enum:__anon55
+H264ENCODE_TIMEOUT	../source/h264/H264CodeFrame.h	/^    H264ENCODE_TIMEOUT = 1,$/;"	e	enum:__anon55
+H264ENCSTAT_ERROR	../source/h264/H264Instance.h	/^    H264ENCSTAT_ERROR$/;"	e	enum:H264EncStatus
+H264ENCSTAT_INIT	../source/h264/H264Instance.h	/^    H264ENCSTAT_INIT = 0xA1,$/;"	e	enum:H264EncStatus
+H264ENCSTAT_START_FRAME	../source/h264/H264Instance.h	/^    H264ENCSTAT_START_FRAME,$/;"	e	enum:H264EncStatus
+H264ENCSTAT_START_STREAM	../source/h264/H264Instance.h	/^    H264ENCSTAT_START_STREAM,$/;"	e	enum:H264EncStatus
+H264ENCSTRMENCODE_MIN_BUF	../source/h264/H264EncApi.c	66;"	d	file:
+H264ENCSTRMSTART_MIN_BUF	../source/h264/H264EncApi.c	65;"	d	file:
+H264ENC_BASE_VIEW_DOUBLE_BUFFER	../inc/h264encapi.h	/^        H264ENC_BASE_VIEW_DOUBLE_BUFFER = 0,    \/* H.264 stream using$/;"	e	enum:__anon10
+H264ENC_BASE_VIEW_SINGLE_BUFFER	../inc/h264encapi.h	/^        H264ENC_BASE_VIEW_SINGLE_BUFFER = 1,    \/* H.264 stream using$/;"	e	enum:__anon10
+H264ENC_BGR101010	../inc/h264encapi.h	/^        H264ENC_BGR101010 = 13  \/* 30-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_BGR444	../inc/h264encapi.h	/^        H264ENC_BGR444 = 9, \/* 12-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_BGR555	../inc/h264encapi.h	/^        H264ENC_BGR555 = 7, \/* 15-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_BGR565	../inc/h264encapi.h	/^        H264ENC_BGR565 = 5, \/* 16-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_BGR888	../inc/h264encapi.h	/^        H264ENC_BGR888 = 11,    \/* 24-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_BUILD_MAJOR	../source/h264/H264EncApi.c	27;"	d	file:
+H264ENC_BUILD_MINOR	../source/h264/H264EncApi.c	28;"	d	file:
+H264ENC_BUILD_REVISION	../source/h264/H264EncApi.c	29;"	d	file:
+H264ENC_BYTE_STREAM	../inc/h264encapi.h	/^        H264ENC_BYTE_STREAM = 0,    \/* H.264 annex B: NAL unit starts with$/;"	e	enum:__anon9
+H264ENC_DEFAULT_QP	../source/h264/H264Init.c	44;"	d	file:
+H264ENC_ERROR	../inc/h264encapi.h	/^        H264ENC_ERROR = -1,$/;"	e	enum:__anon8
+H264ENC_EWL_ERROR	../inc/h264encapi.h	/^        H264ENC_EWL_ERROR = -5,$/;"	e	enum:__anon8
+H264ENC_EWL_MEMORY_ERROR	../inc/h264encapi.h	/^        H264ENC_EWL_MEMORY_ERROR = -6,$/;"	e	enum:__anon8
+H264ENC_FRAME_READY	../inc/h264encapi.h	/^        H264ENC_FRAME_READY = 1,$/;"	e	enum:__anon8
+H264ENC_HRD_ERROR	../inc/h264encapi.h	/^        H264ENC_HRD_ERROR = -15,$/;"	e	enum:__anon8
+H264ENC_HW_BUS_ERROR	../inc/h264encapi.h	/^        H264ENC_HW_BUS_ERROR = -9,$/;"	e	enum:__anon8
+H264ENC_HW_DATA_ERROR	../inc/h264encapi.h	/^        H264ENC_HW_DATA_ERROR = -10,$/;"	e	enum:__anon8
+H264ENC_HW_RESERVED	../inc/h264encapi.h	/^        H264ENC_HW_RESERVED = -12,$/;"	e	enum:__anon8
+H264ENC_HW_RESET	../inc/h264encapi.h	/^        H264ENC_HW_RESET = -16$/;"	e	enum:__anon8
+H264ENC_HW_TIMEOUT	../inc/h264encapi.h	/^        H264ENC_HW_TIMEOUT = -11,$/;"	e	enum:__anon8
+H264ENC_IDR_ID_MODULO	../source/h264/H264EncApi.c	72;"	d	file:
+H264ENC_INSTANCE_ERROR	../inc/h264encapi.h	/^        H264ENC_INSTANCE_ERROR = -14,$/;"	e	enum:__anon8
+H264ENC_INTRA_FRAME	../inc/h264encapi.h	/^        H264ENC_INTRA_FRAME = 0,$/;"	e	enum:__anon15
+H264ENC_INVALID_ARGUMENT	../inc/h264encapi.h	/^        H264ENC_INVALID_ARGUMENT = -3,$/;"	e	enum:__anon8
+H264ENC_INVALID_STATUS	../inc/h264encapi.h	/^        H264ENC_INVALID_STATUS = -7,$/;"	e	enum:__anon8
+H264ENC_LEVEL_1	../inc/h264encapi.h	/^        H264ENC_LEVEL_1 = 10,$/;"	e	enum:__anon11
+H264ENC_LEVEL_1_1	../inc/h264encapi.h	/^        H264ENC_LEVEL_1_1 = 11,$/;"	e	enum:__anon11
+H264ENC_LEVEL_1_2	../inc/h264encapi.h	/^        H264ENC_LEVEL_1_2 = 12,$/;"	e	enum:__anon11
+H264ENC_LEVEL_1_3	../inc/h264encapi.h	/^        H264ENC_LEVEL_1_3 = 13,$/;"	e	enum:__anon11
+H264ENC_LEVEL_1_b	../inc/h264encapi.h	/^        H264ENC_LEVEL_1_b = 99,$/;"	e	enum:__anon11
+H264ENC_LEVEL_2	../inc/h264encapi.h	/^        H264ENC_LEVEL_2 = 20,$/;"	e	enum:__anon11
+H264ENC_LEVEL_2_1	../inc/h264encapi.h	/^        H264ENC_LEVEL_2_1 = 21,$/;"	e	enum:__anon11
+H264ENC_LEVEL_2_2	../inc/h264encapi.h	/^        H264ENC_LEVEL_2_2 = 22,$/;"	e	enum:__anon11
+H264ENC_LEVEL_3	../inc/h264encapi.h	/^        H264ENC_LEVEL_3 = 30,$/;"	e	enum:__anon11
+H264ENC_LEVEL_3_1	../inc/h264encapi.h	/^        H264ENC_LEVEL_3_1 = 31,$/;"	e	enum:__anon11
+H264ENC_LEVEL_3_2	../inc/h264encapi.h	/^        H264ENC_LEVEL_3_2 = 32,$/;"	e	enum:__anon11
+H264ENC_LEVEL_4	../inc/h264encapi.h	/^        H264ENC_LEVEL_4 = 40,$/;"	e	enum:__anon11
+H264ENC_LEVEL_4_1	../inc/h264encapi.h	/^        H264ENC_LEVEL_4_1 = 41,$/;"	e	enum:__anon11
+H264ENC_LEVEL_4_2	../inc/h264encapi.h	/^        H264ENC_LEVEL_4_2 = 42,$/;"	e	enum:__anon11
+H264ENC_LEVEL_5	../inc/h264encapi.h	/^        H264ENC_LEVEL_5 = 50,$/;"	e	enum:__anon11
+H264ENC_LEVEL_5_1	../inc/h264encapi.h	/^        H264ENC_LEVEL_5_1 = 51$/;"	e	enum:__anon11
+H264ENC_MAJOR_VERSION	../source/h264/H264EncApi.c	24;"	d	file:
+H264ENC_MAX_BITRATE	../source/h264/H264EncApi.c	69;"	d	file:
+H264ENC_MAX_ENC_HEIGHT	../source/h264/H264Init.c	37;"	d	file:
+H264ENC_MAX_ENC_WIDTH	../source/h264/H264Init.c	35;"	d	file:
+H264ENC_MAX_LEVEL	../source/h264/H264Init.c	42;"	d	file:
+H264ENC_MAX_MBS_PER_PIC	../source/h264/H264Init.c	39;"	d	file:
+H264ENC_MAX_PP_INPUT_HEIGHT	../source/h264/H264EncApi.c	68;"	d	file:
+H264ENC_MAX_PP_INPUT_WIDTH	../source/h264/H264EncApi.c	67;"	d	file:
+H264ENC_MAX_USER_DATA_SIZE	../source/h264/H264EncApi.c	70;"	d	file:
+H264ENC_MEMORY_ERROR	../inc/h264encapi.h	/^        H264ENC_MEMORY_ERROR = -4,$/;"	e	enum:__anon8
+H264ENC_MINOR_VERSION	../source/h264/H264EncApi.c	25;"	d	file:
+H264ENC_MIN_ENC_HEIGHT	../source/h264/H264Init.c	36;"	d	file:
+H264ENC_MIN_ENC_WIDTH	../source/h264/H264Init.c	34;"	d	file:
+H264ENC_MVC_STEREO_INTER_PRED	../inc/h264encapi.h	/^        H264ENC_MVC_STEREO_INTER_PRED = 3       \/* H.264 MVC Stereo stream using$/;"	e	enum:__anon10
+H264ENC_MVC_STEREO_INTER_VIEW_PRED	../inc/h264encapi.h	/^        H264ENC_MVC_STEREO_INTER_VIEW_PRED = 2, \/* H.264 MVC Stereo stream using$/;"	e	enum:__anon10
+H264ENC_NAL_UNIT_STREAM	../inc/h264encapi.h	/^        H264ENC_NAL_UNIT_STREAM = 1 \/* Plain NAL units without startcode *\/$/;"	e	enum:__anon9
+H264ENC_NOTCODED_FRAME	../inc/h264encapi.h	/^        H264ENC_NOTCODED_FRAME  \/* Used just as a return value *\/$/;"	e	enum:__anon15
+H264ENC_NULL_ARGUMENT	../inc/h264encapi.h	/^        H264ENC_NULL_ARGUMENT = -2,$/;"	e	enum:__anon8
+H264ENC_OK	../inc/h264encapi.h	/^        H264ENC_OK = 0,$/;"	e	enum:__anon8
+H264ENC_OUTPUT_BUFFER_OVERFLOW	../inc/h264encapi.h	/^        H264ENC_OUTPUT_BUFFER_OVERFLOW = -8,$/;"	e	enum:__anon8
+H264ENC_PREDICTED_FRAME	../inc/h264encapi.h	/^        H264ENC_PREDICTED_FRAME = 1,$/;"	e	enum:__anon15
+H264ENC_RGB101010	../inc/h264encapi.h	/^        H264ENC_RGB101010 = 12, \/* 30-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_RGB444	../inc/h264encapi.h	/^        H264ENC_RGB444 = 8, \/* 12-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_RGB555	../inc/h264encapi.h	/^        H264ENC_RGB555 = 6, \/* 15-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_RGB565	../inc/h264encapi.h	/^        H264ENC_RGB565 = 4, \/* 16-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_RGB888	../inc/h264encapi.h	/^        H264ENC_RGB888 = 10,    \/* 24-bit RGB           *\/$/;"	e	enum:__anon12
+H264ENC_RGBTOYUV_BT601	../inc/h264encapi.h	/^        H264ENC_RGBTOYUV_BT601 = 0, \/* Color conversion according to BT.601 *\/$/;"	e	enum:__anon14
+H264ENC_RGBTOYUV_BT709	../inc/h264encapi.h	/^        H264ENC_RGBTOYUV_BT709 = 1, \/* Color conversion according to BT.709 *\/$/;"	e	enum:__anon14
+H264ENC_RGBTOYUV_USER_DEFINED	../inc/h264encapi.h	/^        H264ENC_RGBTOYUV_USER_DEFINED = 2   \/* User defined color conversion *\/$/;"	e	enum:__anon14
+H264ENC_ROTATE_0	../inc/h264encapi.h	/^        H264ENC_ROTATE_0 = 0,$/;"	e	enum:__anon13
+H264ENC_ROTATE_90L	../inc/h264encapi.h	/^        H264ENC_ROTATE_90L = 2  \/* Rotate 90 degrees counter-clockwise *\/$/;"	e	enum:__anon13
+H264ENC_ROTATE_90R	../inc/h264encapi.h	/^        H264ENC_ROTATE_90R = 1, \/* Rotate 90 degrees clockwise *\/$/;"	e	enum:__anon13
+H264ENC_SW_BUILD	../source/h264/H264EncApi.c	30;"	d	file:
+H264ENC_SYSTEM_ERROR	../inc/h264encapi.h	/^        H264ENC_SYSTEM_ERROR = -13,$/;"	e	enum:__anon8
+H264ENC_YUV420_PLANAR	../inc/h264encapi.h	/^        H264ENC_YUV420_PLANAR = 0,  \/* YYYY... UUUU... VVVV *\/$/;"	e	enum:__anon12
+H264ENC_YUV420_SEMIPLANAR	../inc/h264encapi.h	/^        H264ENC_YUV420_SEMIPLANAR = 1,  \/* YYYY... UVUVUV...    *\/$/;"	e	enum:__anon12
+H264ENC_YUV422_INTERLEAVED_UYVY	../inc/h264encapi.h	/^        H264ENC_YUV422_INTERLEAVED_UYVY = 3,    \/* UYVYUYVY...          *\/$/;"	e	enum:__anon12
+H264ENC_YUV422_INTERLEAVED_YUYV	../inc/h264encapi.h	/^        H264ENC_YUV422_INTERLEAVED_YUYV = 2,    \/* YUYVYUYV...          *\/$/;"	e	enum:__anon12
+H264EncApiVersion	../inc/h264encapi.h	/^    } H264EncApiVersion;$/;"	t	typeref:struct:__anon25
+H264EncBuild	../inc/h264encapi.h	/^    } H264EncBuild;$/;"	t	typeref:struct:__anon26
+H264EncCodingCtrl	../inc/h264encapi.h	/^    } H264EncCodingCtrl;$/;"	t	typeref:struct:__anon18
+H264EncColorConversion	../inc/h264encapi.h	/^    } H264EncColorConversion;$/;"	t	typeref:struct:__anon22
+H264EncColorConversionType	../inc/h264encapi.h	/^    } H264EncColorConversionType;$/;"	t	typeref:enum:__anon14
+H264EncConfig	../inc/h264encapi.h	/^    } H264EncConfig;$/;"	t	typeref:struct:__anon16
+H264EncFilter	../inc/h264encapi_ext.h	/^    } H264EncFilter;$/;"	t	typeref:struct:__anon27
+H264EncGetApiVersion	../source/h264/H264EncApi.c	/^H264EncApiVersion H264EncGetApiVersion(void)$/;"	f
+H264EncGetBuild	../source/h264/H264EncApi.c	/^H264EncBuild H264EncGetBuild(void)$/;"	f
+H264EncGetCodingCtrl	../source/h264/H264EncApi.c	/^H264EncRet H264EncGetCodingCtrl(H264EncInst inst,$/;"	f
+H264EncGetFilter	../source/h264/h264encapi_ext.c	/^H264EncRet H264EncGetFilter(H264EncInst inst, H264EncFilter * pEncCfg)$/;"	f
+H264EncGetPreProcessing	../source/h264/H264EncApi.c	/^H264EncRet H264EncGetPreProcessing(H264EncInst inst,$/;"	f
+H264EncGetRateCtrl	../source/h264/H264EncApi.c	/^H264EncRet H264EncGetRateCtrl(H264EncInst inst, H264EncRateCtrl * pRateCtrl)$/;"	f
+H264EncIn	../inc/h264encapi.h	/^    } H264EncIn;$/;"	t	typeref:struct:__anon20
+H264EncInit	../source/h264/H264EncApi.c	/^H264EncRet H264EncInit(const H264EncConfig * pEncCfg, H264EncInst * instAddr)$/;"	f
+H264EncInst	../inc/h264encapi.h	/^    typedef const void *H264EncInst;$/;"	t
+H264EncLevel	../inc/h264encapi.h	/^    } H264EncLevel;$/;"	t	typeref:enum:__anon11
+H264EncOut	../inc/h264encapi.h	/^    } H264EncOut;$/;"	t	typeref:struct:__anon21
+H264EncPictureArea	../inc/h264encapi.h	/^    } H264EncPictureArea;$/;"	t	typeref:struct:__anon17
+H264EncPictureCodingType	../inc/h264encapi.h	/^    } H264EncPictureCodingType;$/;"	t	typeref:enum:__anon15
+H264EncPictureRotation	../inc/h264encapi.h	/^    } H264EncPictureRotation;$/;"	t	typeref:enum:__anon13
+H264EncPictureType	../inc/h264encapi.h	/^    } H264EncPictureType;$/;"	t	typeref:enum:__anon12
+H264EncPreProcessingCfg	../inc/h264encapi.h	/^    } H264EncPreProcessingCfg;$/;"	t	typeref:struct:__anon23
+H264EncRateCtrl	../inc/h264encapi.h	/^    } H264EncRateCtrl;$/;"	t	typeref:struct:__anon19
+H264EncRelease	../source/h264/H264EncApi.c	/^H264EncRet H264EncRelease(H264EncInst inst)$/;"	f
+H264EncRet	../inc/h264encapi.h	/^    } H264EncRet;$/;"	t	typeref:enum:__anon8
+H264EncSetChromaQpIndexOffset	../source/h264/h264encapi_ext.c	/^H264EncRet H264EncSetChromaQpIndexOffset(H264EncInst inst, i32 offset)$/;"	f
+H264EncSetCodingCtrl	../source/h264/H264EncApi.c	/^H264EncRet H264EncSetCodingCtrl(H264EncInst inst,$/;"	f
+H264EncSetFilter	../source/h264/h264encapi_ext.c	/^H264EncRet H264EncSetFilter(H264EncInst inst, const H264EncFilter * pEncCfg)$/;"	f
+H264EncSetHwBurstSize	../source/h264/h264encapi_ext.c	/^H264EncRet H264EncSetHwBurstSize(H264EncInst inst, u32 burst)$/;"	f
+H264EncSetHwBurstType	../source/h264/h264encapi_ext.c	/^H264EncRet H264EncSetHwBurstType(H264EncInst inst, u32 bursttype)$/;"	f
+H264EncSetPreProcessing	../source/h264/H264EncApi.c	/^H264EncRet H264EncSetPreProcessing(H264EncInst inst,$/;"	f
+H264EncSetRateCtrl	../source/h264/H264EncApi.c	/^H264EncRet H264EncSetRateCtrl(H264EncInst inst,$/;"	f
+H264EncSetSeiUserData	../source/h264/H264EncApi.c	/^H264EncRet H264EncSetSeiUserData(H264EncInst inst, const u8 * pUserData,$/;"	f
+H264EncSetTestId	../source/h264/H264EncApi.c	/^H264EncRet H264EncSetTestId(H264EncInst inst, u32 testId)$/;"	f
+H264EncSliceReady	../inc/h264encapi.h	/^    } H264EncSliceReady;$/;"	t	typeref:struct:__anon24
+H264EncSliceReadyCallBackFunc	../inc/h264encapi.h	/^    typedef void (*H264EncSliceReadyCallBackFunc)(H264EncSliceReady *sliceReady);$/;"	t
+H264EncStatus	../source/h264/H264Instance.h	/^enum H264EncStatus$/;"	g
+H264EncStreamType	../inc/h264encapi.h	/^    } H264EncStreamType;$/;"	t	typeref:enum:__anon9
+H264EncStrmEncode	../source/h264/H264EncApi.c	/^H264EncRet H264EncStrmEncode(H264EncInst inst, const H264EncIn * pEncIn,$/;"	f
+H264EncStrmEnd	../source/h264/H264EncApi.c	/^H264EncRet H264EncStrmEnd(H264EncInst inst, const H264EncIn * pEncIn,$/;"	f
+H264EncStrmStart	../source/h264/H264EncApi.c	/^H264EncRet H264EncStrmStart(H264EncInst inst, const H264EncIn * pEncIn,$/;"	f
+H264EncViewMode	../inc/h264encapi.h	/^    } H264EncViewMode;$/;"	t	typeref:enum:__anon10
+H264EndOfSequence	../source/h264/H264SequenceParameterSet.c	/^void H264EndOfSequence(stream_s * stream, sps_s * sps)$/;"	f
+H264EndOfStream	../source/h264/H264SequenceParameterSet.c	/^void H264EndOfStream(stream_s * stream, sps_s * sps)$/;"	f
+H264ExpGolombSigned	../source/h264/H264PutBits.c	/^void H264ExpGolombSigned(stream_s * stream, i32 val)$/;"	f
+H264ExpGolombUnsigned	../source/h264/H264PutBits.c	/^void H264ExpGolombUnsigned(stream_s * stream, u32 val)$/;"	f
+H264FillerNALU	../source/h264/H264NalUnit.c	/^u32 H264FillerNALU(stream_s * sp, i32 cnt, true_e byteStream)$/;"	f
+H264FillerRc	../source/h264/H264RateControl.c	/^u32 H264FillerRc(h264RateControl_s * rc, u32 frameCnt)$/;"	f
+H264FillerSei	../source/h264/H264Sei.c	/^void H264FillerSei(stream_s * sp, sei_s * sei, i32 cnt)$/;"	f
+H264FilterTest	../source/h264/H264TestId.c	/^void H264FilterTest(h264Instance_s *inst)$/;"	f
+H264FrameQuantizationTest	../source/h264/H264TestId.c	/^void H264FrameQuantizationTest(h264Instance_s *inst)$/;"	f
+H264GetAllowedWidth	../source/h264/H264Init.c	/^i32 H264GetAllowedWidth(i32 width, H264EncPictureType inputType)$/;"	f
+H264GetLevelIndex	../source/h264/H264SequenceParameterSet.c	/^u32 H264GetLevelIndex(u32 levelIdc)$/;"	f
+H264Init	../source/h264/H264Init.c	/^H264EncRet H264Init(const H264EncConfig * pEncCfg, h264Instance_s ** instAddr)$/;"	f
+H264InitRc	../source/h264/H264RateControl.c	/^bool_e H264InitRc(h264RateControl_s * rc)$/;"	f
+H264InitSei	../source/h264/H264Sei.c	/^void H264InitSei(sei_s * sei, true_e byteStream, u32 hrd, u32 timeScale,$/;"	f
+H264InterFavorTest	../source/h264/H264TestId.c	/^void H264InterFavorTest(h264Instance_s *inst)$/;"	f
+H264Intra16FavorTest	../source/h264/H264TestId.c	/^void H264Intra16FavorTest(h264Instance_s *inst)$/;"	f
+H264IntraAreaTest	../source/h264/H264TestId.c	/^void H264IntraAreaTest(h264Instance_s *inst)$/;"	f
+H264IntraSliceMapTest	../source/h264/H264TestId.c	/^void H264IntraSliceMapTest(h264Instance_s *inst)$/;"	f
+H264LevelIdc	../source/h264/H264SequenceParameterSet.c	/^const u32 H264LevelIdc[15] =$/;"	v
+H264MadInit	../source/h264/H264Mad.c	/^void H264MadInit(madTable_s *mad, u32 mbPerFrame)$/;"	f
+H264MadTest	../source/h264/H264TestId.c	/^void H264MadTest(h264Instance_s *inst)$/;"	f
+H264MadThreshold	../source/h264/H264Mad.c	/^void H264MadThreshold(madTable_s *mad, u32 madCount)$/;"	f
+H264MaxBR	../source/h264/H264SequenceParameterSet.c	/^const u32 H264MaxBR[15] =$/;"	v
+H264MaxCPBS	../source/h264/H264SequenceParameterSet.c	/^const u32 H264MaxCPBS[15] =$/;"	v
+H264MaxFS	../source/h264/H264SequenceParameterSet.c	/^const u32 H264MaxFS[15] = { 99, 396, 396, 396, 396, 792, 1620, 1620,$/;"	v
+H264MaxMBPS	../source/h264/H264SequenceParameterSet.c	/^const u32 H264MaxMBPS[15] =$/;"	v
+H264MaxOverfillMv	../source/h264/H264TestId.c	/^void H264MaxOverfillMv(h264Instance_s *inst)$/;"	f
+H264MbQuantizationTest	../source/h264/H264TestId.c	/^void H264MbQuantizationTest(h264Instance_s *inst)$/;"	f
+H264MvTest	../source/h264/H264TestId.c	/^void H264MvTest(h264Instance_s *inst)$/;"	f
+H264NalBits	../source/h264/H264PutBits.h	37;"	d
+H264NalBits	../source/h264/H264PutBits.h	39;"	d
+H264NalUnitHdr	../source/h264/H264NalUnit.c	/^void H264NalUnitHdr(stream_s * stream, i32 nalRefIdc, nalUnitType_e nalUnitType,$/;"	f
+H264NalUnitHdrMvcExtension	../source/h264/H264NalUnit.c	/^void H264NalUnitHdrMvcExtension(stream_s * stream, mvc_s * mvc)$/;"	f
+H264NalUnitTrailinBits	../source/h264/H264NalUnit.c	/^void H264NalUnitTrailinBits(stream_s * stream, true_e byteStream)$/;"	f
+H264PicParameterSet	../source/h264/H264PictureParameterSet.c	/^void H264PicParameterSet(stream_s * stream, pps_s * pps)$/;"	f
+H264PicParameterSetInit	../source/h264/H264PictureParameterSet.c	/^void H264PicParameterSetInit(pps_s * pps)$/;"	f
+H264PicTimingSei	../source/h264/H264Sei.c	/^void H264PicTimingSei(stream_s * sp, sei_s * sei)$/;"	f
+H264PrefixNal	../source/h264/H264EncApi.c	/^void H264PrefixNal(h264Instance_s *pEncInst)$/;"	f
+H264PutBits	../source/h264/H264PutBits.c	/^void H264PutBits(stream_s * buffer, i32 value, i32 number)$/;"	f
+H264PutNalBits	../source/h264/H264PutBits.c	/^void H264PutNalBits(stream_s * buffer, i32 value, i32 number)$/;"	f
+H264RC_OVERFLOW	../source/h264/H264RateControl.h	/^{ H264RC_OVERFLOW = -1 };$/;"	e	enum:__anon60
+H264RbspTrailingBits	../source/h264/H264PutBits.c	/^void H264RbspTrailingBits(stream_s * stream)$/;"	f
+H264RgbInputMaskTest	../source/h264/H264TestId.c	/^void H264RgbInputMaskTest(h264Instance_s *inst)$/;"	f
+H264RoiTest	../source/h264/H264TestId.c	/^void H264RoiTest(h264Instance_s *inst)$/;"	f
+H264SeqParameterSet	../source/h264/H264SequenceParameterSet.c	/^void H264SeqParameterSet(stream_s * stream, sps_s * sps, true_e nalHeader)$/;"	f
+H264SeqParameterSetInit	../source/h264/H264SequenceParameterSet.c	/^void H264SeqParameterSetInit(sps_s * sps)$/;"	f
+H264SetBuffer	../source/h264/H264PutBits.c	/^bool_e H264SetBuffer(stream_s * buffer, u8 * stream, i32 size)$/;"	f
+H264SetNewFrame	../source/h264/H264CodeFrame.c	/^void H264SetNewFrame(h264Instance_s * inst)$/;"	f
+H264Shutdown	../source/h264/H264Init.c	/^void H264Shutdown(h264Instance_s * data)$/;"	f
+H264SliceInit	../source/h264/H264Slice.c	/^void H264SliceInit(slice_s * slice)$/;"	f
+H264SliceTest	../source/h264/H264TestId.c	/^void H264SliceTest(h264Instance_s *inst)$/;"	f
+H264SpsGetVuiHrdBitRate	../source/h264/H264SequenceParameterSet.c	/^u32 H264SpsGetVuiHrdBitRate(sps_s * sps)$/;"	f
+H264SpsGetVuiHrdCpbSize	../source/h264/H264SequenceParameterSet.c	/^u32 H264SpsGetVuiHrdCpbSize(sps_s * sps)$/;"	f
+H264SpsSetVuiAspectRatio	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiAspectRatio(sps_s * sps, u32 sampleAspectRatioWidth,$/;"	f
+H264SpsSetVuiHrd	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiHrd(sps_s * sps, u32 present)$/;"	f
+H264SpsSetVuiHrdBitRate	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiHrdBitRate(sps_s * sps, u32 bitRate)$/;"	f
+H264SpsSetVuiHrdCpbSize	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiHrdCpbSize(sps_s * sps, u32 cpbSize)$/;"	f
+H264SpsSetVuiPictStructPresentFlag	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiPictStructPresentFlag(sps_s * sps, u32 flag)$/;"	f
+H264SpsSetVuiTimigInfo	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiTimigInfo(sps_s * sps, u32 timeScale, u32 numUnitsInTick)$/;"	f
+H264SpsSetVuiVideoInfo	../source/h264/H264SequenceParameterSet.c	/^void H264SpsSetVuiVideoInfo(sps_s * sps, u32 videoFullRange)$/;"	f
+H264SqrtMaxFS8	../source/h264/H264SequenceParameterSet.c	/^const u32 H264SqrtMaxFS8[15] =$/;"	v
+H264StreamBufferLimitTest	../source/h264/H264TestId.c	/^void H264StreamBufferLimitTest(h264Instance_s *inst)$/;"	f
+H264SubsetSeqParameterSet	../source/h264/H264SequenceParameterSet.c	/^void H264SubsetSeqParameterSet(stream_s * stream, sps_s * sps)$/;"	f
+H264UpdateSeiTS	../source/h264/H264Sei.c	/^void H264UpdateSeiTS(sei_s * sei, u32 timeInc)$/;"	f
+H264UserDataTest	../source/h264/H264TestId.c	/^void H264UserDataTest(h264Instance_s *inst)$/;"	f
+H264UserDataUnregSei	../source/h264/H264Sei.c	/^void H264UserDataUnregSei(stream_s * sp, sei_s * sei)$/;"	f
+H264_BUS_ADDRESS_VALID	../source/h264/H264EncApi.c	74;"	d	file:
+H264_MAD_H	../source/h264/H264Mad.h	21;"	d
+H264_RATE_CONTROL_H	../source/h264/H264RateControl.h	21;"	d
+H264_SEI_H	../source/h264/H264Sei.h	21;"	d
+H8290_HAVE_ENCDEBUG_H	../inc/enccommon.h	65;"	d
+HEncAXIReadID	../inc/encswhwregisters.h	/^    HEncAXIReadID,$/;"	e	enum:__anon6
+HEncAXIWriteID	../inc/encswhwregisters.h	/^    HEncAXIWriteID,$/;"	e	enum:__anon6
+HEncBMaskMSB	../inc/encswhwregisters.h	/^    HEncBMaskMSB,$/;"	e	enum:__anon6
+HEncBaseCabacCtx	../inc/encswhwregisters.h	/^    HEncBaseCabacCtx,$/;"	e	enum:__anon6
+HEncBaseControl	../inc/encswhwregisters.h	/^    HEncBaseControl,$/;"	e	enum:__anon6
+HEncBaseInCb	../inc/encswhwregisters.h	/^    HEncBaseInCb,$/;"	e	enum:__anon6
+HEncBaseInCr	../inc/encswhwregisters.h	/^    HEncBaseInCr,$/;"	e	enum:__anon6
+HEncBaseInLum	../inc/encswhwregisters.h	/^    HEncBaseInLum,$/;"	e	enum:__anon6
+HEncBaseMvWrite	../inc/encswhwregisters.h	/^    HEncBaseMvWrite,$/;"	e	enum:__anon6
+HEncBaseNextLum	../inc/encswhwregisters.h	/^    HEncBaseNextLum,$/;"	e	enum:__anon6
+HEncBaseRecChr	../inc/encswhwregisters.h	/^    HEncBaseRecChr,$/;"	e	enum:__anon6
+HEncBaseRecLum	../inc/encswhwregisters.h	/^    HEncBaseRecLum,$/;"	e	enum:__anon6
+HEncBaseRefChr	../inc/encswhwregisters.h	/^    HEncBaseRefChr,$/;"	e	enum:__anon6
+HEncBaseRefLum	../inc/encswhwregisters.h	/^    HEncBaseRefLum,$/;"	e	enum:__anon6
+HEncBaseStream	../inc/encswhwregisters.h	/^    HEncBaseStream,$/;"	e	enum:__anon6
+HEncBurstDisable	../inc/encswhwregisters.h	/^    HEncBurstDisable,$/;"	e	enum:__anon6
+HEncBurstIncr	../inc/encswhwregisters.h	/^    HEncBurstIncr,$/;"	e	enum:__anon6
+HEncBurstLength	../inc/encswhwregisters.h	/^    HEncBurstLength,$/;"	e	enum:__anon6
+HEncCP10WordTarget	../inc/encswhwregisters.h	/^    HEncCP10WordTarget,$/;"	e	enum:__anon6
+HEncCP1WordTarget	../inc/encswhwregisters.h	/^    HEncCP1WordTarget,$/;"	e	enum:__anon6
+HEncCP2WordTarget	../inc/encswhwregisters.h	/^    HEncCP2WordTarget,$/;"	e	enum:__anon6
+HEncCP3WordTarget	../inc/encswhwregisters.h	/^    HEncCP3WordTarget,$/;"	e	enum:__anon6
+HEncCP4WordTarget	../inc/encswhwregisters.h	/^    HEncCP4WordTarget,$/;"	e	enum:__anon6
+HEncCP5WordTarget	../inc/encswhwregisters.h	/^    HEncCP5WordTarget,$/;"	e	enum:__anon6
+HEncCP6WordTarget	../inc/encswhwregisters.h	/^    HEncCP6WordTarget,$/;"	e	enum:__anon6
+HEncCP7WordTarget	../inc/encswhwregisters.h	/^    HEncCP7WordTarget,$/;"	e	enum:__anon6
+HEncCP8WordTarget	../inc/encswhwregisters.h	/^    HEncCP8WordTarget,$/;"	e	enum:__anon6
+HEncCP9WordTarget	../inc/encswhwregisters.h	/^    HEncCP9WordTarget,$/;"	e	enum:__anon6
+HEncCPDeltaQp1	../inc/encswhwregisters.h	/^    HEncCPDeltaQp1,$/;"	e	enum:__anon6
+HEncCPDeltaQp2	../inc/encswhwregisters.h	/^    HEncCPDeltaQp2,$/;"	e	enum:__anon6
+HEncCPDeltaQp3	../inc/encswhwregisters.h	/^    HEncCPDeltaQp3,$/;"	e	enum:__anon6
+HEncCPDeltaQp4	../inc/encswhwregisters.h	/^    HEncCPDeltaQp4,$/;"	e	enum:__anon6
+HEncCPDeltaQp5	../inc/encswhwregisters.h	/^    HEncCPDeltaQp5,$/;"	e	enum:__anon6
+HEncCPDeltaQp6	../inc/encswhwregisters.h	/^    HEncCPDeltaQp6,$/;"	e	enum:__anon6
+HEncCPDeltaQp7	../inc/encswhwregisters.h	/^    HEncCPDeltaQp7,$/;"	e	enum:__anon6
+HEncCPDist	../inc/encswhwregisters.h	/^    HEncCPDist,$/;"	e	enum:__anon6
+HEncCPWordError1	../inc/encswhwregisters.h	/^    HEncCPWordError1,$/;"	e	enum:__anon6
+HEncCPWordError2	../inc/encswhwregisters.h	/^    HEncCPWordError2,$/;"	e	enum:__anon6
+HEncCPWordError3	../inc/encswhwregisters.h	/^    HEncCPWordError3,$/;"	e	enum:__anon6
+HEncCPWordError4	../inc/encswhwregisters.h	/^    HEncCPWordError4,$/;"	e	enum:__anon6
+HEncCPWordError5	../inc/encswhwregisters.h	/^    HEncCPWordError5,$/;"	e	enum:__anon6
+HEncCPWordError6	../inc/encswhwregisters.h	/^    HEncCPWordError6,$/;"	e	enum:__anon6
+HEncCabacEnable	../inc/encswhwregisters.h	/^    HEncCabacEnable,$/;"	e	enum:__anon6
+HEncCabacInitIdc	../inc/encswhwregisters.h	/^    HEncCabacInitIdc,$/;"	e	enum:__anon6
+HEncChrOffset	../inc/encswhwregisters.h	/^    HEncChrOffset,$/;"	e	enum:__anon6
+HEncChromaQp	../inc/encswhwregisters.h	/^    HEncChromaQp,$/;"	e	enum:__anon6
+HEncCirInterval	../inc/encswhwregisters.h	/^    HEncCirInterval,$/;"	e	enum:__anon6
+HEncCirStart	../inc/encswhwregisters.h	/^    HEncCirStart,$/;"	e	enum:__anon6
+HEncClockGating	../inc/encswhwregisters.h	/^    HEncClockGating,$/;"	e	enum:__anon6
+HEncConstrIP	../inc/encswhwregisters.h	/^    HEncConstrIP,$/;"	e	enum:__anon6
+HEncDMVPenalty	../inc/encswhwregisters.h	/^    HEncDMVPenalty,$/;"	e	enum:__anon6
+HEncDMVPenalty4p	../inc/encswhwregisters.h	/^    HEncDMVPenalty4p,$/;"	e	enum:__anon6
+HEncDataDiscard	../inc/encswhwregisters.h	/^    HEncDataDiscard,$/;"	e	enum:__anon6
+HEncDeblocking	../inc/encswhwregisters.h	/^    HEncDeblocking,$/;"	e	enum:__anon6
+HEncDisableQPMV	../inc/encswhwregisters.h	/^    HEncDisableQPMV,$/;"	e	enum:__anon6
+HEncEnable	../inc/encswhwregisters.h	/^    HEncEnable,$/;"	e	enum:__anon6
+HEncEncodingMode	../inc/encswhwregisters.h	/^    HEncEncodingMode,$/;"	e	enum:__anon6
+HEncFrameNum	../inc/encswhwregisters.h	/^    HEncFrameNum,$/;"	e	enum:__anon6
+HEncGMaskMSB	../inc/encswhwregisters.h	/^    HEncGMaskMSB,$/;"	e	enum:__anon6
+HEncHWBus	../inc/encswhwregisters.h	/^    HEncHWBus,$/;"	e	enum:__anon6
+HEncHWBusWidth	../inc/encswhwregisters.h	/^    HEncHWBusWidth,$/;"	e	enum:__anon6
+HEncHWH264Support	../inc/encswhwregisters.h	/^    HEncHWH264Support,$/;"	e	enum:__anon6
+HEncHWJpegSupport	../inc/encswhwregisters.h	/^    HEncHWJpegSupport,$/;"	e	enum:__anon6
+HEncHWMaxVideoWidth	../inc/encswhwregisters.h	/^    HEncHWMaxVideoWidth,$/;"	e	enum:__anon6
+HEncHWMpeg4Support	../inc/encswhwregisters.h	/^    HEncHWMpeg4Support,$/;"	e	enum:__anon6
+HEncHWRgbSupport	../inc/encswhwregisters.h	/^    HEncHWRgbSupport,$/;"	e	enum:__anon6
+HEncHWSearchArea	../inc/encswhwregisters.h	/^    HEncHWSearchArea,$/;"	e	enum:__anon6
+HEncHWStabSupport	../inc/encswhwregisters.h	/^    HEncHWStabSupport,$/;"	e	enum:__anon6
+HEncHWSynthesisLan	../inc/encswhwregisters.h	/^    HEncHWSynthesisLan,$/;"	e	enum:__anon6
+HEncHWTiledSupport	../inc/encswhwregisters.h	/^    HEncHWTiledSupport,$/;"	e	enum:__anon6
+HEncHeight	../inc/encswhwregisters.h	/^    HEncHeight,$/;"	e	enum:__anon6
+HEncIPIntra16Favor	../inc/encswhwregisters.h	/^    HEncIPIntra16Favor,$/;"	e	enum:__anon6
+HEncIPPrevModeFavor	../inc/encswhwregisters.h	/^    HEncIPPrevModeFavor,$/;"	e	enum:__anon6
+HEncIRQ	../inc/encswhwregisters.h	/^    HEncIRQ,$/;"	e	enum:__anon6
+HEncIRQBuffer	../inc/encswhwregisters.h	/^    HEncIRQBuffer,$/;"	e	enum:__anon6
+HEncIRQBusError	../inc/encswhwregisters.h	/^    HEncIRQBusError,$/;"	e	enum:__anon6
+HEncIRQDisable	../inc/encswhwregisters.h	/^    HEncIRQDisable,$/;"	e	enum:__anon6
+HEncIRQFrameReady	../inc/encswhwregisters.h	/^    HEncIRQFrameReady,$/;"	e	enum:__anon6
+HEncIRQReset	../inc/encswhwregisters.h	/^    HEncIRQReset,$/;"	e	enum:__anon6
+HEncIRQSliceReady	../inc/encswhwregisters.h	/^    HEncIRQSliceReady,$/;"	e	enum:__anon6
+HEncIRQTest1	../inc/encswhwregisters.h	/^    HEncIRQTest1,$/;"	e	enum:__anon6
+HEncIRQTest2	../inc/encswhwregisters.h	/^    HEncIRQTest2,$/;"	e	enum:__anon6
+HEncIdrPicId	../inc/encswhwregisters.h	/^    HEncIdrPicId,$/;"	e	enum:__anon6
+HEncInputFormat	../inc/encswhwregisters.h	/^    HEncInputFormat,$/;"	e	enum:__anon6
+HEncInputRot	../inc/encswhwregisters.h	/^    HEncInputRot,$/;"	e	enum:__anon6
+HEncInputSwap16	../inc/encswhwregisters.h	/^    HEncInputSwap16,$/;"	e	enum:__anon6
+HEncInputSwap32	../inc/encswhwregisters.h	/^    HEncInputSwap32,$/;"	e	enum:__anon6
+HEncInputSwap8	../inc/encswhwregisters.h	/^    HEncInputSwap8,$/;"	e	enum:__anon6
+HEncIntSliceReady	../inc/encswhwregisters.h	/^    HEncIntSliceReady,$/;"	e	enum:__anon6
+HEncIntTimeout	../inc/encswhwregisters.h	/^    HEncIntTimeout,$/;"	e	enum:__anon6
+HEncInter4Restrict	../inc/encswhwregisters.h	/^    HEncInter4Restrict,$/;"	e	enum:__anon6
+HEncInterFavor	../inc/encswhwregisters.h	/^    HEncInterFavor,$/;"	e	enum:__anon6
+HEncIntraAreaBottom	../inc/encswhwregisters.h	/^    HEncIntraAreaBottom,$/;"	e	enum:__anon6
+HEncIntraAreaLeft	../inc/encswhwregisters.h	/^    HEncIntraAreaLeft,$/;"	e	enum:__anon6
+HEncIntraAreaRight	../inc/encswhwregisters.h	/^    HEncIntraAreaRight,$/;"	e	enum:__anon6
+HEncIntraAreaTop	../inc/encswhwregisters.h	/^    HEncIntraAreaTop,$/;"	e	enum:__anon6
+HEncIntraSliceMap1	../inc/encswhwregisters.h	/^    HEncIntraSliceMap1,$/;"	e	enum:__anon6
+HEncIntraSliceMap2	../inc/encswhwregisters.h	/^    HEncIntraSliceMap2,$/;"	e	enum:__anon6
+HEncIntraSliceMap3	../inc/encswhwregisters.h	/^    HEncIntraSliceMap3,$/;"	e	enum:__anon6
+HEncJpegMode	../inc/encswhwregisters.h	/^    HEncJpegMode,$/;"	e	enum:__anon6
+HEncJpegQuantChroma1	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma1,$/;"	e	enum:__anon6
+HEncJpegQuantChroma10	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma10,$/;"	e	enum:__anon6
+HEncJpegQuantChroma11	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma11,$/;"	e	enum:__anon6
+HEncJpegQuantChroma12	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma12,$/;"	e	enum:__anon6
+HEncJpegQuantChroma13	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma13,$/;"	e	enum:__anon6
+HEncJpegQuantChroma14	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma14,$/;"	e	enum:__anon6
+HEncJpegQuantChroma15	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma15,$/;"	e	enum:__anon6
+HEncJpegQuantChroma16	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma16,$/;"	e	enum:__anon6
+HEncJpegQuantChroma2	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma2,$/;"	e	enum:__anon6
+HEncJpegQuantChroma3	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma3,$/;"	e	enum:__anon6
+HEncJpegQuantChroma4	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma4,$/;"	e	enum:__anon6
+HEncJpegQuantChroma5	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma5,$/;"	e	enum:__anon6
+HEncJpegQuantChroma6	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma6,$/;"	e	enum:__anon6
+HEncJpegQuantChroma7	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma7,$/;"	e	enum:__anon6
+HEncJpegQuantChroma8	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma8,$/;"	e	enum:__anon6
+HEncJpegQuantChroma9	../inc/encswhwregisters.h	/^    HEncJpegQuantChroma9,$/;"	e	enum:__anon6
+HEncJpegQuantLuma1	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma1,$/;"	e	enum:__anon6
+HEncJpegQuantLuma10	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma10,$/;"	e	enum:__anon6
+HEncJpegQuantLuma11	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma11,$/;"	e	enum:__anon6
+HEncJpegQuantLuma12	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma12,$/;"	e	enum:__anon6
+HEncJpegQuantLuma13	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma13,$/;"	e	enum:__anon6
+HEncJpegQuantLuma14	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma14,$/;"	e	enum:__anon6
+HEncJpegQuantLuma15	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma15,$/;"	e	enum:__anon6
+HEncJpegQuantLuma16	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma16,$/;"	e	enum:__anon6
+HEncJpegQuantLuma2	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma2,$/;"	e	enum:__anon6
+HEncJpegQuantLuma3	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma3,$/;"	e	enum:__anon6
+HEncJpegQuantLuma4	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma4,$/;"	e	enum:__anon6
+HEncJpegQuantLuma5	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma5,$/;"	e	enum:__anon6
+HEncJpegQuantLuma6	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma6,$/;"	e	enum:__anon6
+HEncJpegQuantLuma7	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma7,$/;"	e	enum:__anon6
+HEncJpegQuantLuma8	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma8,$/;"	e	enum:__anon6
+HEncJpegQuantLuma9	../inc/encswhwregisters.h	/^    HEncJpegQuantLuma9,$/;"	e	enum:__anon6
+HEncJpegRST	../inc/encswhwregisters.h	/^    HEncJpegRST,$/;"	e	enum:__anon6
+HEncJpegRSTInt	../inc/encswhwregisters.h	/^    HEncJpegRSTInt,$/;"	e	enum:__anon6
+HEncJpegSlice	../inc/encswhwregisters.h	/^    HEncJpegSlice,$/;"	e	enum:__anon6
+HEncLumOffset	../inc/encswhwregisters.h	/^    HEncLumOffset,$/;"	e	enum:__anon6
+HEncMadCount	../inc/encswhwregisters.h	/^    HEncMadCount,$/;"	e	enum:__anon6
+HEncMadQpDelta	../inc/encswhwregisters.h	/^    HEncMadQpDelta,$/;"	e	enum:__anon6
+HEncMadThreshold	../inc/encswhwregisters.h	/^    HEncMadThreshold,$/;"	e	enum:__anon6
+HEncMaxQp	../inc/encswhwregisters.h	/^    HEncMaxQp,$/;"	e	enum:__anon6
+HEncMbCount	../inc/encswhwregisters.h	/^    HEncMbCount,$/;"	e	enum:__anon6
+HEncMinQp	../inc/encswhwregisters.h	/^    HEncMinQp,$/;"	e	enum:__anon6
+HEncMvWrite	../inc/encswhwregisters.h	/^    HEncMvWrite,$/;"	e	enum:__anon6
+HEncMvcAnchorPicFlag	../inc/encswhwregisters.h	/^    HEncMvcAnchorPicFlag,$/;"	e	enum:__anon6
+HEncMvcInterViewFlag	../inc/encswhwregisters.h	/^    HEncMvcInterViewFlag,$/;"	e	enum:__anon6
+HEncMvcPriorityId	../inc/encswhwregisters.h	/^    HEncMvcPriorityId,$/;"	e	enum:__anon6
+HEncMvcTemporalId	../inc/encswhwregisters.h	/^    HEncMvcTemporalId,$/;"	e	enum:__anon6
+HEncMvcViewId	../inc/encswhwregisters.h	/^    HEncMvcViewId,$/;"	e	enum:__anon6
+HEncNalMode	../inc/encswhwregisters.h	/^    HEncNalMode,$/;"	e	enum:__anon6
+HEncNumSlicesReady	../inc/encswhwregisters.h	/^    HEncNumSlicesReady,$/;"	e	enum:__anon6
+HEncOutputSwap16	../inc/encswhwregisters.h	/^    HEncOutputSwap16,$/;"	e	enum:__anon6
+HEncOutputSwap32	../inc/encswhwregisters.h	/^    HEncOutputSwap32,$/;"	e	enum:__anon6
+HEncOutputSwap8	../inc/encswhwregisters.h	/^    HEncOutputSwap8,$/;"	e	enum:__anon6
+HEncPPSID	../inc/encswhwregisters.h	/^    HEncPPSID,$/;"	e	enum:__anon6
+HEncPicInitQp	../inc/encswhwregisters.h	/^    HEncPicInitQp,$/;"	e	enum:__anon6
+HEncPictureType	../inc/encswhwregisters.h	/^    HEncPictureType,$/;"	e	enum:__anon6
+HEncProductBuild	../inc/encswhwregisters.h	/^    HEncProductBuild,$/;"	e	enum:__anon6
+HEncProductID	../inc/encswhwregisters.h	/^    HEncProductID,$/;"	e	enum:__anon6
+HEncProductMajor	../inc/encswhwregisters.h	/^    HEncProductMajor,$/;"	e	enum:__anon6
+HEncProductMinor	../inc/encswhwregisters.h	/^    HEncProductMinor,$/;"	e	enum:__anon6
+HEncQp	../inc/encswhwregisters.h	/^    HEncQp,$/;"	e	enum:__anon6
+HEncQpSum	../inc/encswhwregisters.h	/^    HEncQpSum,$/;"	e	enum:__anon6
+HEncRGBCoeffA	../inc/encswhwregisters.h	/^    HEncRGBCoeffA,$/;"	e	enum:__anon6
+HEncRGBCoeffB	../inc/encswhwregisters.h	/^    HEncRGBCoeffB,$/;"	e	enum:__anon6
+HEncRGBCoeffC	../inc/encswhwregisters.h	/^    HEncRGBCoeffC,$/;"	e	enum:__anon6
+HEncRGBCoeffE	../inc/encswhwregisters.h	/^    HEncRGBCoeffE,$/;"	e	enum:__anon6
+HEncRGBCoeffF	../inc/encswhwregisters.h	/^    HEncRGBCoeffF,$/;"	e	enum:__anon6
+HEncRMaskMSB	../inc/encswhwregisters.h	/^    HEncRMaskMSB,$/;"	e	enum:__anon6
+HEncRecWriteDisable	../inc/encswhwregisters.h	/^    HEncRecWriteDisable,$/;"	e	enum:__anon6
+HEncRegisterAmount	../inc/encswhwregisters.h	/^    HEncRegisterAmount$/;"	e	enum:__anon6
+HEncRlcSum	../inc/encswhwregisters.h	/^    HEncRlcSum,$/;"	e	enum:__anon6
+HEncRoi1Bottom	../inc/encswhwregisters.h	/^    HEncRoi1Bottom,$/;"	e	enum:__anon6
+HEncRoi1DeltaQp	../inc/encswhwregisters.h	/^    HEncRoi1DeltaQp,$/;"	e	enum:__anon6
+HEncRoi1Left	../inc/encswhwregisters.h	/^    HEncRoi1Left,$/;"	e	enum:__anon6
+HEncRoi1Right	../inc/encswhwregisters.h	/^    HEncRoi1Right,$/;"	e	enum:__anon6
+HEncRoi1Top	../inc/encswhwregisters.h	/^    HEncRoi1Top,$/;"	e	enum:__anon6
+HEncRoi2Bottom	../inc/encswhwregisters.h	/^    HEncRoi2Bottom,$/;"	e	enum:__anon6
+HEncRoi2DeltaQp	../inc/encswhwregisters.h	/^    HEncRoi2DeltaQp,$/;"	e	enum:__anon6
+HEncRoi2Left	../inc/encswhwregisters.h	/^    HEncRoi2Left,$/;"	e	enum:__anon6
+HEncRoi2Right	../inc/encswhwregisters.h	/^    HEncRoi2Right,$/;"	e	enum:__anon6
+HEncRoi2Top	../inc/encswhwregisters.h	/^    HEncRoi2Top,$/;"	e	enum:__anon6
+HEncRowLength	../inc/encswhwregisters.h	/^    HEncRowLength,$/;"	e	enum:__anon6
+HEncSkipPenalty	../inc/encswhwregisters.h	/^    HEncSkipPenalty,$/;"	e	enum:__anon6
+HEncSliceAlpha	../inc/encswhwregisters.h	/^    HEncSliceAlpha,$/;"	e	enum:__anon6
+HEncSliceBeta	../inc/encswhwregisters.h	/^    HEncSliceBeta,$/;"	e	enum:__anon6
+HEncSliceSize	../inc/encswhwregisters.h	/^    HEncSliceSize,$/;"	e	enum:__anon6
+HEncStabGmvX	../inc/encswhwregisters.h	/^    HEncStabGmvX,$/;"	e	enum:__anon6
+HEncStabGmvY	../inc/encswhwregisters.h	/^    HEncStabGmvY,$/;"	e	enum:__anon6
+HEncStabMatrix1	../inc/encswhwregisters.h	/^    HEncStabMatrix1,$/;"	e	enum:__anon6
+HEncStabMatrix2	../inc/encswhwregisters.h	/^    HEncStabMatrix2,$/;"	e	enum:__anon6
+HEncStabMatrix3	../inc/encswhwregisters.h	/^    HEncStabMatrix3,$/;"	e	enum:__anon6
+HEncStabMatrix4	../inc/encswhwregisters.h	/^    HEncStabMatrix4,$/;"	e	enum:__anon6
+HEncStabMatrix5	../inc/encswhwregisters.h	/^    HEncStabMatrix5,$/;"	e	enum:__anon6
+HEncStabMatrix6	../inc/encswhwregisters.h	/^    HEncStabMatrix6,$/;"	e	enum:__anon6
+HEncStabMatrix7	../inc/encswhwregisters.h	/^    HEncStabMatrix7,$/;"	e	enum:__anon6
+HEncStabMatrix8	../inc/encswhwregisters.h	/^    HEncStabMatrix8,$/;"	e	enum:__anon6
+HEncStabMatrix9	../inc/encswhwregisters.h	/^    HEncStabMatrix9,$/;"	e	enum:__anon6
+HEncStabMinimum	../inc/encswhwregisters.h	/^    HEncStabMinimum,$/;"	e	enum:__anon6
+HEncStabMode	../inc/encswhwregisters.h	/^    HEncStabMode,$/;"	e	enum:__anon6
+HEncStabMotionSum	../inc/encswhwregisters.h	/^    HEncStabMotionSum,$/;"	e	enum:__anon6
+HEncStartOffset	../inc/encswhwregisters.h	/^    HEncStartOffset,$/;"	e	enum:__anon6
+HEncStreamMode	../inc/encswhwregisters.h	/^    HEncStreamMode,$/;"	e	enum:__anon6
+HEncStrmBufLimit	../inc/encswhwregisters.h	/^    HEncStrmBufLimit,$/;"	e	enum:__anon6
+HEncStrmHdrRem1	../inc/encswhwregisters.h	/^    HEncStrmHdrRem1,$/;"	e	enum:__anon6
+HEncStrmHdrRem2	../inc/encswhwregisters.h	/^    HEncStrmHdrRem2,$/;"	e	enum:__anon6
+HEncTestCounter	../inc/encswhwregisters.h	/^    HEncTestCounter,$/;"	e	enum:__anon6
+HEncTestIrq	../inc/encswhwregisters.h	/^    HEncTestIrq,$/;"	e	enum:__anon6
+HEncTestLength	../inc/encswhwregisters.h	/^    HEncTestLength,$/;"	e	enum:__anon6
+HEncTestMem	../inc/encswhwregisters.h	/^    HEncTestMem,$/;"	e	enum:__anon6
+HEncTestReg	../inc/encswhwregisters.h	/^    HEncTestReg,$/;"	e	enum:__anon6
+HEncTransform8x8	../inc/encswhwregisters.h	/^    HEncTransform8x8,$/;"	e	enum:__anon6
+HEncWidth	../inc/encswhwregisters.h	/^    HEncWidth,$/;"	e	enum:__anon6
+HEncXFill	../inc/encswhwregisters.h	/^    HEncXFill,$/;"	e	enum:__anon6
+HEncYFill	../inc/encswhwregisters.h	/^    HEncYFill,$/;"	e	enum:__anon6
+HSWREG	../source/camstab/vidstabinternal.c	40;"	d	file:
+HSWREG	../source/common/encasiccontroller.c	52;"	d	file:
+HSWREG	../source/common/encasiccontroller_v2.c	46;"	d	file:
+HWOFF_SWON	../source/common/encasiccontroller.h	/^    HWOFF_SWON, \/* HW is paused or disabled, SW is processing *\/$/;"	e	enum:__anon46
+HWON_SWOFF	../source/common/encasiccontroller.h	/^    HWON_SWOFF, \/* HW processing, SW waiting for HW *\/$/;"	e	enum:__anon46
+HWON_SWON	../source/common/encasiccontroller.h	/^    HWON_SWON,  \/* Both HW and SW processing *\/$/;"	e	enum:__anon46
+HWStabData	../source/camstab/vidstabcommon.h	/^} HWStabData;$/;"	t	typeref:struct:HWStabData_
+HWStabData_	../source/camstab/vidstabcommon.h	/^typedef struct HWStabData_$/;"	s
+HW_ID	../source/h264/H264EncApi.c	79;"	d	file:
+HW_ID_MASK	../source/h264/H264EncApi.c	78;"	d	file:
+Hi	../source/jpeg/EncJpeg.h	/^    u32 Hi[MAX_NUMBER_OF_COMPONENTS];$/;"	m	struct:JpegEncFrameHeader_t
+I32_MAX	../source/h264/H264Mad.h	26;"	d
+I32_MAX	../source/h264/H264RateControl.c	62;"	d	file:
+IDLE	../source/common/encasiccontroller.h	/^    IDLE = 0,   \/* Initial state, both HW and SW disabled *\/$/;"	e	enum:__anon46
+IDR	../inc/enccommon.h	/^    IDR = 5,    \/* Coded slice of an IDR picture *\/$/;"	e	enum:__anon3
+INITIAL_BUFFER_FULLNESS	../source/h264/H264RateControl.c	56;"	d	file:
+INTRA_QP_DELTA	../source/h264/H264RateControl.c	65;"	d	file:
+INVALID_LEVEL	../source/h264/H264SequenceParameterSet.h	93;"	d
+ISLICE	../source/h264/H264Slice.h	/^    ISLICE = 2,$/;"	e	enum:__anon69
+ISLICES	../source/h264/H264Slice.h	/^    ISLICES = 7$/;"	e	enum:__anon69
+InitialQp	../source/h264/H264RateControl.c	/^static i32 InitialQp(i32 bits, i32 pels)$/;"	f	file:
+InterpolateMotion	../source/camstab/vidstabalg.c	/^void InterpolateMotion(i32(*data)[5], i32 * hor, i32 * ver)$/;"	f
+JPEGENCODE_DATA_ERROR	../source/jpeg/EncJpegCodeFrame.h	/^    JPEGENCODE_DATA_ERROR = 2,$/;"	e	enum:__anon75
+JPEGENCODE_HW_ERROR	../source/jpeg/EncJpegCodeFrame.h	/^    JPEGENCODE_HW_ERROR = 3,$/;"	e	enum:__anon75
+JPEGENCODE_HW_RESET	../source/jpeg/EncJpegCodeFrame.h	/^    JPEGENCODE_HW_RESET = 5$/;"	e	enum:__anon75
+JPEGENCODE_OK	../source/jpeg/EncJpegCodeFrame.h	/^    JPEGENCODE_OK = 0,$/;"	e	enum:__anon75
+JPEGENCODE_SYSTEM_ERROR	../source/jpeg/EncJpegCodeFrame.h	/^    JPEGENCODE_SYSTEM_ERROR = 4,$/;"	e	enum:__anon75
+JPEGENCODE_TIMEOUT	../source/jpeg/EncJpegCodeFrame.h	/^    JPEGENCODE_TIMEOUT = 1,$/;"	e	enum:__anon75
+JPEGENC_420_MODE	../inc/jpegencapi.h	/^        JPEGENC_420_MODE = 0,   \/* Encoding in YUV 4:2:0 mode *\/$/;"	e	enum:__anon33
+JPEGENC_422_MODE	../inc/jpegencapi.h	/^        JPEGENC_422_MODE    \/* Encoding in YUV 4:2:2 mode *\/$/;"	e	enum:__anon33
+JPEGENC_BGR101010	../inc/jpegencapi.h	/^        JPEGENC_BGR101010 = 13  \/* 30-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_BGR444	../inc/jpegencapi.h	/^        JPEGENC_BGR444 = 9, \/* 12-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_BGR555	../inc/jpegencapi.h	/^        JPEGENC_BGR555 = 7, \/* 15-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_BGR565	../inc/jpegencapi.h	/^        JPEGENC_BGR565 = 5, \/* 16-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_BGR888	../inc/jpegencapi.h	/^        JPEGENC_BGR888 = 11,    \/* 24-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_BUILD_MAJOR	../source/jpeg/JpegEncApi.c	27;"	d	file:
+JPEGENC_BUILD_MINOR	../source/jpeg/JpegEncApi.c	28;"	d	file:
+JPEGENC_BUILD_REVISION	../source/jpeg/JpegEncApi.c	29;"	d	file:
+JPEGENC_DOTS_PER_CM	../inc/jpegencapi.h	/^        JPEGENC_DOTS_PER_CM = 2 \/* X and Y are dots per cm   *\/$/;"	e	enum:__anon34
+JPEGENC_DOTS_PER_INCH	../inc/jpegencapi.h	/^        JPEGENC_DOTS_PER_INCH = 1,  \/* X and Y are dots per inch *\/$/;"	e	enum:__anon34
+JPEGENC_ERROR	../inc/jpegencapi.h	/^        JPEGENC_ERROR = -1,$/;"	e	enum:__anon28
+JPEGENC_EWL_ERROR	../inc/jpegencapi.h	/^        JPEGENC_EWL_ERROR = -7,$/;"	e	enum:__anon28
+JPEGENC_EWL_MEMORY_ERROR	../inc/jpegencapi.h	/^        JPEGENC_EWL_MEMORY_ERROR = -8,$/;"	e	enum:__anon28
+JPEGENC_FRAME_READY	../inc/jpegencapi.h	/^        JPEGENC_FRAME_READY = 1,$/;"	e	enum:__anon28
+JPEGENC_HW_BUS_ERROR	../inc/jpegencapi.h	/^        JPEGENC_HW_BUS_ERROR = -9,$/;"	e	enum:__anon28
+JPEGENC_HW_DATA_ERROR	../inc/jpegencapi.h	/^        JPEGENC_HW_DATA_ERROR = -10,$/;"	e	enum:__anon28
+JPEGENC_HW_RESERVED	../inc/jpegencapi.h	/^        JPEGENC_HW_RESERVED = -12,$/;"	e	enum:__anon28
+JPEGENC_HW_RESET	../inc/jpegencapi.h	/^        JPEGENC_HW_RESET = -15$/;"	e	enum:__anon28
+JPEGENC_HW_TIMEOUT	../inc/jpegencapi.h	/^        JPEGENC_HW_TIMEOUT = -11,$/;"	e	enum:__anon28
+JPEGENC_INSTANCE_ERROR	../inc/jpegencapi.h	/^        JPEGENC_INSTANCE_ERROR = -14,$/;"	e	enum:__anon28
+JPEGENC_INVALID_ARGUMENT	../inc/jpegencapi.h	/^        JPEGENC_INVALID_ARGUMENT = -3,$/;"	e	enum:__anon28
+JPEGENC_INVALID_STATUS	../inc/jpegencapi.h	/^        JPEGENC_INVALID_STATUS = -5,$/;"	e	enum:__anon28
+JPEGENC_MAJOR_VERSION	../source/jpeg/JpegEncApi.c	24;"	d	file:
+JPEGENC_MAX_SIZE	../source/jpeg/JpegEncApi.c	33;"	d	file:
+JPEGENC_MEMORY_ERROR	../inc/jpegencapi.h	/^        JPEGENC_MEMORY_ERROR = -4,$/;"	e	enum:__anon28
+JPEGENC_MINOR_VERSION	../source/jpeg/JpegEncApi.c	25;"	d	file:
+JPEGENC_MULTI_MARKER	../inc/jpegencapi.h	/^        JPEGENC_MULTI_MARKER    \/* Luma\/Chroma tables are written behind$/;"	e	enum:__anon35
+JPEGENC_NO_UNITS	../inc/jpegencapi.h	/^        JPEGENC_NO_UNITS = 0,   \/* No units,$/;"	e	enum:__anon34
+JPEGENC_NULL_ARGUMENT	../inc/jpegencapi.h	/^        JPEGENC_NULL_ARGUMENT = -2,$/;"	e	enum:__anon28
+JPEGENC_OK	../inc/jpegencapi.h	/^        JPEGENC_OK = 0,$/;"	e	enum:__anon28
+JPEGENC_OUTPUT_BUFFER_OVERFLOW	../inc/jpegencapi.h	/^        JPEGENC_OUTPUT_BUFFER_OVERFLOW = -6,$/;"	e	enum:__anon28
+JPEGENC_RESTART_INTERVAL	../inc/jpegencapi.h	/^        JPEGENC_RESTART_INTERVAL = 2,$/;"	e	enum:__anon28
+JPEGENC_RGB101010	../inc/jpegencapi.h	/^        JPEGENC_RGB101010 = 12, \/* 30-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_RGB444	../inc/jpegencapi.h	/^        JPEGENC_RGB444 = 8, \/* 12-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_RGB555	../inc/jpegencapi.h	/^        JPEGENC_RGB555 = 6, \/* 15-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_RGB565	../inc/jpegencapi.h	/^        JPEGENC_RGB565 = 4, \/* 16-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_RGB888	../inc/jpegencapi.h	/^        JPEGENC_RGB888 = 10,    \/* 24-bit RGB           *\/$/;"	e	enum:__anon29
+JPEGENC_RGBTOYUV_BT601	../inc/jpegencapi.h	/^        JPEGENC_RGBTOYUV_BT601 = 0, \/* Color conversion according to BT.601 *\/$/;"	e	enum:__anon31
+JPEGENC_RGBTOYUV_BT709	../inc/jpegencapi.h	/^        JPEGENC_RGBTOYUV_BT709 = 1, \/* Color conversion according to BT.709 *\/$/;"	e	enum:__anon31
+JPEGENC_RGBTOYUV_USER_DEFINED	../inc/jpegencapi.h	/^        JPEGENC_RGBTOYUV_USER_DEFINED = 2   \/* User defined color conversion *\/$/;"	e	enum:__anon31
+JPEGENC_ROTATE_0	../inc/jpegencapi.h	/^        JPEGENC_ROTATE_0 = 0,$/;"	e	enum:__anon30
+JPEGENC_ROTATE_90L	../inc/jpegencapi.h	/^        JPEGENC_ROTATE_90L = 2  \/* Rotate 90 degrees counter-clockwise *\/$/;"	e	enum:__anon30
+JPEGENC_ROTATE_90R	../inc/jpegencapi.h	/^        JPEGENC_ROTATE_90R = 1, \/* Rotate 90 degrees clockwise *\/$/;"	e	enum:__anon30
+JPEGENC_SINGLE_MARKER	../inc/jpegencapi.h	/^        JPEGENC_SINGLE_MARKER = 0,  \/* Luma\/Chroma tables are written behind$/;"	e	enum:__anon35
+JPEGENC_SLICED_FRAME	../inc/jpegencapi.h	/^        JPEGENC_SLICED_FRAME    \/* The frame is sliced into restart intervals;$/;"	e	enum:__anon32
+JPEGENC_SW_BUILD	../source/jpeg/JpegEncApi.c	30;"	d	file:
+JPEGENC_SYSTEM_ERROR	../inc/jpegencapi.h	/^        JPEGENC_SYSTEM_ERROR = -13,$/;"	e	enum:__anon28
+JPEGENC_THUMB_JPEG	../inc/jpegencapi.h	/^        JPEGENC_THUMB_JPEG = 0x10,  \/* Thumbnail coded using JPEG  *\/$/;"	e	enum:__anon36
+JPEGENC_THUMB_PALETTE_RGB8	../inc/jpegencapi.h	/^        JPEGENC_THUMB_PALETTE_RGB8 = 0x11,  \/* Thumbnail stored using 1 byte\/pixel *\/$/;"	e	enum:__anon36
+JPEGENC_THUMB_RGB24	../inc/jpegencapi.h	/^        JPEGENC_THUMB_RGB24 = 0x13  \/* Thumbnail stored using 3 bytes\/pixel *\/$/;"	e	enum:__anon36
+JPEGENC_WHOLE_FRAME	../inc/jpegencapi.h	/^        JPEGENC_WHOLE_FRAME = 0,    \/* The whole frame is stored in linear memory *\/$/;"	e	enum:__anon32
+JPEGENC_YUV420_PLANAR	../inc/jpegencapi.h	/^        JPEGENC_YUV420_PLANAR = 0,  \/* YYYY... UUUU... VVVV *\/$/;"	e	enum:__anon29
+JPEGENC_YUV420_SEMIPLANAR	../inc/jpegencapi.h	/^        JPEGENC_YUV420_SEMIPLANAR = 1,  \/* YYYY... UVUVUV...    *\/$/;"	e	enum:__anon29
+JPEGENC_YUV422_INTERLEAVED_UYVY	../inc/jpegencapi.h	/^        JPEGENC_YUV422_INTERLEAVED_UYVY = 3,    \/* UYVYUYVY...          *\/$/;"	e	enum:__anon29
+JPEGENC_YUV422_INTERLEAVED_YUYV	../inc/jpegencapi.h	/^        JPEGENC_YUV422_INTERLEAVED_YUYV = 2,    \/* YUYVYUYV...          *\/$/;"	e	enum:__anon29
+JpegEncAcDhtTables	../source/jpeg/EncJpegDhtTables.h	/^} JpegEncAcDhtTables;$/;"	t	typeref:struct:JpegEncAcDhtTables_t
+JpegEncAcDhtTables_t	../source/jpeg/EncJpegDhtTables.h	/^typedef struct JpegEncAcDhtTables_t$/;"	s
+JpegEncAcVijTables	../source/jpeg/EncJpegDhtTables.h	/^} JpegEncAcVijTables;$/;"	t	typeref:struct:JpegEncAcVijTables_t
+JpegEncAcVijTables_t	../source/jpeg/EncJpegDhtTables.h	/^typedef struct JpegEncAcVijTables_t$/;"	s
+JpegEncApiVersion	../inc/jpegencapi.h	/^    } JpegEncApiVersion;$/;"	t	typeref:struct:__anon37
+JpegEncAppUnitsType	../inc/jpegencapi.h	/^    } JpegEncAppUnitsType;$/;"	t	typeref:enum:__anon34
+JpegEncAppn_t	../source/jpeg/EncJpeg.h	/^typedef struct JpegEncAppn_t    \/* APP0 *\/$/;"	s
+JpegEncAppn_t	../source/jpeg/EncJpeg.h	/^} JpegEncAppn_t;$/;"	t	typeref:struct:JpegEncAppn_t
+JpegEncBuild	../inc/jpegencapi.h	/^    } JpegEncBuild;$/;"	t	typeref:struct:__anon38
+JpegEncCfg	../inc/jpegencapi.h	/^    } JpegEncCfg;$/;"	t	typeref:struct:__anon41
+JpegEncCodingMode	../inc/jpegencapi.h	/^    } JpegEncCodingMode;$/;"	t	typeref:enum:__anon33
+JpegEncCodingType	../inc/jpegencapi.h	/^    } JpegEncCodingType;$/;"	t	typeref:enum:__anon32
+JpegEncColorConversion	../inc/jpegencapi.h	/^    } JpegEncColorConversion;$/;"	t	typeref:struct:__anon40
+JpegEncColorConversionType	../inc/jpegencapi.h	/^    } JpegEncColorConversionType;$/;"	t	typeref:enum:__anon31
+JpegEncCommentHeader	../source/jpeg/EncJpeg.h	/^} JpegEncCommentHeader;$/;"	t	typeref:struct:JpegEncCommentHeader_t
+JpegEncCommentHeader_t	../source/jpeg/EncJpeg.h	/^typedef struct JpegEncCommentHeader_t   \/* COM *\/$/;"	s
+JpegEncDcDhtTables	../source/jpeg/EncJpegDhtTables.h	/^} JpegEncDcDhtTables;$/;"	t	typeref:struct:JpegEncDcDhtTables_t
+JpegEncDcDhtTables_t	../source/jpeg/EncJpegDhtTables.h	/^typedef struct JpegEncDcDhtTables_t$/;"	s
+JpegEncDcVijTables	../source/jpeg/EncJpegDhtTables.h	/^} JpegEncDcVijTables;$/;"	t	typeref:struct:JpegEncDcVijTables_t
+JpegEncDcVijTables_t	../source/jpeg/EncJpegDhtTables.h	/^typedef struct JpegEncDcVijTables_t$/;"	s
+JpegEncEncode	../source/jpeg/JpegEncApi.c	/^JpegEncRet JpegEncEncode(JpegEncInst inst, const JpegEncIn * pEncIn,$/;"	f
+JpegEncFrameHeader	../source/jpeg/EncJpeg.h	/^} JpegEncFrameHeader;$/;"	t	typeref:struct:JpegEncFrameHeader_t
+JpegEncFrameHeader_t	../source/jpeg/EncJpeg.h	/^typedef struct JpegEncFrameHeader_t \/* SOF0 *\/$/;"	s
+JpegEncFrameType	../inc/jpegencapi.h	/^    } JpegEncFrameType;$/;"	t	typeref:enum:__anon29
+JpegEncGetApiVersion	../source/jpeg/JpegEncApi.c	/^JpegEncApiVersion JpegEncGetApiVersion(void)$/;"	f
+JpegEncGetBuild	../source/jpeg/JpegEncApi.c	/^JpegEncBuild JpegEncGetBuild(void)$/;"	f
+JpegEncIn	../inc/jpegencapi.h	/^    } JpegEncIn;$/;"	t	typeref:struct:__anon42
+JpegEncInit	../source/jpeg/JpegEncApi.c	/^JpegEncRet JpegEncInit(const JpegEncCfg * pEncCfg, JpegEncInst * instAddr)$/;"	f
+JpegEncInst	../inc/jpegencapi.h	/^    typedef const void *JpegEncInst;$/;"	t
+JpegEncOut	../inc/jpegencapi.h	/^    } JpegEncOut;$/;"	t	typeref:struct:__anon43
+JpegEncPictureRotation	../inc/jpegencapi.h	/^    } JpegEncPictureRotation;$/;"	t	typeref:enum:__anon30
+JpegEncQuantTables	../source/jpeg/EncJpeg.h	/^} JpegEncQuantTables;$/;"	t	typeref:struct:JpegEncQuantTables_t
+JpegEncQuantTables_t	../source/jpeg/EncJpeg.h	/^typedef struct JpegEncQuantTables_t$/;"	s
+JpegEncRelease	../source/jpeg/JpegEncApi.c	/^JpegEncRet JpegEncRelease(JpegEncInst inst)$/;"	f
+JpegEncRestart	../source/jpeg/EncJpeg.h	/^} JpegEncRestart;$/;"	t	typeref:struct:JpegEncRestart_t
+JpegEncRestart_t	../source/jpeg/EncJpeg.h	/^typedef struct JpegEncRestart_t \/* DRI *\/$/;"	s
+JpegEncRet	../inc/jpegencapi.h	/^    } JpegEncRet;$/;"	t	typeref:enum:__anon28
+JpegEncSetPictureSize	../source/jpeg/JpegEncApi.c	/^JpegEncRet JpegEncSetPictureSize(JpegEncInst inst, const JpegEncCfg * pEncCfg)$/;"	f
+JpegEncSetThumbnail	../source/jpeg/JpegEncApi.c	/^JpegEncRet JpegEncSetThumbnail(JpegEncInst inst, const JpegEncThumb *pJpegThumb)$/;"	f
+JpegEncStatus	../source/jpeg/EncJpegInstance.h	/^enum JpegEncStatus$/;"	g
+JpegEncTableMarkerType	../inc/jpegencapi.h	/^    } JpegEncTableMarkerType;$/;"	t	typeref:enum:__anon35
+JpegEncThumb	../inc/jpegencapi.h	/^    } JpegEncThumb;$/;"	t	typeref:struct:__anon39
+JpegEncThumbFormat	../inc/jpegencapi.h	/^    } JpegEncThumbFormat;$/;"	t	typeref:enum:__anon36
+JpegInit	../source/jpeg/EncJpegInit.c	/^JpegEncRet JpegInit(const JpegEncCfg * pEncCfg, jpegInstance_s ** instAddr)$/;"	f
+JpegShutdown	../source/jpeg/EncJpegInit.c	/^void JpegShutdown(jpegInstance_s * data)$/;"	f
+LOEFFLER_ASIC_DCT	../inc/enccommon.h	44;"	d
+LOEFFLER_ASIC_IDCT	../inc/enccommon.h	45;"	d
+LOG2_MAX_MV_LENGTH_HOR	../source/h264/H264SequenceParameterSet.c	37;"	d	file:
+LOG2_MAX_MV_LENGTH_VER	../source/h264/H264SequenceParameterSet.c	38;"	d	file:
+Lc	../source/jpeg/EncJpeg.h	/^    u32 Lc;$/;"	m	struct:JpegEncCommentHeader_t
+Lf	../source/jpeg/EncJpeg.h	/^    u32 Lf;$/;"	m	struct:JpegEncFrameHeader_t
+LinearModel	../source/h264/H264RateControl.c	/^void LinearModel(h264RateControl_s * rc)$/;"	f
+Lp	../source/jpeg/EncJpeg.h	/^    u32 Lp;$/;"	m	struct:JpegEncAppn_t
+Lr	../source/jpeg/EncJpeg.h	/^    u32 Lr;$/;"	m	struct:JpegEncRestart_t
+MAD_TABLE_LEN	../source/h264/H264Mad.h	28;"	d
+MAX	../inc/enccommon.h	140;"	d
+MAX	../source/camstab/vidstabalg.c	27;"	d	file:
+MAX_INPUT_IMAGE_WIDTH	../source/common/encpreprocess.h	41;"	d
+MAX_LEVEL_INDEX	../source/h264/H264SequenceParameterSet.c	34;"	d	file:
+MAX_NUMBER_OF_COMPONENTS	../source/jpeg/EncJpeg.h	47;"	d
+MIN	../inc/enccommon.h	141;"	d
+MIN	../source/camstab/vidstabalg.c	28;"	d	file:
+MIN_PIC_SIZE	../source/h264/H264RateControl.c	57;"	d	file:
+MVC	../inc/enccommon.h	/^    MVC = 20        \/* Coded slice of a view picture *\/$/;"	e	enum:__anon3
+MbQuant	../source/h264/H264RateControl.c	/^void MbQuant(h264RateControl_s * rc)$/;"	f
+NEXTID	../source/common/encasiccontroller.c	231;"	d	file:
+NONIDR	../inc/enccommon.h	/^    NONIDR = 1, \/* Coded slice of a non-IDR picture *\/$/;"	e	enum:__anon3
+NULL	../inc/basetype.h	46;"	d
+NULL	../inc/basetype.h	48;"	d
+NextHeader	../source/jpeg/EncJpegCodeFrame.c	/^void NextHeader(stream_s * stream, jpegData_s * jpeg)$/;"	f
+Nf	../source/jpeg/EncJpeg.h	/^    u32 Nf;$/;"	m	struct:JpegEncFrameHeader_t
+P	../source/jpeg/EncJpeg.h	/^    u32 P;$/;"	m	struct:JpegEncFrameHeader_t
+PPSET	../inc/enccommon.h	/^    PPSET = 8,  \/* Picture parameter set *\/$/;"	e	enum:__anon3
+PREFIX	../inc/enccommon.h	/^    PREFIX = 14,    \/* Prefix *\/$/;"	e	enum:__anon3
+PREVID	../source/common/encasiccontroller.c	232;"	d	file:
+PSLICE	../source/h264/H264Slice.h	/^    PSLICE = 0,$/;"	e	enum:__anon69
+PSLICES	../source/h264/H264Slice.h	/^    PSLICES = 5,$/;"	e	enum:__anon69
+PicQuant	../source/h264/H264RateControl.c	/^void PicQuant(h264RateControl_s * rc)$/;"	f
+PicQuantLimit	../source/h264/H264RateControl.c	/^void PicQuantLimit(h264RateControl_s * rc)$/;"	f
+PicSkip	../source/h264/H264RateControl.c	/^void PicSkip(h264RateControl_s * rc)$/;"	f
+PrintTraceFile	../source/camstab/vidstabalg.c	/^void PrintTraceFile(i32 x, i32 y)$/;"	f
+QP_DELTA	../source/h264/H264RateControl.c	63;"	d	file:
+QP_DELTA_LIMIT	../source/h264/H264RateControl.c	64;"	d	file:
+QuantChrominance	../source/jpeg/EncJpegQuantTables.h	/^static const u8 QuantChrominance[11][64] = {$/;"	v
+QuantLuminance	../source/jpeg/EncJpegQuantTables.h	/^static const u8 QuantLuminance[11][64] = {$/;"	v
+QuarterPixelMotion	../source/camstab/vidstabalg.c	/^void QuarterPixelMotion(SwStbData * data, i32 minX, i32 minY)$/;"	f
+RC_CBR_HRD	../source/h264/H264RateControl.h	29;"	d
+RC_TABLE_LENGTH	../source/h264/H264RateControl.h	34;"	d
+ROTATE_0	../source/common/encpreprocess.h	36;"	d
+ROTATE_90L	../source/common/encpreprocess.h	38;"	d
+ROTATE_90R	../source/common/encpreprocess.h	37;"	d
+RST0	../source/jpeg/EncJpegMarkers.h	/^    RST0 = 0xFFD0,  \/* Restart marker 0                  *\/$/;"	e	enum:__anon77
+RST1	../source/jpeg/EncJpegMarkers.h	/^    RST1 = 0xFFD1,  \/* Restart marker 1                  *\/$/;"	e	enum:__anon77
+RST2	../source/jpeg/EncJpegMarkers.h	/^    RST2 = 0xFFD2,  \/* Restart marker 2                  *\/$/;"	e	enum:__anon77
+RST3	../source/jpeg/EncJpegMarkers.h	/^    RST3 = 0xFFD3,  \/* Restart marker 3                  *\/$/;"	e	enum:__anon77
+RST4	../source/jpeg/EncJpegMarkers.h	/^    RST4 = 0xFFD4,  \/* Restart marker 4                  *\/$/;"	e	enum:__anon77
+RST5	../source/jpeg/EncJpegMarkers.h	/^    RST5 = 0xFFD5,  \/* Restart marker 5                  *\/$/;"	e	enum:__anon77
+RST6	../source/jpeg/EncJpegMarkers.h	/^    RST6 = 0xFFD6,  \/* Restart marker 6                  *\/$/;"	e	enum:__anon77
+RST7	../source/jpeg/EncJpegMarkers.h	/^    RST7 = 0xFFD7,  \/* Restart marker 7                  *\/$/;"	e	enum:__anon77
+RegValues	../source/camstab/vidstabinternal.h	/^} RegValues;$/;"	t	typeref:struct:RegValues_
+RegValues_	../source/camstab/vidstabinternal.h	/^typedef struct RegValues_$/;"	s
+Ri	../source/jpeg/EncJpeg.h	/^    u32 Ri;$/;"	m	struct:JpegEncRestart_t
+SEI	../inc/enccommon.h	/^    SEI = 6,    \/* SEI message *\/$/;"	e	enum:__anon3
+SEI_BUFFERING_PERIOD	../source/h264/H264Sei.c	25;"	d	file:
+SEI_FILLER_PAYLOAD	../source/h264/H264Sei.c	27;"	d	file:
+SEI_PIC_TIMING	../source/h264/H264Sei.c	26;"	d	file:
+SEI_USER_DATA_UNREGISTERED	../source/h264/H264Sei.c	28;"	d	file:
+SIGN	../inc/enccommon.h	142;"	d
+SOF0	../source/jpeg/EncJpegMarkers.h	/^    SOF0 = 0xFFC0,  \/* Start of Frame                    *\/$/;"	e	enum:__anon77
+SOI	../source/jpeg/EncJpegMarkers.h	/^    SOI = 0xFFD8,   \/* Start of Image                    *\/$/;"	e	enum:__anon77
+SOS	../source/jpeg/EncJpegMarkers.h	/^    SOS = 0xFFDA,   \/* Start of Scan                     *\/$/;"	e	enum:__anon77
+SPSET	../inc/enccommon.h	/^    SPSET = 7,  \/* Sequence parameter set *\/$/;"	e	enum:__anon3
+SSPSET	../inc/enccommon.h	/^    SSPSET = 15,    \/* Subset sequence parameter set *\/$/;"	e	enum:__anon3
+SeqParameterSetMvcExtension	../source/h264/H264SequenceParameterSet.c	/^static void SeqParameterSetMvcExtension(stream_s * stream, sps_s * sps)$/;"	f	file:
+SetParameter	../source/h264/H264Init.c	/^bool_e SetParameter(h264Instance_s * inst, const H264EncConfig * pEncCfg)$/;"	f
+SetQTable	../source/jpeg/EncJpegInit.c	/^void SetQTable(u8 *dst, const u8 *src)$/;"	f
+SourceParameter	../source/h264/H264RateControl.c	/^void SourceParameter(h264RateControl_s * rc, i32 nonZeroCnt)$/;"	f
+SwStbData	../source/camstab/vidstabcommon.h	/^} SwStbData;$/;"	t	typeref:struct:SwStbData_
+SwStbData_	../source/camstab/vidstabcommon.h	/^typedef struct SwStbData_$/;"	s
+SwStbMotionType	../source/camstab/vidstabinternal.h	/^typedef u32 SwStbMotionType;$/;"	t
+SwapEndianess	../source/h264/H264Cabac.c	/^static void SwapEndianess(u32 * buf, u32 sizeBytes)$/;"	f	file:
+TRACE_BIT_STREAM	../inc/enccommon.h	76;"	d
+TRACE_STREAM	../inc/enccommon.h	58;"	d
+TimeStamp	../source/h264/H264Sei.c	/^static void TimeStamp(stream_s * sp, timeStamp_s * ts)$/;"	f	file:
+Tqi	../source/jpeg/EncJpeg.h	/^    u32 Tqi[MAX_NUMBER_OF_COMPONENTS];$/;"	m	struct:JpegEncFrameHeader_t
+UpdateVuiPresence	../source/h264/H264SequenceParameterSet.c	/^void UpdateVuiPresence(sps_s * sps)$/;"	f
+VIDEOSTB_BGR101010	../inc/vidstbapi.h	/^        VIDEOSTB_BGR101010 = 13                 \/* 30-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_BGR444	../inc/vidstbapi.h	/^        VIDEOSTB_BGR444 = 9,                    \/* 12-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_BGR555	../inc/vidstbapi.h	/^        VIDEOSTB_BGR555 = 7,                    \/* 15-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_BGR565	../inc/vidstbapi.h	/^        VIDEOSTB_BGR565 = 5,                    \/* 16-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_BGR888	../inc/vidstbapi.h	/^        VIDEOSTB_BGR888 = 11,                   \/* 24-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_BUILD_MAJOR	../source/camstab/vidstabapi.c	35;"	d	file:
+VIDEOSTB_BUILD_MINOR	../source/camstab/vidstabapi.c	36;"	d	file:
+VIDEOSTB_BUILD_REVISION	../source/camstab/vidstabapi.c	37;"	d	file:
+VIDEOSTB_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_ERROR = -1,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_EWL_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_EWL_ERROR = -5,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_EWL_MEMORY_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_EWL_MEMORY_ERROR = -6,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_HW_BUS_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_HW_BUS_ERROR = -9,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_HW_RESERVED	../inc/vidstbapi.h	/^        VIDEOSTB_HW_RESERVED = -12,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_HW_RESET	../inc/vidstbapi.h	/^        VIDEOSTB_HW_RESET = -16$/;"	e	enum:VideoStbRet_
+VIDEOSTB_HW_TIMEOUT	../inc/vidstbapi.h	/^        VIDEOSTB_HW_TIMEOUT = -11,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_INSTANCE_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_INSTANCE_ERROR = -14,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_INVALID_ARGUMENT	../inc/vidstbapi.h	/^        VIDEOSTB_INVALID_ARGUMENT = -3,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_MAJOR_VERSION	../source/camstab/vidstabapi.c	32;"	d	file:
+VIDEOSTB_MEMORY_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_MEMORY_ERROR = -4,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_MINOR_VERSION	../source/camstab/vidstabapi.c	33;"	d	file:
+VIDEOSTB_NULL_ARGUMENT	../inc/vidstbapi.h	/^        VIDEOSTB_NULL_ARGUMENT = -2,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_OK	../inc/vidstbapi.h	/^        VIDEOSTB_OK = 0,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_RGB101010	../inc/vidstbapi.h	/^        VIDEOSTB_RGB101010 = 12,                \/* 30-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_RGB444	../inc/vidstbapi.h	/^        VIDEOSTB_RGB444 = 8,                    \/* 12-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_RGB555	../inc/vidstbapi.h	/^        VIDEOSTB_RGB555 = 6,                    \/* 15-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_RGB565	../inc/vidstbapi.h	/^        VIDEOSTB_RGB565 = 4,                    \/* 16-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_RGB888	../inc/vidstbapi.h	/^        VIDEOSTB_RGB888 = 10,                   \/* 24-bit RGB           *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_SW_BUILD	../source/camstab/vidstabapi.c	38;"	d	file:
+VIDEOSTB_SYSTEM_ERROR	../inc/vidstbapi.h	/^        VIDEOSTB_SYSTEM_ERROR = -13,$/;"	e	enum:VideoStbRet_
+VIDEOSTB_YUV420_PLANAR	../inc/vidstbapi.h	/^        VIDEOSTB_YUV420_PLANAR = 0,             \/* YYYY... UUUU... VVVV *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_YUV420_SEMIPLANAR	../inc/vidstbapi.h	/^        VIDEOSTB_YUV420_SEMIPLANAR = 1,         \/* YYYY... UVUVUV...    *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_YUV422_INTERLEAVED_UYVY	../inc/vidstbapi.h	/^        VIDEOSTB_YUV422_INTERLEAVED_UYVY = 3,   \/* UYVYUYVY...          *\/$/;"	e	enum:VideoStbInputFormat_
+VIDEOSTB_YUV422_INTERLEAVED_YUYV	../inc/vidstbapi.h	/^        VIDEOSTB_YUV422_INTERLEAVED_YUYV = 2,   \/* YUYVYUYV...          *\/$/;"	e	enum:VideoStbInputFormat_
+VOLATILE	../inc/basetype.h	23;"	d
+VS8290_ASIC_CLOCK_GATING_ENABLED	../source/camstab/vidstabcfg.h	143;"	d
+VS8290_AXI_READ_ID	../source/camstab/vidstabcfg.h	132;"	d
+VS8290_AXI_WRITE_ID	../source/camstab/vidstabcfg.h	136;"	d
+VS8290_BURST_DATA_DISCARD_ENABLED	../source/camstab/vidstabcfg.h	127;"	d
+VS8290_BURST_INCR_TYPE_ENABLED	../source/camstab/vidstabcfg.h	118;"	d
+VS8290_BURST_LENGTH	../source/camstab/vidstabcfg.h	111;"	d
+VS8290_INPUT_SWAP_16_RGB16	../source/camstab/vidstabcfg.h	61;"	d
+VS8290_INPUT_SWAP_16_RGB32	../source/camstab/vidstabcfg.h	82;"	d
+VS8290_INPUT_SWAP_16_YUV	../source/camstab/vidstabcfg.h	40;"	d
+VS8290_INPUT_SWAP_32_RGB16	../source/camstab/vidstabcfg.h	54;"	d
+VS8290_INPUT_SWAP_32_RGB32	../source/camstab/vidstabcfg.h	75;"	d
+VS8290_INPUT_SWAP_32_YUV	../source/camstab/vidstabcfg.h	33;"	d
+VS8290_INPUT_SWAP_8_RGB16	../source/camstab/vidstabcfg.h	68;"	d
+VS8290_INPUT_SWAP_8_RGB32	../source/camstab/vidstabcfg.h	89;"	d
+VS8290_INPUT_SWAP_8_YUV	../source/camstab/vidstabcfg.h	47;"	d
+VS8290_IRQ_DISABLE	../source/camstab/vidstabcfg.h	98;"	d
+VSAlgGetResult	../source/camstab/vidstabalg.c	/^void VSAlgGetResult(const SwStbData * data, u32 * xOff, u32 * yOff)$/;"	f
+VSAlgInit	../source/camstab/vidstabalg.c	/^void VSAlgInit(SwStbData * data, u32 srcWidth, u32 srcHeight, u32 width,$/;"	f
+VSAlgReset	../source/camstab/vidstabalg.c	/^void VSAlgReset(SwStbData * data)$/;"	f
+VSAlgStabilize	../source/camstab/vidstabalg.c	/^u32 VSAlgStabilize(SwStbData * data, const HWStabData * hwStabData)$/;"	f
+VSCheckInput	../source/camstab/vidstabinternal.c	/^i32 VSCheckInput(const VideoStbParam * param)$/;"	f
+VSCheckSize	../source/h264/H264EncApi.c	/^i32 VSCheckSize(u32 inputWidth, u32 inputHeight, u32 stabilizedWidth,$/;"	f
+VSInitAsicCtrl	../source/camstab/vidstabinternal.c	/^void VSInitAsicCtrl(VideoStb * pVidStab)$/;"	f
+VSReadStabData	../source/camstab/vidstabcommon.c	/^void VSReadStabData(const u32 * regMirror, HWStabData * hwStabData)$/;"	f
+VSSetCropping	../source/camstab/vidstabinternal.c	/^void VSSetCropping(VideoStb * pVidStab, u32 currentPictBus, u32 nextPictBus)$/;"	f
+VSSetRegisterValue	../source/camstab/vidstabinternal.c	/^void VSSetRegisterValue(u32 *regMirror, regName name, u32 value)$/;"	f
+VSSetupAsicAll	../source/camstab/vidstabinternal.c	/^void VSSetupAsicAll(VideoStb * pVidStab)$/;"	f
+VSWaitAsicReady	../source/camstab/vidstabinternal.c	/^i32 VSWaitAsicReady(VideoStb * pVidStab)$/;"	f
+VS_BUS_ADDRESS_VALID	../source/camstab/vidstabapi.c	41;"	d	file:
+Vi	../source/jpeg/EncJpeg.h	/^    u32 Vi[MAX_NUMBER_OF_COMPONENTS];$/;"	m	struct:JpegEncFrameHeader_t
+VideoStb	../source/camstab/vidstabinternal.h	/^} VideoStb;$/;"	t	typeref:struct:VideoStb_
+VideoStbApiVersion	../inc/vidstbapi.h	/^    } VideoStbApiVersion;$/;"	t	typeref:struct:__anon44
+VideoStbBuild	../inc/vidstbapi.h	/^    } VideoStbBuild;$/;"	t	typeref:struct:__anon45
+VideoStbGetApiVersion	../source/camstab/vidstabapi.c	/^VideoStbApiVersion VideoStbGetApiVersion(void)$/;"	f
+VideoStbGetBuild	../source/camstab/vidstabapi.c	/^VideoStbBuild VideoStbGetBuild(void)$/;"	f
+VideoStbInit	../source/camstab/vidstabapi.c	/^VideoStbRet VideoStbInit(VideoStbInst * instAddr, const VideoStbParam * param)$/;"	f
+VideoStbInputFormat	../inc/vidstbapi.h	/^    } VideoStbInputFormat;$/;"	t	typeref:enum:VideoStbInputFormat_
+VideoStbInputFormat_	../inc/vidstbapi.h	/^    typedef enum VideoStbInputFormat_$/;"	g
+VideoStbInst	../inc/vidstbapi.h	/^    typedef const void *VideoStbInst;$/;"	t
+VideoStbParam	../inc/vidstbapi.h	/^    } VideoStbParam;$/;"	t	typeref:struct:VideoStbParam_
+VideoStbParam_	../inc/vidstbapi.h	/^    typedef struct VideoStbParam_$/;"	s
+VideoStbRelease	../source/camstab/vidstabapi.c	/^VideoStbRet VideoStbRelease(VideoStbInst vidStab)$/;"	f
+VideoStbReset	../source/camstab/vidstabapi.c	/^VideoStbRet VideoStbReset(VideoStbInst vidStab, const VideoStbParam * param)$/;"	f
+VideoStbResult	../inc/vidstbapi.h	/^    } VideoStbResult;$/;"	t	typeref:struct:VideoStbResult_
+VideoStbResult_	../inc/vidstbapi.h	/^    typedef struct VideoStbResult_$/;"	s
+VideoStbRet	../inc/vidstbapi.h	/^    } VideoStbRet;$/;"	t	typeref:enum:VideoStbRet_
+VideoStbRet_	../inc/vidstbapi.h	/^    typedef enum VideoStbRet_$/;"	g
+VideoStbStabilize	../source/camstab/vidstabapi.c	/^VideoStbRet VideoStbStabilize(VideoStbInst vidStab,$/;"	f
+VideoStb_	../source/camstab/vidstabinternal.h	/^typedef struct VideoStb_$/;"	s
+Vij_Ac	../source/jpeg/EncJpegDhtTables.h	/^static const JpegEncAcVijTables Vij_Ac[162] = {$/;"	v
+Vij_Dc	../source/jpeg/EncJpegDhtTables.h	/^static const JpegEncDcVijTables Vij_Dc[12] = {$/;"	v
+VirtualBuffer	../source/h264/H264RateControl.c	/^static i32 VirtualBuffer(h264VirtualBuffer_s *vb, i32 timeInc, true_e hrd)$/;"	f	file:
+WORD_CNT_MAX	../source/h264/H264RateControl.c	66;"	d	file:
+WriteVui	../source/h264/H264SequenceParameterSet.c	/^static void WriteVui(stream_s * strm, vui_t * vui, i32 numRefFrames)$/;"	f	file:
+X	../source/jpeg/EncJpeg.h	/^    u32 X;$/;"	m	struct:JpegEncFrameHeader_t
+Xdensity	../source/jpeg/EncJpeg.h	/^    u32 Xdensity;$/;"	m	struct:JpegEncAppn_t
+Y	../source/jpeg/EncJpeg.h	/^    u32 Y;$/;"	m	struct:JpegEncFrameHeader_t
+Ydensity	../source/jpeg/EncJpeg.h	/^    u32 Ydensity;$/;"	m	struct:JpegEncAppn_t
+_SIZE_T_DEFINED	../inc/basetype.h	41;"	d
+__ENCCFG_H__	../source/common/enccfg.h	20;"	d
+__ENC_ASIC_CONTROLLER_H__	../source/common/encasiccontroller.h	20;"	d
+__ENC_COMMON_H__	../inc/enccommon.h	21;"	d
+__ENC_JPEG_CODE_VOP_H__	../source/jpeg/EncJpegCodeFrame.h	31;"	d
+__ENC_JPEG_DHT_TABLES_H__	../source/jpeg/EncJpegDhtTables.h	31;"	d
+__ENC_JPEG_H__	../source/jpeg/EncJpeg.h	31;"	d
+__ENC_JPEG_INIT_H__	../source/jpeg/EncJpegInit.h	31;"	d
+__ENC_JPEG_INSTANCE_H__	../source/jpeg/EncJpegInstance.h	32;"	d
+__ENC_JPEG_MARKERS_H__	../source/jpeg/EncJpegMarkers.h	32;"	d
+__ENC_JPEG_PUT_BITS_H__	../source/jpeg/EncJpegPutBits.h	31;"	d
+__ENC_PRE_PROCESS_H__	../source/common/encpreprocess.h	20;"	d
+__EWL_H__	../inc/ewl.h	21;"	d
+__H264CABACCONTEXT_H__	../source/h264/H264CabacContext.h	21;"	d
+__H264CABAC_H__	../source/h264/H264Cabac.h	21;"	d
+__H264ENCAPI_EXT_H__	../inc/h264encapi_ext.h	21;"	d
+__H264ENCAPI_H__	../inc/h264encapi.h	21;"	d
+__H264_CODE_FRAME_H__	../source/h264/H264CodeFrame.h	21;"	d
+__H264_INIT_H__	../source/h264/H264Init.h	21;"	d
+__H264_INSTANCE_H__	../source/h264/H264Instance.h	21;"	d
+__H264_NAL_UNIT_H__	../source/h264/H264NalUnit.h	21;"	d
+__H264_PICTURE_PARAMETER_SET_H__	../source/h264/H264PictureParameterSet.h	21;"	d
+__H264_PUT_BITS_H__	../source/h264/H264PutBits.h	21;"	d
+__H264_SEQUENCE_PARAMETER_SET_h__	../source/h264/H264SequenceParameterSet.h	21;"	d
+__H264_SLICE_H__	../source/h264/H264Slice.h	21;"	d
+__H264_TESTID_H__	../source/h264/H264TestId.h	21;"	d
+__JPEGENCAPI_H__	../inc/jpegencapi.h	32;"	d
+__JPEG_COMMON_H__	../source/jpeg/EncJpegCommon.h	31;"	d
+__QUANT_TABLES_H__	../source/jpeg/EncJpegQuantTables.h	31;"	d
+__VIDSTABCOMMON_H__	../source/camstab/vidstabcommon.h	20;"	d
+__VIDSTBAPI_H__	../inc/vidstbapi.h	20;"	d
+__VIDSTBCFG_H__	../source/camstab/vidstabcfg.h	20;"	d
+__VIDSTBINTERNAL_H__	../source/camstab/vidstabinternal.h	20;"	d
+a1	../source/h264/H264Mad.h	/^    i32  a1;               \/* model parameter, y = a1*x + a2 *\/$/;"	m	struct:__anon57
+a1	../source/h264/H264RateControl.h	/^    i32  a1;               \/* model parameter *\/$/;"	m	struct:__anon61
+a2	../source/h264/H264Mad.h	/^    i32  a2;               \/* model parameter *\/$/;"	m	struct:__anon57
+a2	../source/h264/H264RateControl.h	/^    i32  a2;               \/* model parameter *\/$/;"	m	struct:__anon61
+anchorPicFlag	../source/h264/H264NalUnit.h	/^    u32 anchorPicFlag;$/;"	m	struct:__anon58
+appn	../source/jpeg/EncJpeg.h	/^    JpegEncAppn_t appn; \/* APPn Header Data             *\/$/;"	m	struct:__anon74
+asic	../source/h264/H264Instance.h	/^    asicData_s asic;$/;"	m	struct:__anon56
+asic	../source/jpeg/EncJpegInstance.h	/^    asicData_s asic;$/;"	m	struct:__anon76
+asicCfgReg	../source/camstab/vidstabinternal.h	/^    u32 asicCfgReg;$/;"	m	struct:RegValues_
+asicCfgReg	../source/common/encasiccontroller.h	/^    u32 asicCfgReg;$/;"	m	struct:__anon50
+asicCodingType_e	../source/common/encasiccontroller.h	/^} asicCodingType_e;$/;"	t	typeref:enum:__anon47
+asicData_s	../source/common/encasiccontroller.h	/^} asicData_s;$/;"	t	typeref:struct:__anon52
+asicFrameCodingType_e	../source/common/encasiccontroller.h	/^} asicFrameCodingType_e;$/;"	t	typeref:enum:__anon49
+asicHwId	../source/common/encasiccontroller.h	/^    u32 asicHwId;$/;"	m	struct:__anon50
+asicMbType_e	../source/common/encasiccontroller.h	/^} asicMbType_e;$/;"	t	typeref:enum:__anon48
+asicRegisterDesc	../inc/encswhwregisters.h	/^static const regField_s asicRegisterDesc[] = {$/;"	v
+avg_rc_error	../source/h264/H264RateControl.c	/^static i32 avg_rc_error(linReg_s *p)$/;"	f	file:
+bMaskMsb	../source/camstab/vidstabinternal.h	/^    u32 bMaskMsb;$/;"	m	struct:RegValues_
+bMaskMsb	../source/common/encasiccontroller.h	/^    u32 bMaskMsb;$/;"	m	struct:__anon50
+base	../inc/encswhwregisters.h	/^    i32 base;               \/* Register base address  *\/$/;"	m	struct:__anon7
+bitCnt	../inc/enccommon.h	/^    u32 bitCnt; \/* Bit counter *\/$/;"	m	struct:__anon5
+bitPerPic	../source/h264/H264RateControl.h	/^    i32 bitPerPic;           \/* average number of bits per picture *\/$/;"	m	struct:__anon63
+bitPerSecond	../inc/h264encapi.h	/^        u32 bitPerSecond;    \/* Target bitrate in bits\/second, this is$/;"	m	struct:__anon19
+bitRate	../source/h264/H264RateControl.h	/^    i32 bitRate;             \/* input bit rate per second *\/$/;"	m	struct:__anon63
+bitRate	../source/h264/H264SequenceParameterSet.h	/^    u32 bitRate;$/;"	m	struct:__anon67
+bitStreamRestrictionFlag	../source/h264/H264SequenceParameterSet.h	/^    u32 bitStreamRestrictionFlag;$/;"	m	struct:__anon67
+bits	../source/h264/H264RateControl.h	/^    i32  bits[RC_TABLE_LENGTH+1];\/* Number of bits needed to code residual *\/$/;"	m	struct:__anon61
+bool_e	../inc/enccommon.h	/^} bool_e;$/;"	t	typeref:enum:__anon1
+bottom	../inc/h264encapi.h	/^        u32 bottom;         \/* Bottom macroblock row inside area [top..heightMbs-1] *\/$/;"	m	struct:__anon17
+bucketFullness	../source/h264/H264RateControl.h	/^    i32 bucketFullness;      \/* Leaky Bucket fullness *\/$/;"	m	struct:__anon63
+bufferOccupancy	../source/h264/H264RateControl.h	/^    i32 bufferOccupancy;     \/* number of bits in the buffer *\/$/;"	m	struct:__anon63
+bufferSize	../source/h264/H264RateControl.h	/^    i32 bufferSize;          \/* size of the virtual buffer *\/$/;"	m	struct:__anon63
+bufferState_e	../source/common/encasiccontroller.h	/^} bufferState_e;$/;"	t	typeref:enum:__anon46
+bufferedBits	../inc/enccommon.h	/^    u32 bufferedBits;   \/* Amount of bits in byte buffer, [0-7] *\/$/;"	m	struct:__anon5
+busAddress	../inc/ewl.h	/^        u32 busAddress;$/;"	m	struct:EWLLinearMem
+busCb	../inc/jpegencapi.h	/^        u32 busCb;           \/* Bus address of chrominance input (Cb)        *\/$/;"	m	struct:__anon42
+busChromaU	../inc/h264encapi.h	/^        u32 busChromaU;      \/* Bus address for input chrominance$/;"	m	struct:__anon20
+busChromaV	../inc/h264encapi.h	/^        u32 busChromaV;      \/* Bus address for input chrominance$/;"	m	struct:__anon20
+busCr	../inc/jpegencapi.h	/^        u32 busCr;           \/* Bus address of chrominance input (Cr)        *\/$/;"	m	struct:__anon42
+busLum	../inc/jpegencapi.h	/^        u32 busLum;          \/* Bus address of luminance input   (Y)         *\/$/;"	m	struct:__anon42
+busLuma	../inc/h264encapi.h	/^        u32 busLuma;         \/* Bus address for input picture$/;"	m	struct:__anon20
+busLumaStab	../inc/h264encapi.h	/^        u32 busLumaStab;     \/* bus address of next picture to stabilize (luminance) *\/$/;"	m	struct:__anon20
+busOutBuf	../inc/h264encapi.h	/^        u32 busOutBuf;       \/* Bus address of output stream buffer *\/$/;"	m	struct:__anon20
+busOutBuf	../inc/jpegencapi.h	/^        u32 busOutBuf;       \/* Bus address of output stream buffer          *\/$/;"	m	struct:__anon42
+busType	../inc/ewl.h	/^        u32 busType;         \/* HW bus type in use *\/$/;"	m	struct:EWLHwConfig
+busWidth	../inc/ewl.h	/^        u32 busWidth;$/;"	m	struct:EWLHwConfig
+byteBuffer	../inc/enccommon.h	/^    u32 byteBuffer; \/* Byte buffer *\/$/;"	m	struct:__anon5
+byteCnt	../inc/enccommon.h	/^    u32 byteCnt;    \/* Byte counter *\/$/;"	m	struct:__anon5
+byteStream	../source/h264/H264PictureParameterSet.h	/^    true_e byteStream;$/;"	m	struct:__anon59
+byteStream	../source/h264/H264Sei.h	/^    true_e byteStream;$/;"	m	struct:__anon66
+byteStream	../source/h264/H264SequenceParameterSet.h	/^    true_e byteStream;$/;"	m	struct:__anon68
+byteStream	../source/h264/H264Slice.h	/^    true_e byteStream;$/;"	m	struct:__anon70
+cabacCtx	../source/common/encasiccontroller.h	/^    EWLLinearMem_t cabacCtx;$/;"	m	struct:__anon52
+cabacCtxBase	../source/common/encasiccontroller.h	/^    u32 cabacCtxBase;$/;"	m	struct:__anon50
+cabacInitIdc	../inc/h264encapi.h	/^        u32 cabacInitIdc;    \/* [0,2] CABAC table initial value *\/$/;"	m	struct:__anon18
+cabacInitIdc	../source/common/encasiccontroller.h	/^    u32 cabacInitIdc;$/;"	m	struct:__anon50
+cabacInitIdc	../source/h264/H264Slice.h	/^    u32 cabacInitIdc;$/;"	m	struct:__anon70
+cdf	../source/h264/H264Sei.h	/^    u32 cdf;$/;"	m	struct:__anon66
+checkPointDistance	../source/h264/H264RateControl.h	/^    i32 checkPointDistance;$/;"	m	struct:__anon62
+checkPoints	../source/h264/H264RateControl.h	/^    i32 checkPoints;$/;"	m	struct:__anon62
+checksum	../source/camstab/vidstabinternal.h	/^    const void *checksum;$/;"	m	struct:VideoStb_
+chromaQpIndexOffset	../source/common/encasiccontroller.h	/^    i32 chromaQpIndexOffset;$/;"	m	struct:__anon50
+chromaQpIndexOffset	../source/h264/H264PictureParameterSet.h	/^    i32 chromaQpIndexOffset;$/;"	m	struct:__anon59
+cirInterval	../inc/h264encapi.h	/^        u32 cirInterval;        \/* [0..mbTotal] Macroblock interval for$/;"	m	struct:__anon18
+cirInterval	../source/common/encasiccontroller.h	/^    u32 cirInterval;$/;"	m	struct:__anon50
+cirStart	../inc/h264encapi.h	/^        u32 cirStart;           \/* [0..mbTotal] First macroblock for$/;"	m	struct:__anon18
+cirStart	../source/common/encasiccontroller.h	/^    u32 cirStart;$/;"	m	struct:__anon50
+clientType	../inc/ewl.h	/^        u32 clientType;$/;"	m	struct:EWLInitParam
+cntType	../source/h264/H264Sei.h	/^    u32 cntType;$/;"	m	struct:__anon66
+codingHeight	../inc/jpegencapi.h	/^        u32 codingHeight;    \/* Height of encoded image                      *\/$/;"	m	struct:__anon41
+codingMode	../inc/jpegencapi.h	/^        JpegEncCodingMode codingMode;   \/* 4:2:0 \/ 4:2:2 coding             *\/$/;"	m	struct:__anon41
+codingMode	../source/jpeg/EncJpeg.h	/^    i32 codingMode; \/* 420 or 422 *\/$/;"	m	struct:__anon74
+codingType	../inc/h264encapi.h	/^        H264EncPictureCodingType codingType;    \/* Proposed picture coding type, $/;"	m	struct:__anon20
+codingType	../inc/h264encapi.h	/^        H264EncPictureCodingType codingType;    \/* Realized picture coding type,$/;"	m	struct:__anon21
+codingType	../inc/jpegencapi.h	/^        JpegEncCodingType codingType;   \/* Whole frame \/ restart interval   *\/$/;"	m	struct:__anon41
+codingType	../source/common/encasiccontroller.h	/^    u32 codingType;$/;"	m	struct:__anon50
+codingType	../source/jpeg/EncJpeg.h	/^    i32 codingType; \/* Whole or slice *\/$/;"	m	struct:__anon74
+codingWidth	../inc/jpegencapi.h	/^        u32 codingWidth;     \/* Width of encoded image                       *\/$/;"	m	struct:__anon41
+coeffA	../inc/h264encapi.h	/^        u16 coeffA;          \/* User defined color conversion coefficient *\/$/;"	m	struct:__anon22
+coeffA	../inc/jpegencapi.h	/^        u16 coeffA;          \/* User defined color conversion coefficient  *\/$/;"	m	struct:__anon40
+coeffB	../inc/h264encapi.h	/^        u16 coeffB;          \/* User defined color conversion coefficient *\/$/;"	m	struct:__anon22
+coeffB	../inc/jpegencapi.h	/^        u16 coeffB;          \/* User defined color conversion coefficient  *\/$/;"	m	struct:__anon40
+coeffC	../inc/h264encapi.h	/^        u16 coeffC;          \/* User defined color conversion coefficient *\/$/;"	m	struct:__anon22
+coeffC	../inc/jpegencapi.h	/^        u16 coeffC;          \/* User defined color conversion coefficient  *\/$/;"	m	struct:__anon40
+coeffCntMax	../source/h264/H264RateControl.h	/^    i32 coeffCntMax;         \/* Number of coeff per picture *\/$/;"	m	struct:__anon64
+coeffE	../inc/h264encapi.h	/^        u16 coeffE;          \/* User defined color conversion coefficient *\/$/;"	m	struct:__anon22
+coeffE	../inc/jpegencapi.h	/^        u16 coeffE;          \/* User defined color conversion coefficient  *\/$/;"	m	struct:__anon40
+coeffF	../inc/h264encapi.h	/^        u16 coeffF;          \/* User defined color conversion coefficient *\/$/;"	m	struct:__anon22
+coeffF	../inc/jpegencapi.h	/^        u16 coeffF;          \/* User defined color conversion coefficient  *\/$/;"	m	struct:__anon40
+colorConversion	../inc/h264encapi.h	/^        H264EncColorConversion colorConversion;$/;"	m	struct:__anon23
+colorConversion	../inc/jpegencapi.h	/^        JpegEncColorConversion colorConversion; \/* RGB to YUV conversion    *\/$/;"	m	struct:__anon41
+colorConversionCoeffA	../source/camstab/vidstabinternal.h	/^    u32 colorConversionCoeffA;$/;"	m	struct:RegValues_
+colorConversionCoeffA	../source/common/encasiccontroller.h	/^    u32 colorConversionCoeffA;$/;"	m	struct:__anon50
+colorConversionCoeffA	../source/common/encpreprocess.h	/^    u32 colorConversionCoeffA;$/;"	m	struct:__anon54
+colorConversionCoeffB	../source/camstab/vidstabinternal.h	/^    u32 colorConversionCoeffB;$/;"	m	struct:RegValues_
+colorConversionCoeffB	../source/common/encasiccontroller.h	/^    u32 colorConversionCoeffB;$/;"	m	struct:__anon50
+colorConversionCoeffB	../source/common/encpreprocess.h	/^    u32 colorConversionCoeffB;$/;"	m	struct:__anon54
+colorConversionCoeffC	../source/camstab/vidstabinternal.h	/^    u32 colorConversionCoeffC;$/;"	m	struct:RegValues_
+colorConversionCoeffC	../source/common/encasiccontroller.h	/^    u32 colorConversionCoeffC;$/;"	m	struct:__anon50
+colorConversionCoeffC	../source/common/encpreprocess.h	/^    u32 colorConversionCoeffC;$/;"	m	struct:__anon54
+colorConversionCoeffE	../source/camstab/vidstabinternal.h	/^    u32 colorConversionCoeffE;$/;"	m	struct:RegValues_
+colorConversionCoeffE	../source/common/encasiccontroller.h	/^    u32 colorConversionCoeffE;$/;"	m	struct:__anon50
+colorConversionCoeffE	../source/common/encpreprocess.h	/^    u32 colorConversionCoeffE;$/;"	m	struct:__anon54
+colorConversionCoeffF	../source/camstab/vidstabinternal.h	/^    u32 colorConversionCoeffF;$/;"	m	struct:RegValues_
+colorConversionCoeffF	../source/common/encasiccontroller.h	/^    u32 colorConversionCoeffF;$/;"	m	struct:__anon50
+colorConversionCoeffF	../source/common/encpreprocess.h	/^    u32 colorConversionCoeffF;$/;"	m	struct:__anon54
+colorConversionType	../source/common/encpreprocess.h	/^    u32 colorConversionType;    \/* 0 = bt601, 1 = bt709, 2 = user defined *\/$/;"	m	struct:__anon54
+com	../source/jpeg/EncJpeg.h	/^    JpegEncCommentHeader com;   \/* COM Header Data              *\/$/;"	m	struct:__anon74
+comEnable	../source/jpeg/EncJpeg.h	/^    u32 comEnable;$/;"	m	struct:JpegEncCommentHeader_t
+comLen	../source/jpeg/EncJpeg.h	/^    u32 comLen;$/;"	m	struct:JpegEncCommentHeader_t
+comLength	../inc/jpegencapi.h	/^        u32 comLength;       \/* Length of COM header                         *\/$/;"	m	struct:__anon41
+constIntraPred	../source/h264/H264PictureParameterSet.h	/^    true_e constIntraPred;$/;"	m	struct:__anon59
+constrainedIntraPrediction	../inc/h264encapi.h	/^        u32 constrainedIntraPrediction; \/* 0 = No constrains,$/;"	m	struct:__anon18
+constrainedIntraPrediction	../source/common/encasiccontroller.h	/^    u32 constrainedIntraPrediction;$/;"	m	struct:__anon50
+constraintSet0	../source/h264/H264SequenceParameterSet.h	/^    true_e constraintSet0;$/;"	m	struct:__anon68
+constraintSet1	../source/h264/H264SequenceParameterSet.h	/^    true_e constraintSet1;$/;"	m	struct:__anon68
+constraintSet2	../source/h264/H264SequenceParameterSet.h	/^    true_e constraintSet2;$/;"	m	struct:__anon68
+constraintSet3	../source/h264/H264SequenceParameterSet.h	/^    true_e constraintSet3;$/;"	m	struct:__anon68
+count	../source/h264/H264Mad.h	/^    i32  count[MAD_TABLE_LEN];  \/* number of macroblocks under threshold *\/$/;"	m	struct:__anon57
+cpDistanceMbs	../source/common/encasiccontroller.h	/^    u32 cpDistanceMbs;$/;"	m	struct:__anon50
+cpTarget	../source/common/encasiccontroller.h	/^    const u32 *cpTarget;$/;"	m	struct:__anon50
+cpTargetResults	../source/common/encasiccontroller.h	/^    u32 *cpTargetResults;$/;"	m	struct:__anon50
+cpbRemovalDelayLength	../source/h264/H264SequenceParameterSet.h	/^    u32 cpbRemovalDelayLength;$/;"	m	struct:__anon67
+cpbSize	../source/h264/H264SequenceParameterSet.h	/^    u32 cpbSize;$/;"	m	struct:__anon67
+crd	../source/h264/H264Sei.h	/^    u32 crd;    \/* CPB removal delay *\/$/;"	m	struct:__anon66
+crdLen	../source/h264/H264Sei.h	/^    u32 crdLen;$/;"	m	struct:__anon66
+cts	../source/h264/H264Sei.h	/^    u32 cts;$/;"	m	struct:__anon66
+data	../inc/jpegencapi.h	/^        const void *data;    \/* Thumbnail data *\/$/;"	m	struct:__anon39
+data	../source/camstab/vidstabinternal.h	/^    SwStbData data;$/;"	m	struct:VideoStb_
+dataLength	../inc/jpegencapi.h	/^        u16 dataLength;      \/* Data amount in bytes *\/$/;"	m	struct:__anon39
+deblockingFilterControlPresent	../source/h264/H264PictureParameterSet.h	/^    true_e deblockingFilterControlPresent;$/;"	m	struct:__anon59
+deltaQp	../source/common/encasiccontroller.h	/^    const i32 *deltaQp;$/;"	m	struct:__anon50
+description	../inc/encswhwregisters.h	/^    char *description;      \/* Field description *\/$/;"	m	struct:__anon7
+diffMvPenalty	../source/common/encasiccontroller.h	/^    u32 diffMvPenalty;$/;"	m	struct:__anon50
+diffMvPenalty4p	../source/common/encasiccontroller.h	/^    u32 diffMvPenalty4p;$/;"	m	struct:__anon50
+direct8x8Inference	../source/h264/H264SequenceParameterSet.h	/^    true_e direct8x8Inference;$/;"	m	struct:__anon68
+disableDeblocking	../inc/h264encapi_ext.h	/^        u32 disableDeblocking;$/;"	m	struct:__anon27
+disableDeblocking	../source/h264/H264Slice.h	/^    u32 disableDeblocking;$/;"	m	struct:__anon70
+disableDeblockingFilter	../inc/h264encapi.h	/^        u32 disableDeblockingFilter;    \/* 0 = Filter enabled,$/;"	m	struct:__anon18
+disableQuarterPixelMv	../source/common/encasiccontroller.h	/^    u32 disableQuarterPixelMv;$/;"	m	struct:__anon50
+dod	../source/h264/H264Sei.h	/^    u32 dod;    \/* DPB removal delay *\/$/;"	m	struct:__anon66
+dodLen	../source/h264/H264Sei.h	/^    u32 dodLen;$/;"	m	struct:__anon66
+dpbOutputDelayLength	../source/h264/H264SequenceParameterSet.h	/^    u32 dpbOutputDelayLength;$/;"	m	struct:__anon67
+emulCnt	../inc/enccommon.h	/^    u32 emulCnt; \/* Counter for emulation_3_byte, needed in SEI *\/$/;"	m	struct:__anon5
+enable	../inc/h264encapi.h	/^        u32 enable;         \/* [0,1] Enables this area *\/$/;"	m	struct:__anon17
+enableCabac	../inc/h264encapi.h	/^        u32 enableCabac;     \/* 0 = CAVLC - Baseline profile,$/;"	m	struct:__anon18
+enableCabac	../source/common/encasiccontroller.h	/^    u32 enableCabac;$/;"	m	struct:__anon50
+enableCabac	../source/h264/H264PictureParameterSet.h	/^    u32 enableCabac;    \/* 0=cavlc, 1=cabac, 2=cavlc(intra)+cabac(inter) *\/$/;"	m	struct:__anon59
+enabled	../source/h264/H264Sei.h	/^    u32 enabled;$/;"	m	struct:__anon66
+encStatus	../source/h264/H264Instance.h	/^    u32 encStatus;$/;"	m	struct:__anon56
+encStatus	../source/jpeg/EncJpegInstance.h	/^    u32 encStatus;$/;"	m	struct:__anon76
+entropyCodingMode	../source/h264/H264PictureParameterSet.h	/^    true_e entropyCodingMode;$/;"	m	struct:__anon59
+estTimeInc	../source/h264/H264RateControl.h	/^    u32 estTimeInc;$/;"	m	struct:__anon64
+ewl	../source/camstab/vidstabinternal.h	/^    const void *ewl;$/;"	m	struct:VideoStb_
+ewl	../source/common/encasiccontroller.h	/^    const void *ewl;$/;"	m	struct:__anon52
+fillerIdx	../source/h264/H264RateControl.h	/^    u32 fillerIdx;$/;"	m	struct:__anon64
+fillerNalSize	../source/h264/H264Instance.h	/^    u32 fillerNalSize;$/;"	m	struct:__anon56
+filterDisable	../source/common/encasiccontroller.h	/^    u32 filterDisable;$/;"	m	struct:__anon50
+filterErrorX	../source/camstab/vidstabcommon.h	/^    i32 filterErrorX;$/;"	m	struct:SwStbData_
+filterErrorXp	../source/camstab/vidstabcommon.h	/^    i32 filterErrorXp;$/;"	m	struct:SwStbData_
+filterErrorY	../source/camstab/vidstabcommon.h	/^    i32 filterErrorY;$/;"	m	struct:SwStbData_
+filterErrorYp	../source/camstab/vidstabcommon.h	/^    i32 filterErrorYp;$/;"	m	struct:SwStbData_
+filterLengthX	../source/camstab/vidstabcommon.h	/^    i32 filterLengthX;$/;"	m	struct:SwStbData_
+filterLengthY	../source/camstab/vidstabcommon.h	/^    i32 filterLengthY;$/;"	m	struct:SwStbData_
+filterOffsetA	../inc/h264encapi_ext.h	/^        i32 filterOffsetA;$/;"	m	struct:__anon27
+filterOffsetA	../source/h264/H264Slice.h	/^    i32 filterOffsetA;$/;"	m	struct:__anon70
+filterOffsetB	../inc/h264encapi_ext.h	/^        i32 filterOffsetB;$/;"	m	struct:__anon27
+filterOffsetB	../source/h264/H264Slice.h	/^    i32 filterOffsetB;$/;"	m	struct:__anon70
+filterPosX	../source/camstab/vidstabcommon.h	/^    i32 filterPosX;$/;"	m	struct:SwStbData_
+filterPosY	../source/camstab/vidstabcommon.h	/^    i32 filterPosY;$/;"	m	struct:SwStbData_
+filterSumMotX	../source/camstab/vidstabcommon.h	/^    i32 filterSumMotX;$/;"	m	struct:SwStbData_
+filterSumMotY	../source/camstab/vidstabcommon.h	/^    i32 filterSumMotY;$/;"	m	struct:SwStbData_
+filterSumStabX	../source/camstab/vidstabcommon.h	/^    i32 filterSumStabX;$/;"	m	struct:SwStbData_
+filterSumStabY	../source/camstab/vidstabcommon.h	/^    i32 filterSumStabY;$/;"	m	struct:SwStbData_
+filterX	../source/camstab/vidstabcommon.h	/^    i32 filterX;$/;"	m	struct:SwStbData_
+filterY	../source/camstab/vidstabcommon.h	/^    i32 filterY;$/;"	m	struct:SwStbData_
+firstFreeBit	../source/common/encasiccontroller.h	/^    u32 firstFreeBit;$/;"	m	struct:__anon50
+fixedIntraQp	../inc/h264encapi.h	/^        u32 fixedIntraQp;    \/* Fixed QP value for all Intra pictures, [0..51]$/;"	m	struct:__anon19
+fixedIntraQp	../source/h264/H264RateControl.h	/^    u32 fixedIntraQp;$/;"	m	struct:__anon64
+fixedQp	../source/h264/H264RateControl.h	/^    i32 fixedQp;             \/* Pic header qp when fixed *\/$/;"	m	struct:__anon64
+format	../inc/jpegencapi.h	/^        JpegEncThumbFormat format;  \/* Format of the thumbnail *\/$/;"	m	struct:__anon39
+format	../inc/vidstbapi.h	/^        VideoStbInputFormat format;$/;"	m	struct:VideoStbParam_
+fpRcTrc	../source/h264/H264RateControl.c	/^FILE *fpRcTrc = NULL;$/;"	v
+frame	../source/jpeg/EncJpeg.h	/^    JpegEncFrameHeader frame;   \/* Frame Header Data            *\/$/;"	m	struct:__anon74
+frameBitCnt	../source/h264/H264RateControl.h	/^    i32 frameBitCnt;$/;"	m	struct:__anon64
+frameCnt	../source/h264/H264Instance.h	/^    u32 frameCnt;$/;"	m	struct:__anon56
+frameCnt	../source/h264/H264RateControl.h	/^    u32 frameCnt;$/;"	m	struct:__anon64
+frameCoded	../source/h264/H264RateControl.h	/^    true_e frameCoded;       \/* Pic coded information *\/$/;"	m	struct:__anon64
+frameCodingType	../source/common/encasiccontroller.h	/^    u32 frameCodingType;$/;"	m	struct:__anon50
+frameCropBottomOffset	../source/h264/H264SequenceParameterSet.h	/^    u32 frameCropBottomOffset;$/;"	m	struct:__anon68
+frameCropLeftOffset	../source/h264/H264SequenceParameterSet.h	/^    u32 frameCropLeftOffset;$/;"	m	struct:__anon68
+frameCropRightOffset	../source/h264/H264SequenceParameterSet.h	/^    u32 frameCropRightOffset;$/;"	m	struct:__anon68
+frameCropTopOffset	../source/h264/H264SequenceParameterSet.h	/^    u32 frameCropTopOffset;$/;"	m	struct:__anon68
+frameCropping	../source/h264/H264SequenceParameterSet.h	/^    true_e frameCropping;$/;"	m	struct:__anon68
+frameHeader	../inc/jpegencapi.h	/^        u32 frameHeader;     \/* Enable\/disable creation of frame headers     *\/$/;"	m	struct:__anon42
+frameMbsOnly	../source/h264/H264SequenceParameterSet.h	/^    true_e frameMbsOnly;$/;"	m	struct:__anon68
+frameNum	../source/common/encasiccontroller.h	/^    u32 frameNum;$/;"	m	struct:__anon50
+frameNum	../source/h264/H264Slice.h	/^    u32 frameNum;$/;"	m	struct:__anon70
+frameNumBits	../source/h264/H264Slice.h	/^    u32 frameNumBits;$/;"	m	struct:__anon70
+frameRateDenom	../inc/h264encapi.h	/^        u32 frameRateDenom;  \/* Maximum frame rate is frameRateNum\/frameRateDenom$/;"	m	struct:__anon16
+frameRateNum	../inc/h264encapi.h	/^        u32 frameRateNum;    \/* The stream time scale, [1..1048575] *\/$/;"	m	struct:__anon16
+frameType	../inc/jpegencapi.h	/^        JpegEncFrameType frameType; \/* Input frame YUV \/ RGB format     *\/$/;"	m	struct:__anon41
+fts	../source/h264/H264Sei.h	/^    u32 fts;    \/* Full time stamp *\/$/;"	m	struct:__anon65
+gBufferMax	../source/h264/H264RateControl.h	/^    i32 gBufferMin, gBufferMax;$/;"	m	struct:__anon64
+gBufferMin	../source/h264/H264RateControl.h	/^    i32 gBufferMin, gBufferMax;$/;"	m	struct:__anon64
+gDelaySum	../source/h264/H264RateControl.h	/^    i32 gDelaySum;$/;"	m	struct:__anon64
+gInitialDelay	../source/h264/H264RateControl.h	/^    i32 gInitialDelay;$/;"	m	struct:__anon64
+gInitialDoffs	../source/h264/H264RateControl.h	/^    i32 gInitialDoffs;$/;"	m	struct:__anon64
+gMaskMsb	../source/camstab/vidstabinternal.h	/^    u32 gMaskMsb;$/;"	m	struct:RegValues_
+gMaskMsb	../source/common/encasiccontroller.h	/^    u32 gMaskMsb;$/;"	m	struct:__anon50
+gapsInFrameNumValueAllowed	../source/h264/H264SequenceParameterSet.h	/^    true_e gapsInFrameNumValueAllowed;$/;"	m	struct:__anon68
+get_avg_bits	../source/h264/H264RateControl.c	/^static i32 get_avg_bits(linReg_s *p, i32 n)$/;"	f	file:
+gob	../source/common/encasiccontroller.h	/^        EWLLinearMem_t gob;$/;"	m	union:__anon52::__anon53
+gob	../source/common/encasiccontroller.h	/^        u32 gob;$/;"	m	union:__anon50::__anon51
+gobFrameId	../source/common/encasiccontroller.h	/^    u32 gobFrameId;$/;"	m	struct:__anon50
+gobHeaderMask	../source/common/encasiccontroller.h	/^    u32 gobHeaderMask;$/;"	m	struct:__anon50
+gop	../source/h264/H264RateControl.h	/^    linReg_s gop;          \/* Data for GOP *\/$/;"	m	struct:__anon64
+gopAvgBitCnt	../source/h264/H264RateControl.h	/^    i32 gopAvgBitCnt;       \/* Previous GOP average bit count *\/$/;"	m	struct:__anon64
+gopBitCnt	../source/h264/H264RateControl.h	/^    i32 gopBitCnt;          \/* Current GOP bit count so far *\/$/;"	m	struct:__anon64
+gopLen	../inc/h264encapi.h	/^        u32 gopLen;          \/* Length for Group of Pictures, indicates$/;"	m	struct:__anon19
+gopLen	../source/h264/H264RateControl.h	/^    i32 gopLen;$/;"	m	struct:__anon64
+gopQpDiv	../source/h264/H264RateControl.h	/^    i32 gopQpDiv;$/;"	m	struct:__anon64
+gopQpSum	../source/h264/H264RateControl.h	/^    i32 gopQpSum;           \/* Sum of current GOP inter frame QPs *\/$/;"	m	struct:__anon64
+gop_avg_qp	../source/h264/H264RateControl.c	/^i32 gop_avg_qp(h264RateControl_s *rc)$/;"	f
+h264ContextInit	../source/h264/H264CabacContext.h	/^static const i32 h264ContextInit[3][460][2] = {$/;"	v
+h264ContextInitIntra	../source/h264/H264CabacContext.h	/^static const int h264ContextInitIntra[460][2] = {$/;"	v
+h264DiffMvPenalty	../source/h264/H264CodeFrame.c	/^static const u32 h264DiffMvPenalty[52] =$/;"	v	file:
+h264DiffMvPenalty4p	../source/h264/H264CodeFrame.c	/^static const u32 h264DiffMvPenalty4p[52] =$/;"	v	file:
+h264Enabled	../inc/ewl.h	/^        u32 h264Enabled;     \/* HW supports H.264 *\/$/;"	m	struct:EWLHwConfig
+h264EncodeFrame_e	../source/h264/H264CodeFrame.h	/^} h264EncodeFrame_e;$/;"	t	typeref:enum:__anon55
+h264Instance_s	../source/h264/H264Instance.h	/^} h264Instance_s;$/;"	t	typeref:struct:__anon56
+h264Inter4x4Disabled	../source/common/encasiccontroller.h	/^    u32 h264Inter4x4Disabled;$/;"	m	struct:__anon50
+h264InterFavor	../source/h264/H264CodeFrame.c	/^static const u32 h264InterFavor[52] = {$/;"	v	file:
+h264InterFavorWebCam	../source/h264/H264CodeFrame.c	/^static const u32 h264InterFavorWebCam[52] = {$/;"	v	file:
+h264Intra16Favor	../source/h264/H264CodeFrame.c	/^static const u32 h264Intra16Favor[52] = {$/;"	v	file:
+h264PrevModeFavor	../source/common/encasiccontroller.c	/^static const u32 h264PrevModeFavor[52] = {$/;"	v	file:
+h264QpCtrl_s	../source/h264/H264RateControl.h	/^} h264QpCtrl_s;$/;"	t	typeref:struct:__anon62
+h264RateControl_s	../source/h264/H264RateControl.h	/^} h264RateControl_s;$/;"	t	typeref:struct:__anon64
+h264SkipSadPenalty	../source/h264/H264CodeFrame.c	/^static const u32 h264SkipSadPenalty[52] = {$/;"	v	file:
+h264StrmMode	../source/common/encasiccontroller.h	/^    u32 h264StrmMode;   \/* 0 - byte stream, 1 - NAL units *\/$/;"	m	struct:__anon50
+h264VirtualBuffer_s	../source/h264/H264RateControl.h	/^} h264VirtualBuffer_s;$/;"	t	typeref:struct:__anon63
+half	../source/camstab/vidstabcommon.h	/^    i32 half[5][5];$/;"	m	struct:SwStbData_
+header	../source/jpeg/EncJpeg.h	/^    true_e header;$/;"	m	struct:__anon74
+header	../source/jpeg/EncJpeg.h	/^    u32 header;$/;"	m	struct:JpegEncFrameHeader_t
+hec	../source/common/encasiccontroller.h	/^    u32 hec;$/;"	m	struct:__anon50
+height	../inc/h264encapi.h	/^        u32 height;          \/* Encoded picture height in pixels, multiple of 2 *\/$/;"	m	struct:__anon16
+height	../inc/jpegencapi.h	/^        u8 height;           \/* Height in pixels of thumbnail *\/$/;"	m	struct:__anon39
+height	../source/jpeg/EncJpeg.h	/^    i32 height;$/;"	m	struct:__anon74
+horOffsetSrc	../source/common/encpreprocess.h	/^    u32 horOffsetSrc;   \/* Encoded frame offset, reference is ... *\/$/;"	m	struct:__anon54
+hr	../source/h264/H264Sei.h	/^    u32 hr; \/* Hours *\/$/;"	m	struct:__anon65
+hrd	../inc/h264encapi.h	/^        u32 hrd;             \/* Hypothetical Reference Decoder model, [0,1]$/;"	m	struct:__anon19
+hrd	../source/h264/H264RateControl.h	/^    true_e hrd;              \/* HRD restrictions followed or not *\/$/;"	m	struct:__anon64
+hrd	../source/h264/H264Sei.h	/^    u32 hrd;    \/* HRD conformance *\/$/;"	m	struct:__anon66
+hrdCpbSize	../inc/h264encapi.h	/^        u32 hrdCpbSize;      \/* Size of Coded Picture Buffer in HRD (bits) *\/$/;"	m	struct:__anon19
+hrf	../source/h264/H264Sei.h	/^    u32 hrf;$/;"	m	struct:__anon65
+hwBuild	../inc/h264encapi.h	/^        u32 hwBuild;         \/* Hardware build ID *\/$/;"	m	struct:__anon26
+hwBuild	../inc/jpegencapi.h	/^        u32 hwBuild;         \/* Hardware build ID *\/$/;"	m	struct:__anon38
+hwBuild	../inc/vidstbapi.h	/^        u32 hwBuild;         \/* Hardware build ID *\/$/;"	m	struct:__anon45
+hwStabData	../source/camstab/vidstabinternal.h	/^    HWStabData hwStabData;$/;"	m	struct:RegValues_
+i16	../inc/basetype.h	/^typedef signed short i16;$/;"	t
+i16x	../inc/basetype.h	/^typedef signed int i16x;$/;"	t
+i16x	../inc/basetype.h	/^typedef signed short i16x;$/;"	t
+i32	../inc/basetype.h	/^typedef signed int i32;$/;"	t
+i8	../inc/basetype.h	/^typedef signed char i8;$/;"	t
+icrd	../source/h264/H264Sei.h	/^    u32 icrd;   \/* initial cpb removal delay *\/$/;"	m	struct:__anon66
+icrdLen	../source/h264/H264Sei.h	/^    u32 icrdLen;$/;"	m	struct:__anon66
+icrdo	../source/h264/H264Sei.h	/^    u32 icrdo;  \/* initial cpb removal delay offset *\/$/;"	m	struct:__anon66
+icrdoLen	../source/h264/H264Sei.h	/^    u32 icrdoLen;$/;"	m	struct:__anon66
+ident1	../source/jpeg/EncJpeg.h	/^    u32 ident1;$/;"	m	struct:JpegEncAppn_t
+ident2	../source/jpeg/EncJpeg.h	/^    u32 ident2;$/;"	m	struct:JpegEncAppn_t
+ident3	../source/jpeg/EncJpeg.h	/^    u32 ident3;$/;"	m	struct:JpegEncAppn_t
+idrPicId	../source/common/encasiccontroller.h	/^    u32 idrPicId;$/;"	m	struct:__anon50
+idrPicId	../source/h264/H264Slice.h	/^    u32 idrPicId;$/;"	m	struct:__anon70
+initialCpbRemovalDelayLength	../source/h264/H264SequenceParameterSet.h	/^    u32 initialCpbRemovalDelayLength;$/;"	m	struct:__anon67
+inputCbBase	../source/common/encasiccontroller.h	/^    u32 inputCbBase;$/;"	m	struct:__anon50
+inputChromaBaseOffset	../source/common/encasiccontroller.h	/^    u32 inputChromaBaseOffset;$/;"	m	struct:__anon50
+inputCrBase	../source/common/encasiccontroller.h	/^    u32 inputCrBase;$/;"	m	struct:__anon50
+inputFormat	../source/common/encpreprocess.h	/^    u32 inputFormat;$/;"	m	struct:__anon54
+inputHeight	../inc/jpegencapi.h	/^        u32 inputHeight;     \/* Number of lines in input image               *\/$/;"	m	struct:__anon41
+inputHeight	../inc/vidstbapi.h	/^        u32 inputHeight;$/;"	m	struct:VideoStbParam_
+inputHeight	../source/camstab/vidstabcommon.h	/^    i32 inputHeight;$/;"	m	struct:SwStbData_
+inputImageFormat	../source/camstab/vidstabinternal.h	/^    u32 inputImageFormat;$/;"	m	struct:RegValues_
+inputImageFormat	../source/common/encasiccontroller.h	/^    u32 inputImageFormat;$/;"	m	struct:__anon50
+inputImageRotation	../source/common/encasiccontroller.h	/^    u32 inputImageRotation;$/;"	m	struct:__anon50
+inputLumBase	../source/camstab/vidstabinternal.h	/^    u32 inputLumBase;$/;"	m	struct:RegValues_
+inputLumBase	../source/common/encasiccontroller.h	/^    u32 inputLumBase;$/;"	m	struct:__anon50
+inputLumaBaseOffset	../source/camstab/vidstabinternal.h	/^    u32 inputLumaBaseOffset;$/;"	m	struct:RegValues_
+inputLumaBaseOffset	../source/common/encasiccontroller.h	/^    u32 inputLumaBaseOffset;$/;"	m	struct:__anon50
+inputLumaBaseOffsetVert	../source/common/encasiccontroller.h	/^    u32 inputLumaBaseOffsetVert;$/;"	m	struct:__anon50
+inputType	../inc/h264encapi.h	/^        H264EncPictureType inputType;$/;"	m	struct:__anon23
+inputWidth	../inc/jpegencapi.h	/^        u32 inputWidth;      \/* Number of pixels\/line in input image         *\/$/;"	m	struct:__anon41
+inputWidth	../inc/vidstbapi.h	/^        u32 inputWidth;$/;"	m	struct:VideoStbParam_
+inputWidth	../source/camstab/vidstabcommon.h	/^    i32 inputWidth; \/* Input picture dimensions in pixels *\/$/;"	m	struct:SwStbData_
+inputYuvTiledEnabled	../inc/ewl.h	/^        u32 inputYuvTiledEnabled; \/* HW supports tiled YUV input format *\/$/;"	m	struct:EWLHwConfig
+inst	../source/h264/H264Instance.h	/^    const void *inst;$/;"	m	struct:__anon56
+inst	../source/jpeg/EncJpegInstance.h	/^    const void *inst;     \/* used as checksum *\/$/;"	m	struct:__anon76
+interFavor	../source/common/encasiccontroller.h	/^    u32 interFavor;$/;"	m	struct:__anon50
+interViewFlag	../source/h264/H264NalUnit.h	/^    u32 interViewFlag;$/;"	m	struct:__anon58
+internalImageChrBaseR	../source/common/encasiccontroller.h	/^    u32 internalImageChrBaseR;$/;"	m	struct:__anon50
+internalImageChrBaseW	../source/common/encasiccontroller.h	/^    u32 internalImageChrBaseW;$/;"	m	struct:__anon50
+internalImageChroma	../source/common/encasiccontroller.h	/^    EWLLinearMem_t internalImageChroma[3];$/;"	m	struct:__anon52
+internalImageLumBaseR	../source/common/encasiccontroller.h	/^    u32 internalImageLumBaseR;$/;"	m	struct:__anon50
+internalImageLumBaseW	../source/common/encasiccontroller.h	/^    u32 internalImageLumBaseW;$/;"	m	struct:__anon50
+internalImageLuma	../source/common/encasiccontroller.h	/^    EWLLinearMem_t internalImageLuma[3];$/;"	m	struct:__anon52
+intra	../source/h264/H264RateControl.h	/^    linReg_s intra;        \/* Data for intra frames *\/$/;"	m	struct:__anon64
+intra16Favor	../source/common/encasiccontroller.h	/^    u32 intra16Favor;$/;"	m	struct:__anon50
+intraArea	../inc/h264encapi.h	/^        H264EncPictureArea intraArea;   \/* Area for forcing intra macroblocks *\/$/;"	m	struct:__anon18
+intraAreaBottom	../source/common/encasiccontroller.h	/^    u32 intraAreaBottom;$/;"	m	struct:__anon50
+intraAreaLeft	../source/common/encasiccontroller.h	/^    u32 intraAreaLeft;$/;"	m	struct:__anon50
+intraAreaRight	../source/common/encasiccontroller.h	/^    u32 intraAreaRight;$/;"	m	struct:__anon50
+intraAreaTop	../source/common/encasiccontroller.h	/^    u32 intraAreaTop;$/;"	m	struct:__anon50
+intraDcVlcThr	../source/common/encasiccontroller.h	/^    u32 intraDcVlcThr;$/;"	m	struct:__anon50
+intraError	../source/h264/H264RateControl.h	/^    linReg_s intraError;   \/* Prediction error for intra frames *\/$/;"	m	struct:__anon64
+intraInterval	../source/h264/H264RateControl.h	/^    i32 intraInterval;      \/* Distance between two previous I-frames *\/$/;"	m	struct:__anon64
+intraIntervalCtr	../source/h264/H264RateControl.h	/^    i32 intraIntervalCtr;$/;"	m	struct:__anon64
+intraQpDelta	../inc/h264encapi.h	/^        i32 intraQpDelta;    \/* Intra QP delta. intraQP = QP + intraQpDelta$/;"	m	struct:__anon19
+intraQpDelta	../source/h264/H264RateControl.h	/^    i32 intraQpDelta;$/;"	m	struct:__anon64
+intraSliceMap1	../inc/h264encapi.h	/^        u32 intraSliceMap1;     \/* Bitmap for forcing slices 0..31 to intra,$/;"	m	struct:__anon18
+intraSliceMap1	../source/common/encasiccontroller.h	/^    u32 intraSliceMap1;$/;"	m	struct:__anon50
+intraSliceMap2	../inc/h264encapi.h	/^        u32 intraSliceMap2;     \/* Bitmap for forcing slices 32..63 to intra,$/;"	m	struct:__anon18
+intraSliceMap2	../source/common/encasiccontroller.h	/^    u32 intraSliceMap2;$/;"	m	struct:__anon50
+intraSliceMap3	../inc/h264encapi.h	/^        u32 intraSliceMap3;     \/* Bitmap for forcing slices 64..95 to intra,$/;"	m	struct:__anon18
+intraSliceMap3	../source/common/encasiccontroller.h	/^    u32 intraSliceMap3;$/;"	m	struct:__anon50
+irqDisable	../source/camstab/vidstabinternal.h	/^    u32 irqDisable;$/;"	m	struct:RegValues_
+irqDisable	../source/common/encasiccontroller.h	/^    u32 irqDisable;$/;"	m	struct:__anon50
+irqInterval	../source/common/encasiccontroller.h	/^    u32 irqInterval;$/;"	m	struct:__anon50
+jfifSize	../inc/jpegencapi.h	/^        u32 jfifSize;        \/* Encoded JFIF size (bytes)                    *\/$/;"	m	struct:__anon43
+jpeg	../source/jpeg/EncJpegInstance.h	/^    jpegData_s jpeg;$/;"	m	struct:__anon76
+jpegData_s	../source/jpeg/EncJpeg.h	/^} jpegData_s;$/;"	t	typeref:struct:__anon74
+jpegEnabled	../inc/ewl.h	/^        u32 jpegEnabled;     \/* HW supports JPEG *\/$/;"	m	struct:EWLHwConfig
+jpegEncodeFrame_e	../source/jpeg/EncJpegCodeFrame.h	/^} jpegEncodeFrame_e;$/;"	t	typeref:enum:__anon75
+jpegInstance_s	../source/jpeg/EncJpegInstance.h	/^} jpegInstance_s;$/;"	t	typeref:struct:__anon76
+jpegMode	../source/common/encasiccontroller.h	/^    u32 jpegMode;$/;"	m	struct:__anon50
+jpegRestartInterval	../source/common/encasiccontroller.h	/^    u32 jpegRestartInterval;$/;"	m	struct:__anon50
+jpegRestartMarker	../source/common/encasiccontroller.h	/^    u32 jpegRestartMarker;$/;"	m	struct:__anon50
+jpegSetNewFrame	../source/jpeg/EncJpegCodeFrame.c	/^void jpegSetNewFrame(jpegInstance_s * inst)$/;"	f
+jpegSliceEnable	../source/common/encasiccontroller.h	/^    u32 jpegSliceEnable;$/;"	m	struct:__anon50
+left	../inc/h264encapi.h	/^        u32 left;           \/* Left macroblock row inside area [0..widthMbs-1] *\/$/;"	m	struct:__anon17
+len	../source/h264/H264Mad.h	/^    i32  len;              \/* current lenght *\/$/;"	m	struct:__anon57
+len	../source/h264/H264RateControl.h	/^    i32  len;              \/* current lenght *\/$/;"	m	struct:__anon61
+level	../inc/h264encapi.h	/^        H264EncLevel level;$/;"	m	struct:__anon16
+levelIdc	../source/h264/H264SequenceParameterSet.h	/^    u32 levelIdc;$/;"	m	struct:__anon68
+levelIdx	../source/h264/H264SequenceParameterSet.h	/^    u32 levelIdx;$/;"	m	struct:__anon68
+linReg	../source/h264/H264RateControl.h	/^    linReg_s linReg;       \/* Data for R-Q model for inter frames *\/$/;"	m	struct:__anon64
+linReg_s	../source/h264/H264RateControl.h	/^} linReg_s;$/;"	t	typeref:struct:__anon61
+lin_nsxx	../source/h264/H264Mad.c	/^static i32 lin_nsxx(i32 *qp, i32 n)$/;"	f	file:
+lin_nsxx	../source/h264/H264RateControl.c	/^static i32 lin_nsxx(i32 *qp, i32 n)$/;"	f	file:
+lin_sx	../source/h264/H264Mad.c	/^static i32 lin_sx(i32 *x, i32 n)$/;"	f	file:
+lin_sx	../source/h264/H264RateControl.c	/^static i32 lin_sx(i32 *qp, i32 n)$/;"	f	file:
+lin_sxy	../source/h264/H264Mad.c	/^static i32 lin_sxy(i32 *qp, i32 *r, i32 n)$/;"	f	file:
+lin_sxy	../source/h264/H264RateControl.c	/^static i32 lin_sxy(i32 *qp, i32 *r, i32 n)$/;"	f	file:
+lin_sy	../source/h264/H264RateControl.c	/^static i32 lin_sy(i32 *qp, i32 *r, i32 n)$/;"	f	file:
+log2MaxFrameNumMinus4	../source/h264/H264SequenceParameterSet.h	/^    i32 log2MaxFrameNumMinus4;$/;"	m	struct:__anon68
+lsb	../inc/encswhwregisters.h	/^    i32 lsb;                \/* LSB for this field [31..0] *\/$/;"	m	struct:__anon7
+lumHeight	../source/common/encpreprocess.h	/^    u32 lumHeight;  \/* Encoded image height *\/$/;"	m	struct:__anon54
+lumHeightSrc	../source/common/encpreprocess.h	/^    u32 lumHeightSrc;   \/* Source input image height *\/$/;"	m	struct:__anon54
+lumWidth	../source/common/encpreprocess.h	/^    u32 lumWidth;   \/* Encoded image width *\/$/;"	m	struct:__anon54
+lumWidthSrc	../source/common/encpreprocess.h	/^    u32 lumWidthSrc;    \/* Source input image width *\/$/;"	m	struct:__anon54
+mad	../source/h264/H264Instance.h	/^    madTable_s mad;$/;"	m	struct:__anon56
+madCount	../source/common/encasiccontroller.h	/^    u32 madCount;$/;"	m	struct:__anon50
+madQpDelta	../source/common/encasiccontroller.h	/^    i32 madQpDelta;$/;"	m	struct:__anon50
+madTable_s	../source/h264/H264Mad.h	/^} madTable_s;$/;"	t	typeref:struct:__anon57
+madThreshold	../source/common/encasiccontroller.h	/^    u32 madThreshold;$/;"	m	struct:__anon50
+major	../inc/h264encapi.h	/^        u32 major;           \/* Encoder API major version *\/$/;"	m	struct:__anon25
+major	../inc/jpegencapi.h	/^        u32 major;           \/* Encoder API major version                    *\/$/;"	m	struct:__anon37
+major	../inc/vidstbapi.h	/^        u32 major;           \/* API major version *\/$/;"	m	struct:__anon44
+markerType	../inc/jpegencapi.h	/^        JpegEncTableMarkerType markerType;  \/* Table marker type            *\/$/;"	m	struct:__anon41
+markerType	../source/jpeg/EncJpeg.h	/^    i32 markerType;$/;"	m	struct:__anon74
+mask	../inc/encswhwregisters.h	/^    u32 mask;               \/* Bitmask for this field *\/$/;"	m	struct:__anon7
+mask_11b	../source/camstab/vidstabinternal.c	36;"	d	file:
+mask_11b	../source/common/encasiccontroller.c	48;"	d	file:
+mask_11b	../source/common/encasiccontroller_v2.c	42;"	d	file:
+mask_14b	../source/camstab/vidstabinternal.c	37;"	d	file:
+mask_14b	../source/common/encasiccontroller.c	49;"	d	file:
+mask_14b	../source/common/encasiccontroller_v2.c	43;"	d	file:
+mask_16b	../source/camstab/vidstabinternal.c	38;"	d	file:
+mask_16b	../source/common/encasiccontroller.c	50;"	d	file:
+mask_16b	../source/common/encasiccontroller_v2.c	44;"	d	file:
+mask_2b	../source/camstab/vidstabinternal.c	31;"	d	file:
+mask_2b	../source/common/encasiccontroller.c	43;"	d	file:
+mask_2b	../source/common/encasiccontroller_v2.c	37;"	d	file:
+mask_3b	../source/camstab/vidstabinternal.c	32;"	d	file:
+mask_3b	../source/common/encasiccontroller.c	44;"	d	file:
+mask_3b	../source/common/encasiccontroller_v2.c	38;"	d	file:
+mask_4b	../source/camstab/vidstabinternal.c	33;"	d	file:
+mask_4b	../source/common/encasiccontroller.c	45;"	d	file:
+mask_4b	../source/common/encasiccontroller_v2.c	39;"	d	file:
+mask_5b	../source/camstab/vidstabinternal.c	34;"	d	file:
+mask_5b	../source/common/encasiccontroller.c	46;"	d	file:
+mask_5b	../source/common/encasiccontroller_v2.c	40;"	d	file:
+mask_6b	../source/camstab/vidstabinternal.c	35;"	d	file:
+mask_6b	../source/common/encasiccontroller.c	47;"	d	file:
+mask_6b	../source/common/encasiccontroller_v2.c	41;"	d	file:
+maxEncodedWidth	../inc/ewl.h	/^        u32 maxEncodedWidth; \/* Maximum supported width for video encoding (not JPEG) *\/$/;"	m	struct:EWLHwConfig
+mbNum	../source/jpeg/EncJpeg.h	/^    i32 mbNum;$/;"	m	struct:__anon74
+mbPerCol	../source/h264/H264Instance.h	/^    u32 mbPerCol;$/;"	m	struct:__anon56
+mbPerFrame	../source/h264/H264Instance.h	/^    u32 mbPerFrame;$/;"	m	struct:__anon56
+mbPerFrame	../source/h264/H264Mad.h	/^    i32  mbPerFrame;       \/* number of macroblocks per frame *\/$/;"	m	struct:__anon57
+mbPerFrame	../source/jpeg/EncJpeg.h	/^    i32 mbPerFrame;$/;"	m	struct:__anon74
+mbPerPic	../source/h264/H264RateControl.h	/^    i32 mbPerPic;            \/* Number of macroblock per picture *\/$/;"	m	struct:__anon64
+mbPerRow	../source/h264/H264Instance.h	/^    u32 mbPerRow;$/;"	m	struct:__anon56
+mbQpAdjustment	../inc/h264encapi.h	/^        i32 mbQpAdjustment;  \/* Encoder uses MAD thresholding to recognize$/;"	m	struct:__anon19
+mbQpAdjustment	../source/h264/H264RateControl.h	/^    i32 mbQpAdjustment;     \/* QP delta for MAD macroblock QP adjustment *\/$/;"	m	struct:__anon64
+mbRc	../inc/h264encapi.h	/^        u32 mbRc;            \/* Adjust QP inside picture, [0,1] *\/$/;"	m	struct:__anon19
+mbRc	../source/h264/H264RateControl.h	/^    true_e mbRc;             \/* Mb header qp can vary, check point rc *\/$/;"	m	struct:__anon64
+mbRows	../source/h264/H264RateControl.h	/^    i32 mbRows;              \/* MB rows in picture *\/$/;"	m	struct:__anon64
+mbsInCol	../source/camstab/vidstabinternal.h	/^    u32 mbsInCol;$/;"	m	struct:RegValues_
+mbsInCol	../source/common/encasiccontroller.h	/^    u32 mbsInCol;$/;"	m	struct:__anon50
+mbsInRow	../source/camstab/vidstabinternal.h	/^    u32 mbsInRow;$/;"	m	struct:RegValues_
+mbsInRow	../source/common/encasiccontroller.h	/^    u32 mbsInRow;$/;"	m	struct:__anon50
+min	../source/h264/H264Sei.h	/^    u32 min;    \/* Minutes *\/$/;"	m	struct:__anon65
+minf	../source/h264/H264Sei.h	/^    u32 minf;$/;"	m	struct:__anon65
+minor	../inc/h264encapi.h	/^        u32 minor;           \/* Encoder API minor version *\/$/;"	m	struct:__anon25
+minor	../inc/jpegencapi.h	/^        u32 minor;           \/* Encoder API minor version                    *\/$/;"	m	struct:__anon37
+minor	../inc/vidstbapi.h	/^        u32 minor;           \/* API minor version *\/$/;"	m	struct:__anon44
+moduloTimeBase	../source/common/encasiccontroller.h	/^    u32 moduloTimeBase;$/;"	m	struct:__anon50
+motion	../source/camstab/vidstabcommon.h	/^    const u32 *motion;$/;"	m	struct:SwStbData_
+motionVectors	../inc/h264encapi.h	/^        i8 *motionVectors;   \/* One pixel motion vector x and y and corresponding$/;"	m	struct:__anon21
+mpeg4DiffMvPenalty	../source/common/encasiccontroller.c	/^static const u32 mpeg4DiffMvPenalty[32] = { 0,$/;"	v	file:
+mpeg4Enabled	../inc/ewl.h	/^        u32 mpeg4Enabled;    \/* HW supports MPEG-4 *\/$/;"	m	struct:EWLHwConfig
+mpeg4InterFavor	../source/common/encasiccontroller.c	/^static const i32 mpeg4InterFavor[32] = { 0,$/;"	v	file:
+mvOutput	../source/common/encasiccontroller.h	/^    EWLLinearMem_t mvOutput;$/;"	m	struct:__anon52
+mvOutputBase	../source/common/encasiccontroller.h	/^    u32 mvOutputBase;$/;"	m	struct:__anon50
+mvc	../source/h264/H264Instance.h	/^    mvc_s mvc;$/;"	m	struct:__anon56
+mvcAnchorPicFlag	../source/common/encasiccontroller.h	/^    u32 mvcAnchorPicFlag;$/;"	m	struct:__anon50
+mvcInterViewFlag	../source/common/encasiccontroller.h	/^    u32 mvcInterViewFlag;$/;"	m	struct:__anon50
+mvcPriorityId	../source/common/encasiccontroller.h	/^    u32 mvcPriorityId;$/;"	m	struct:__anon50
+mvcTemporalId	../source/common/encasiccontroller.h	/^    u32 mvcTemporalId;$/;"	m	struct:__anon50
+mvcViewId	../source/common/encasiccontroller.h	/^    u32 mvcViewId;$/;"	m	struct:__anon50
+mvc_s	../source/h264/H264NalUnit.h	/^} mvc_s;$/;"	t	typeref:struct:__anon58
+nal	../source/common/encasiccontroller.h	/^        EWLLinearMem_t nal;$/;"	m	union:__anon52::__anon53
+nal	../source/common/encasiccontroller.h	/^        u32 nal;$/;"	m	union:__anon50::__anon51
+nalHrdParametersPresentFlag	../source/h264/H264SequenceParameterSet.h	/^    u32 nalHrdParametersPresentFlag;$/;"	m	struct:__anon67
+nalRefIdc	../source/h264/H264Slice.h	/^    u32 nalRefIdc;$/;"	m	struct:__anon70
+nalUnitSize	../source/h264/H264Sei.h	/^    u32 nalUnitSize;$/;"	m	struct:__anon66
+nalUnitType	../source/h264/H264Slice.h	/^    nalUnitType_e nalUnitType;$/;"	m	struct:__anon70
+nalUnitType_e	../inc/enccommon.h	/^} nalUnitType_e;$/;"	t	typeref:enum:__anon3
+naluOffset	../source/h264/H264Instance.h	/^    i32 naluOffset;         \/* Start offset for NAL unit size table *\/$/;"	m	struct:__anon56
+name	../inc/encswhwregisters.h	/^    i32 name;               \/* Register name and index  *\/$/;"	m	struct:__anon7
+new_pic_quant	../source/h264/H264RateControl.c	/^static i32 new_pic_quant(linReg_s *p, i32 bits, true_e useQpDeltaLimit)$/;"	f	file:
+nframes	../source/h264/H264Sei.h	/^    u32 nframes;$/;"	m	struct:__anon66
+nonZeroCnt	../source/h264/H264RateControl.h	/^    i32 nonZeroCnt;$/;"	m	struct:__anon64
+nonZeroTarget	../source/h264/H264RateControl.h	/^    i32 nonZeroTarget;$/;"	m	struct:__anon63
+nuit	../source/h264/H264Sei.h	/^    u32 nuit;   \/* number of units in tick *\/$/;"	m	struct:__anon65
+numNalus	../inc/h264encapi.h	/^        u32 numNalus;        \/* Amount of NAL units *\/$/;"	m	struct:__anon21
+numNalus	../source/h264/H264Instance.h	/^    i32 numNalus;           \/* Number of NAL units created *\/$/;"	m	struct:__anon56
+numRefBuffsChr	../source/h264/H264Instance.h	/^    u32 numRefBuffsChr;$/;"	m	struct:__anon56
+numRefBuffsLum	../source/h264/H264Instance.h	/^    u32 numRefBuffsLum;$/;"	m	struct:__anon56
+numRefFrames	../source/h264/H264SequenceParameterSet.h	/^    u32 numRefFrames;$/;"	m	struct:__anon68
+numRefIdxL0ActiveMinus1	../source/h264/H264PictureParameterSet.h	/^    i32 numRefIdxL0ActiveMinus1;$/;"	m	struct:__anon59
+numRefIdxL1ActiveMinus1	../source/h264/H264PictureParameterSet.h	/^    i32 numRefIdxL1ActiveMinus1;$/;"	m	struct:__anon59
+numSliceGroupsMinus1	../source/h264/H264PictureParameterSet.h	/^    i32 numSliceGroupsMinus1;$/;"	m	struct:__anon59
+numUnitsInTick	../source/h264/H264SequenceParameterSet.h	/^    u32 numUnitsInTick;$/;"	m	struct:__anon67
+numViews	../source/h264/H264Instance.h	/^    u32 numViews;$/;"	m	struct:__anon56
+number	../inc/enccommon.h	/^    i32 number; \/* Number of bits *\/$/;"	m	struct:__anon4
+origHeight	../inc/h264encapi.h	/^        u32 origHeight;$/;"	m	struct:__anon23
+origWidth	../inc/h264encapi.h	/^        u32 origWidth;$/;"	m	struct:__anon23
+outBufSize	../inc/h264encapi.h	/^        u32 outBufSize;      \/* Size of output stream buffer in bytes *\/$/;"	m	struct:__anon20
+outBufSize	../inc/jpegencapi.h	/^        u32 outBufSize;      \/* Size of output buffer (bytes)                *\/$/;"	m	struct:__anon42
+outRateDenom	../source/h264/H264RateControl.h	/^    i32 outRateDenom;$/;"	m	struct:__anon64
+outRateNum	../source/h264/H264RateControl.h	/^    i32 outRateNum;$/;"	m	struct:__anon64
+outputStrmBase	../source/common/encasiccontroller.h	/^    u32 outputStrmBase;$/;"	m	struct:__anon50
+outputStrmSize	../source/common/encasiccontroller.h	/^    u32 outputStrmSize;$/;"	m	struct:__anon50
+overflow	../inc/enccommon.h	/^    i32 overflow;    \/* This will signal a buffer overflow *\/$/;"	m	struct:__anon5
+pAppData	../inc/h264encapi.h	/^        void *pAppData;     \/* Pointer to application data. *\/$/;"	m	struct:__anon24
+pAppData	../source/h264/H264Instance.h	/^    void *pAppData;         \/* User given application specific data *\/$/;"	m	struct:__anon56
+pCb	../inc/jpegencapi.h	/^        const u8 *pCb;       \/* Pointer to chrominance input (Cb)            *\/$/;"	m	struct:__anon42
+pCom	../inc/jpegencapi.h	/^        const u8 *pCom;      \/* Comment header pointer                       *\/$/;"	m	struct:__anon41
+pComment	../source/jpeg/EncJpeg.h	/^    const u8 *pComment;$/;"	m	struct:JpegEncCommentHeader_t
+pCr	../inc/jpegencapi.h	/^        const u8 *pCr;       \/* Pointer to chrominance input (Cr)            *\/$/;"	m	struct:__anon42
+pLum	../inc/jpegencapi.h	/^        const u8 *pLum;      \/* Pointer to luminance input   (Y)             *\/$/;"	m	struct:__anon42
+pNaluSizeBuf	../inc/h264encapi.h	/^        u32 *pNaluSizeBuf;   \/* Output buffer for NAL unit sizes$/;"	m	struct:__anon21
+pOutBuf	../inc/h264encapi.h	/^        u32 *pOutBuf;        \/* Pointer to output stream buffer *\/$/;"	m	struct:__anon20
+pOutBuf	../inc/h264encapi.h	/^        u32 *pOutBuf;       \/* Pointer to beginning of output stream buffer. *\/$/;"	m	struct:__anon24
+pOutBuf	../inc/jpegencapi.h	/^        u8 *pOutBuf;         \/* Pointer to output buffer                     *\/$/;"	m	struct:__anon42
+pOutBuf	../source/h264/H264Instance.h	/^    u32 *pOutBuf;           \/* User given stream output buffer *\/$/;"	m	struct:__anon56
+pQchromi	../source/jpeg/EncJpeg.h	/^    const u8 *pQchromi;$/;"	m	struct:JpegEncQuantTables_t
+pQlumi	../source/jpeg/EncJpeg.h	/^    const u8 *pQlumi;$/;"	m	struct:JpegEncQuantTables_t
+pUserData	../source/h264/H264Sei.h	/^    const u8 * pUserData;$/;"	m	struct:__anon66
+picHeightInMapUnitsMinus1	../source/h264/H264SequenceParameterSet.h	/^    i32 picHeightInMapUnitsMinus1;$/;"	m	struct:__anon68
+picInitQp	../source/common/encasiccontroller.h	/^    u32 picInitQp;$/;"	m	struct:__anon50
+picInitQpMinus26	../source/h264/H264PictureParameterSet.h	/^    i32 picInitQpMinus26;$/;"	m	struct:__anon59
+picInitQsMinus26	../source/h264/H264PictureParameterSet.h	/^    i32 picInitQsMinus26;$/;"	m	struct:__anon59
+picOrderCntType	../source/h264/H264SequenceParameterSet.h	/^    u32 picOrderCntType;$/;"	m	struct:__anon68
+picOrderPresent	../source/h264/H264PictureParameterSet.h	/^    true_e picOrderPresent;$/;"	m	struct:__anon59
+picParameterSet	../source/h264/H264Instance.h	/^    pps_s picParameterSet;$/;"	m	struct:__anon56
+picParameterSetId	../source/h264/H264PictureParameterSet.h	/^    i32 picParameterSetId;$/;"	m	struct:__anon59
+picParameterSetId	../source/h264/H264Slice.h	/^    u32 picParameterSetId;$/;"	m	struct:__anon70
+picRc	../source/h264/H264RateControl.h	/^    true_e picRc;$/;"	m	struct:__anon64
+picSkip	../source/h264/H264RateControl.h	/^    true_e picSkip;          \/* Frame Skip enable *\/$/;"	m	struct:__anon64
+picTimeInc	../source/h264/H264RateControl.h	/^    i32 picTimeInc;          \/* timeInc since last coded picture *\/$/;"	m	struct:__anon63
+picWidthInMbsMinus1	../source/h264/H264SequenceParameterSet.h	/^    i32 picWidthInMbsMinus1;$/;"	m	struct:__anon68
+pictStructPresentFlag	../source/h264/H264SequenceParameterSet.h	/^    u32 pictStructPresentFlag;$/;"	m	struct:__anon67
+pictureRc	../inc/h264encapi.h	/^        u32 pictureRc;       \/* Adjust QP between pictures, [0,1] *\/$/;"	m	struct:__anon19
+pictureSkip	../inc/h264encapi.h	/^        u32 pictureSkip;     \/* Allow rate control to skip pictures, [0,1] *\/$/;"	m	struct:__anon19
+pixelsOnRow	../source/camstab/vidstabinternal.h	/^    u32 pixelsOnRow;$/;"	m	struct:RegValues_
+pixelsOnRow	../source/common/encasiccontroller.h	/^    u32 pixelsOnRow;$/;"	m	struct:__anon50
+pos	../source/h264/H264Mad.h	/^    i32  pos;              \/* current position *\/$/;"	m	struct:__anon57
+pos	../source/h264/H264RateControl.h	/^    i32  pos;              \/* current position *\/$/;"	m	struct:__anon61
+ppsId	../source/common/encasiccontroller.h	/^    u32 ppsId;$/;"	m	struct:__anon50
+pps_s	../source/h264/H264PictureParameterSet.h	/^} pps_s;$/;"	t	typeref:struct:__anon59
+preProcess	../source/h264/H264Instance.h	/^    preProcess_s preProcess;$/;"	m	struct:__anon56
+preProcess	../source/jpeg/EncJpegInstance.h	/^    preProcess_s preProcess;$/;"	m	struct:__anon76
+preProcess_s	../source/common/encpreprocess.h	/^} preProcess_s;$/;"	t	typeref:struct:__anon54
+prevFrameNum	../source/h264/H264Slice.h	/^    u32 prevFrameNum;$/;"	m	struct:__anon70
+prevMean	../source/camstab/vidstabcommon.h	/^    u32 prevMean;$/;"	m	struct:SwStbData_
+prevMin	../source/camstab/vidstabcommon.h	/^    u32 prevMin;$/;"	m	struct:SwStbData_
+priorityId	../source/h264/H264NalUnit.h	/^    u32 priorityId;$/;"	m	struct:__anon58
+profileIdc	../source/h264/H264SequenceParameterSet.h	/^    u32 profileIdc;$/;"	m	struct:__anon68
+ps	../source/h264/H264Sei.h	/^    u32 ps;$/;"	m	struct:__anon66
+psp	../source/h264/H264Sei.h	/^    u32 psp;$/;"	m	struct:__anon66
+qLevel	../inc/jpegencapi.h	/^        u32 qLevel;          \/* Quantization level (0 - 9)                   *\/$/;"	m	struct:__anon41
+qTable	../source/jpeg/EncJpeg.h	/^    JpegEncQuantTables qTable;$/;"	m	struct:__anon74
+qTableChroma	../inc/jpegencapi.h	/^        const u8 *qTableChroma; \/* Quantization table for chrominance [64],$/;"	m	struct:__anon41
+qTableChroma	../source/jpeg/EncJpeg.h	/^    u8 qTableChroma[64];$/;"	m	struct:__anon74
+qTableLuma	../inc/jpegencapi.h	/^        const u8 *qTableLuma;   \/* Quantization table for luminance [64],$/;"	m	struct:__anon41
+qTableLuma	../source/jpeg/EncJpeg.h	/^    u8 qTableLuma[64];$/;"	m	struct:__anon74
+q_step	../source/h264/H264RateControl.c	/^static const i32 q_step[53] = { 3, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 9, 10, 11,$/;"	v	file:
+qp	../source/common/encasiccontroller.h	/^    u32 qp;$/;"	m	struct:__anon50
+qpChange	../source/h264/H264RateControl.h	/^    i32 qpChange[CTRL_LEVELS];  \/* Check point qp difference *\/$/;"	m	struct:__anon62
+qpCtrl	../source/h264/H264RateControl.h	/^    h264QpCtrl_s qpCtrl;$/;"	m	struct:__anon64
+qpHdr	../inc/h264encapi.h	/^        i32 qpHdr;           \/* QP for next encoded picture, [-1..51]$/;"	m	struct:__anon19
+qpHdr	../source/h264/H264RateControl.h	/^    i32 qpHdr;               \/* Pic header qp of current voded picture *\/$/;"	m	struct:__anon64
+qpHdrPrev	../source/h264/H264RateControl.h	/^    i32 qpHdrPrev;           \/* Pic header qp of previous coded picture *\/$/;"	m	struct:__anon64
+qpLastCoded	../source/h264/H264RateControl.h	/^    i32 qpLastCoded;         \/* Quantization parameter of last coded mb *\/$/;"	m	struct:__anon64
+qpMax	../inc/h264encapi.h	/^        u32 qpMax;           \/* Maximum QP for any picture, [0..51] *\/$/;"	m	struct:__anon19
+qpMax	../source/common/encasiccontroller.h	/^    u32 qpMax;$/;"	m	struct:__anon50
+qpMax	../source/h264/H264RateControl.h	/^    i32 qpMax;               \/* Pic header maximum qp, user set *\/$/;"	m	struct:__anon64
+qpMin	../inc/h264encapi.h	/^        u32 qpMin;           \/* Minimum QP for any picture, [0..51] *\/$/;"	m	struct:__anon19
+qpMin	../source/common/encasiccontroller.h	/^    u32 qpMin;$/;"	m	struct:__anon50
+qpMin	../source/h264/H264RateControl.h	/^    i32 qpMin;               \/* Pic header minimum qp, user set *\/$/;"	m	struct:__anon64
+qpMotionX	../source/camstab/vidstabcommon.h	/^    i32 qpMotionX;$/;"	m	struct:SwStbData_
+qpMotionY	../source/camstab/vidstabcommon.h	/^    i32 qpMotionY;$/;"	m	struct:SwStbData_
+qpReorderTable	../source/common/encasiccontroller.c	/^static const u32 qpReorderTable[64] =$/;"	v	file:
+qpSum	../source/common/encasiccontroller.h	/^    u32 qpSum;$/;"	m	struct:__anon50
+qpSum	../source/h264/H264RateControl.h	/^    i32 qpSum;               \/* Qp sum counter *\/$/;"	m	struct:__anon64
+qpTarget	../source/h264/H264RateControl.h	/^    i32 qpTarget;            \/* Target quantrization parameter *\/$/;"	m	struct:__anon64
+qp_prev	../source/h264/H264RateControl.h	/^    i32  qp_prev;          \/* previous QP *\/$/;"	m	struct:__anon61
+qs	../source/h264/H264RateControl.h	/^    i32  qs[RC_TABLE_LENGTH+1];  \/* quantization step size *\/$/;"	m	struct:__anon61
+quantTable	../source/common/encasiccontroller.h	/^    u8 quantTable[8 * 8 * 2];$/;"	m	struct:__anon50
+quarter	../source/camstab/vidstabcommon.h	/^    i32 quarter[5][5];$/;"	m	struct:SwStbData_
+quarterPixelMv	../inc/h264encapi.h	/^        u32 quarterPixelMv;     \/* 1\/4 pixel motion estimation$/;"	m	struct:__anon18
+quarterPixelMv	../source/h264/H264Slice.h	/^    u32 quarterPixelMv;$/;"	m	struct:__anon70
+rError	../source/h264/H264RateControl.h	/^    linReg_s rError;       \/* Rate prediction error for inter frames(bits) *\/$/;"	m	struct:__anon64
+rGmvX	../source/camstab/vidstabcommon.h	/^    i32 rGmvX;$/;"	m	struct:HWStabData_
+rGmvY	../source/camstab/vidstabcommon.h	/^    i32 rGmvY;$/;"	m	struct:HWStabData_
+rMaskMsb	../source/camstab/vidstabinternal.h	/^    u32 rMaskMsb;$/;"	m	struct:RegValues_
+rMaskMsb	../source/common/encasiccontroller.h	/^    u32 rMaskMsb;$/;"	m	struct:__anon50
+rMatrixVal	../source/camstab/vidstabcommon.h	/^    u32 rMatrixVal[9];$/;"	m	struct:HWStabData_
+rMotionMin	../source/camstab/vidstabcommon.h	/^    u32 rMotionMin;$/;"	m	struct:HWStabData_
+rMotionSum	../source/camstab/vidstabcommon.h	/^    u32 rMotionSum;$/;"	m	struct:HWStabData_
+rateControl	../source/h264/H264Instance.h	/^    h264RateControl_s rateControl;$/;"	m	struct:__anon56
+realBitCnt	../source/h264/H264RateControl.h	/^    i32 realBitCnt;          \/* real bit count *\/$/;"	m	struct:__anon63
+recWriteDisable	../source/common/encasiccontroller.h	/^    u32 recWriteDisable;$/;"	m	struct:__anon50
+reconImageId	../source/common/encasiccontroller.h	/^    u32 reconImageId;$/;"	m	struct:__anon50
+redundantPicCntPresent	../source/h264/H264PictureParameterSet.h	/^    true_e redundantPicCntPresent;$/;"	m	struct:__anon59
+regField_s	../inc/encswhwregisters.h	/^} regField_s;$/;"	t	typeref:struct:__anon7
+regMirror	../source/camstab/vidstabinternal.h	/^    u32 regMirror[64];$/;"	m	struct:VideoStb_
+regMirror	../source/common/encasiccontroller.h	/^    u32 regMirror[64];$/;"	m	struct:__anon50
+regName	../inc/encswhwregisters.h	/^} regName;$/;"	t	typeref:enum:__anon6
+regValues_s	../source/common/encasiccontroller.h	/^} regValues_s;$/;"	t	typeref:struct:__anon50
+regs	../source/common/encasiccontroller.h	/^    regValues_s regs;$/;"	m	struct:__anon52
+regval	../source/camstab/vidstabinternal.h	/^    RegValues regval;$/;"	m	struct:VideoStb_
+restart	../source/jpeg/EncJpeg.h	/^    JpegEncRestart restart; \/* Restart Interval             *\/$/;"	m	struct:__anon74
+restartInterval	../inc/jpegencapi.h	/^        u32 restartInterval; \/* Restart interval (MCU lines)                 *\/$/;"	m	struct:__anon41
+rgbEnabled	../inc/ewl.h	/^        u32 rgbEnabled;      \/* HW supports RGB input *\/$/;"	m	struct:EWLHwConfig
+right	../inc/h264encapi.h	/^        u32 right;          \/* Right macroblock row inside area [left..widthMbs-1] *\/$/;"	m	struct:__anon17
+rlcBase	../source/common/encasiccontroller.h	/^    u32 rlcBase;$/;"	m	struct:__anon50
+rlcCount	../source/common/encasiccontroller.h	/^    u32 rlcCount;$/;"	m	struct:__anon50
+rlcLimitSpace	../source/common/encasiccontroller.h	/^    u32 rlcLimitSpace;$/;"	m	struct:__anon50
+roi1Area	../inc/h264encapi.h	/^        H264EncPictureArea roi1Area;    \/* Area for 1st Region-Of-Interest *\/$/;"	m	struct:__anon18
+roi1Bottom	../source/common/encasiccontroller.h	/^    u32 roi1Bottom;$/;"	m	struct:__anon50
+roi1DeltaQp	../inc/h264encapi.h	/^        i32 roi1DeltaQp;                \/* [-15..0] QP delta value for 1st ROI *\/$/;"	m	struct:__anon18
+roi1DeltaQp	../source/common/encasiccontroller.h	/^    i32 roi1DeltaQp;$/;"	m	struct:__anon50
+roi1Left	../source/common/encasiccontroller.h	/^    u32 roi1Left;$/;"	m	struct:__anon50
+roi1Right	../source/common/encasiccontroller.h	/^    u32 roi1Right;$/;"	m	struct:__anon50
+roi1Top	../source/common/encasiccontroller.h	/^    u32 roi1Top;$/;"	m	struct:__anon50
+roi2Area	../inc/h264encapi.h	/^        H264EncPictureArea roi2Area;    \/* Area for 2nd Region-Of-Interest *\/$/;"	m	struct:__anon18
+roi2Bottom	../source/common/encasiccontroller.h	/^    u32 roi2Bottom;$/;"	m	struct:__anon50
+roi2DeltaQp	../inc/h264encapi.h	/^        i32 roi2DeltaQp;                \/* [-15..0] QP delta value for 2nd ROI *\/$/;"	m	struct:__anon18
+roi2DeltaQp	../source/common/encasiccontroller.h	/^    i32 roi2DeltaQp;$/;"	m	struct:__anon50
+roi2Left	../source/common/encasiccontroller.h	/^    u32 roi2Left;$/;"	m	struct:__anon50
+roi2Right	../source/common/encasiccontroller.h	/^    u32 roi2Right;$/;"	m	struct:__anon50
+roi2Top	../source/common/encasiccontroller.h	/^    u32 roi2Top;$/;"	m	struct:__anon50
+rotation	../inc/h264encapi.h	/^        H264EncPictureRotation rotation;$/;"	m	struct:__anon23
+rotation	../inc/jpegencapi.h	/^        JpegEncPictureRotation rotation;    \/* rotation off\/-90\/+90             *\/$/;"	m	struct:__anon41
+rotation	../source/common/encpreprocess.h	/^    u32 rotation;$/;"	m	struct:__anon54
+roundingCtrl	../source/common/encasiccontroller.h	/^    u32 roundingCtrl;$/;"	m	struct:__anon50
+row	../source/jpeg/EncJpeg.h	/^    i32 row;$/;"	m	struct:__anon74
+rstCount	../source/jpeg/EncJpeg.h	/^    i32 rstCount;$/;"	m	struct:__anon74
+rwNextLumaBase	../source/camstab/vidstabinternal.h	/^    u32 rwNextLumaBase;$/;"	m	struct:RegValues_
+rwStabMode	../source/camstab/vidstabinternal.h	/^    u32 rwStabMode;$/;"	m	struct:RegValues_
+sampleAspectRatioHeight	../inc/h264encapi.h	/^        u32 sampleAspectRatioHeight;    \/* Vertical size of the sample aspect ratio$/;"	m	struct:__anon18
+sampleAspectRatioWidth	../inc/h264encapi.h	/^        u32 sampleAspectRatioWidth; \/* Horizontal size of the sample aspect$/;"	m	struct:__anon18
+sarHeight	../source/h264/H264SequenceParameterSet.h	/^    u32 sarHeight;$/;"	m	struct:__anon67
+sarWidth	../source/h264/H264SequenceParameterSet.h	/^    u32 sarWidth;$/;"	m	struct:__anon67
+sceneChange	../source/camstab/vidstabcommon.h	/^    u32 sceneChange;$/;"	m	struct:SwStbData_
+searchAreaSmall	../inc/ewl.h	/^        u32 searchAreaSmall; \/* HW search area reduced *\/$/;"	m	struct:EWLHwConfig
+sec	../source/h264/H264Sei.h	/^    u32 sec;    \/* Seconds *\/$/;"	m	struct:__anon65
+secf	../source/h264/H264Sei.h	/^    u32 secf;$/;"	m	struct:__anon65
+sei	../source/h264/H264RateControl.h	/^    sei_s sei;$/;"	m	struct:__anon64
+seiMessages	../inc/h264encapi.h	/^        u32 seiMessages;     \/* Insert picture timing and buffering$/;"	m	struct:__anon18
+sei_s	../source/h264/H264Sei.h	/^} sei_s;$/;"	t	typeref:struct:__anon66
+seqId	../source/h264/H264Sei.h	/^    u32 seqId;$/;"	m	struct:__anon66
+seqParameterSet	../source/h264/H264Instance.h	/^    sps_s seqParameterSet;$/;"	m	struct:__anon56
+seqParameterSetId	../source/h264/H264PictureParameterSet.h	/^    i32 seqParameterSetId;$/;"	m	struct:__anon59
+seqParameterSetId	../source/h264/H264SequenceParameterSet.h	/^    u32 seqParameterSetId;$/;"	m	struct:__anon68
+size	../inc/enccommon.h	/^    u32 size;   \/* Byte size of stream buffer *\/$/;"	m	struct:__anon5
+size	../inc/ewl.h	/^        u32 size;$/;"	m	struct:EWLLinearMem
+sizeTbl	../source/common/encasiccontroller.h	/^    } sizeTbl;$/;"	m	struct:__anon52	typeref:union:__anon52::__anon53
+sizeTblBase	../source/common/encasiccontroller.h	/^    } sizeTblBase;$/;"	m	struct:__anon50	typeref:union:__anon50::__anon51
+sizeTblPresent	../source/common/encasiccontroller.h	/^    u32 sizeTblPresent;$/;"	m	struct:__anon50
+sizeTblSize	../source/common/encasiccontroller.h	/^    u32 sizeTblSize;$/;"	m	struct:__anon52
+size_t	../inc/basetype.h	/^typedef unsigned int size_t;$/;"	t
+skipFrameTarget	../source/h264/H264RateControl.h	/^    i32 skipFrameTarget;     \/* how many frames should be skipped in a row *\/$/;"	m	struct:__anon63
+skipPenalty	../source/common/encasiccontroller.h	/^    u32 skipPenalty;$/;"	m	struct:__anon50
+skippedFrames	../source/h264/H264RateControl.h	/^    i32 skippedFrames;       \/* how many frames have been skipped in a row *\/$/;"	m	struct:__anon63
+slice	../source/h264/H264Instance.h	/^    slice_s slice;$/;"	m	struct:__anon56
+sliceAlphaOffset	../source/common/encasiccontroller.h	/^    i32 sliceAlphaOffset;$/;"	m	struct:__anon50
+sliceBetaOffset	../source/common/encasiccontroller.h	/^    i32 sliceBetaOffset;$/;"	m	struct:__anon50
+sliceNum	../source/jpeg/EncJpeg.h	/^    i32 sliceNum;   \/* Number of current input slice *\/$/;"	m	struct:__anon74
+sliceReadyCbFunc	../source/h264/H264Instance.h	/^    H264EncSliceReadyCallBackFunc sliceReadyCbFunc;$/;"	m	struct:__anon56
+sliceReadyInterrupt	../source/common/encasiccontroller.h	/^    u32 sliceReadyInterrupt;$/;"	m	struct:__anon50
+sliceRows	../source/jpeg/EncJpeg.h	/^    i32 sliceRows;  \/* Amount of MB rows in a slice *\/$/;"	m	struct:__anon74
+sliceSize	../inc/h264encapi.h	/^        u32 sliceSize;       \/* Slice size in macroblock rows,$/;"	m	struct:__anon18
+sliceSize	../source/h264/H264Slice.h	/^    u32 sliceSize;$/;"	m	struct:__anon70
+sliceSizeMbRows	../source/common/encasiccontroller.h	/^    u32 sliceSizeMbRows;$/;"	m	struct:__anon50
+sliceSizes	../inc/h264encapi.h	/^        u32 *sliceSizes;    \/* Holds the size (bytes) of every completed slice. *\/$/;"	m	struct:__anon24
+sliceType	../source/h264/H264Slice.h	/^    sliceType_e sliceType;$/;"	m	struct:__anon70
+sliceTypeCur	../source/h264/H264RateControl.h	/^    u32 sliceTypeCur;$/;"	m	struct:__anon64
+sliceTypePrev	../source/h264/H264RateControl.h	/^    u32 sliceTypePrev;$/;"	m	struct:__anon64
+sliceType_e	../source/h264/H264Slice.h	/^} sliceType_e;$/;"	t	typeref:enum:__anon69
+slice_s	../source/h264/H264Slice.h	/^} slice_s;$/;"	t	typeref:struct:__anon70
+slicesReady	../inc/h264encapi.h	/^        u32 slicesReady;    \/* Indicates how many slices are completed. *\/$/;"	m	struct:__anon24
+slicesReadyPrev	../inc/h264encapi.h	/^        u32 slicesReadyPrev;\/* Indicates how many slices were completed at$/;"	m	struct:__anon24
+sps_s	../source/h264/H264SequenceParameterSet.h	/^} sps_s;$/;"	t	typeref:struct:__anon68
+srcPrm	../source/h264/H264RateControl.h	/^    i32 srcPrm;              \/* Source parameter *\/$/;"	m	struct:__anon64
+stabOffsetX	../inc/vidstbapi.h	/^        u32 stabOffsetX;$/;"	m	struct:VideoStbResult_
+stabOffsetX	../source/camstab/vidstabcommon.h	/^    i32 stabOffsetX;    \/* [0, inputWidth-stabilizedWidth] *\/$/;"	m	struct:SwStbData_
+stabOffsetY	../inc/vidstbapi.h	/^        u32 stabOffsetY;$/;"	m	struct:VideoStbResult_
+stabOffsetY	../source/camstab/vidstabcommon.h	/^    i32 stabOffsetY;    \/* [0, inputHeight-stabilizedHeight] *\/$/;"	m	struct:SwStbData_
+stabilizedHeight	../inc/vidstbapi.h	/^        u32 stabilizedHeight;$/;"	m	struct:VideoStbParam_
+stabilizedHeight	../source/camstab/vidstabcommon.h	/^    i32 stabilizedHeight;   \/*   multiple of 4, [8, inputHeight-8] *\/$/;"	m	struct:SwStbData_
+stabilizedWidth	../inc/vidstbapi.h	/^        u32 stabilizedWidth;$/;"	m	struct:VideoStbParam_
+stabilizedWidth	../source/camstab/vidstabcommon.h	/^    i32 stabilizedWidth;    \/* Stabilized picture dimensions in pixels, *\/$/;"	m	struct:SwStbData_
+stream	../inc/enccommon.h	/^    u8 *stream; \/* Pointer to next byte of stream *\/$/;"	m	struct:__anon5
+stream	../source/h264/H264Instance.h	/^    stream_s stream;$/;"	m	struct:__anon56
+stream	../source/jpeg/EncJpegInstance.h	/^    stream_s stream;$/;"	m	struct:__anon76
+streamSize	../inc/h264encapi.h	/^        u32 streamSize;      \/* Size of output stream in bytes *\/$/;"	m	struct:__anon21
+streamStartAddress	../source/jpeg/EncJpeg.h	/^    u8 *streamStartAddress; \/* output start address *\/$/;"	m	struct:__anon74
+streamType	../inc/h264encapi.h	/^        H264EncStreamType streamType;   \/* Byte stream \/ Plain NAL units *\/$/;"	m	struct:__anon16
+stream_s	../inc/enccommon.h	/^} stream_s;$/;"	t	typeref:struct:__anon5
+stride	../inc/vidstbapi.h	/^        u32 stride;$/;"	m	struct:VideoStbParam_
+stride	../source/camstab/vidstabcommon.h	/^    i32 stride; \/* Input picture scanline length in bytes *\/$/;"	m	struct:SwStbData_
+stride	../source/camstab/vidstabinternal.h	/^    u32 stride;$/;"	m	struct:VideoStb_
+strmStartLSB	../source/common/encasiccontroller.h	/^    u32 strmStartLSB;$/;"	m	struct:__anon50
+strmStartMSB	../source/common/encasiccontroller.h	/^    u32 strmStartMSB;$/;"	m	struct:__anon50
+swBuild	../inc/h264encapi.h	/^        u32 swBuild;         \/* Software build ID *\/$/;"	m	struct:__anon26
+swBuild	../inc/jpegencapi.h	/^        u32 swBuild;         \/* Software build ID *\/$/;"	m	struct:__anon38
+swBuild	../inc/vidstbapi.h	/^        u32 swBuild;         \/* Software build ID *\/$/;"	m	struct:__anon45
+synthesisLanguage	../inc/ewl.h	/^        u32 synthesisLanguage;$/;"	m	struct:EWLHwConfig
+table	../inc/enccommon.h	/^    i32 *table;         \/* Video packet or Gob sizes *\/$/;"	m	struct:__anon5
+tableCnt	../inc/enccommon.h	/^    i32 tableCnt;       \/* Table counter of above table *\/$/;"	m	struct:__anon5
+tableSize	../inc/enccommon.h	/^    i32 tableSize;      \/* Size of above table *\/$/;"	m	struct:__anon5
+table_s	../inc/enccommon.h	/^} table_s;$/;"	t	typeref:struct:__anon4
+targetError	../source/common/encasiccontroller.h	/^    const i32 *targetError;$/;"	m	struct:__anon50
+targetPicSize	../source/h264/H264RateControl.h	/^    i32 targetPicSize;$/;"	m	struct:__anon64
+temporalId	../source/h264/H264NalUnit.h	/^    u32 temporalId;$/;"	m	struct:__anon58
+testId	../source/h264/H264Instance.h	/^    u32 testId;$/;"	m	struct:__anon56
+th	../source/h264/H264Mad.h	/^    i32  th[MAD_TABLE_LEN];     \/* mad threshold *\/$/;"	m	struct:__anon57
+threshold	../source/h264/H264Mad.h	/^    i32  threshold;        \/* current frame threshold *\/$/;"	m	struct:__anon57
+thumbEnable	../source/jpeg/EncJpeg.h	/^    u32 thumbEnable;$/;"	m	struct:JpegEncAppn_t
+thumbnail	../source/jpeg/EncJpeg.h	/^    JpegEncThumb thumbnail; \/* thumbnail data *\/$/;"	m	struct:__anon74
+time	../source/h264/H264Sei.h	/^    u32 time;   \/* Modulo time *\/$/;"	m	struct:__anon65
+timeInc	../source/common/encasiccontroller.h	/^    u32 timeInc;$/;"	m	struct:__anon50
+timeIncBits	../source/common/encasiccontroller.h	/^    u32 timeIncBits;$/;"	m	struct:__anon50
+timeIncrement	../inc/h264encapi.h	/^        u32 timeIncrement;   \/* The previous picture duration in units$/;"	m	struct:__anon20
+timeOffsetLength	../source/h264/H264SequenceParameterSet.h	/^    u32 timeOffsetLength;$/;"	m	struct:__anon67
+timeScale	../source/h264/H264RateControl.h	/^    i32 timeScale;           \/* input frame rate numerator *\/$/;"	m	struct:__anon63
+timeScale	../source/h264/H264Sei.h	/^    u32 timeScale;$/;"	m	struct:__anon65
+timeScale	../source/h264/H264SequenceParameterSet.h	/^    u32 timeScale;$/;"	m	struct:__anon67
+timeStamp_s	../source/h264/H264Sei.h	/^} timeStamp_s;$/;"	t	typeref:struct:__anon65
+toffs	../source/h264/H264Sei.h	/^    u32 toffs;$/;"	m	struct:__anon66
+toffsLen	../source/h264/H264Sei.h	/^    u32 toffsLen;$/;"	m	struct:__anon66
+top	../inc/h264encapi.h	/^        u32 top;            \/* Top macroblock row inside area [0..heightMbs-1] *\/$/;"	m	struct:__anon17
+trace	../inc/encswhwregisters.h	/^    i32 trace;              \/* Enable\/disable writing in swreg_params.trc *\/$/;"	m	struct:__anon7
+transform8x8Mode	../inc/h264encapi.h	/^        u32 transform8x8Mode;   \/* Enable 8x8 transform mode, High profile$/;"	m	struct:__anon18
+transform8x8Mode	../source/common/encasiccontroller.h	/^    u32 transform8x8Mode;$/;"	m	struct:__anon50
+transform8x8Mode	../source/h264/H264PictureParameterSet.h	/^    true_e transform8x8Mode;$/;"	m	struct:__anon59
+true_e	../inc/enccommon.h	/^} true_e;$/;"	t	typeref:enum:__anon2
+ts	../source/h264/H264Sei.h	/^    timeStamp_s ts;$/;"	m	struct:__anon66
+type	../inc/h264encapi.h	/^        H264EncColorConversionType type;$/;"	m	struct:__anon22
+type	../inc/jpegencapi.h	/^        JpegEncColorConversionType type;$/;"	m	struct:__anon40
+u16	../inc/basetype.h	/^typedef unsigned short u16;$/;"	t
+u16x	../inc/basetype.h	/^typedef unsigned int u16x;$/;"	t
+u16x	../inc/basetype.h	/^typedef unsigned short u16x;$/;"	t
+u32	../inc/basetype.h	/^typedef unsigned int u32;$/;"	t
+u8	../inc/basetype.h	/^typedef unsigned char u8;$/;"	t
+units	../source/jpeg/EncJpeg.h	/^    u32 units;$/;"	m	struct:JpegEncAppn_t
+unitsInTic	../source/h264/H264RateControl.h	/^    i32 unitsInTic;          \/* input frame rate denominator *\/$/;"	m	struct:__anon63
+unitsType	../inc/jpegencapi.h	/^        JpegEncAppUnitsType unitsType;  \/* Units for X & Y density in APP0  *\/$/;"	m	struct:__anon41
+update_model	../source/h264/H264Mad.c	/^static void update_model(madTable_s *p)$/;"	f	file:
+update_model	../source/h264/H264RateControl.c	/^static void update_model(linReg_s *p)$/;"	f	file:
+update_rc_error	../source/h264/H264RateControl.c	/^static void update_rc_error(linReg_s *p, i32 bits)$/;"	f	file:
+update_tables	../source/h264/H264Mad.c	/^static void update_tables(madTable_s *p, i32 th, i32 count)$/;"	f	file:
+update_tables	../source/h264/H264RateControl.c	/^static void update_tables(linReg_s *p, i32 qp, i32 bits)$/;"	f	file:
+userDataEnabled	../source/h264/H264Sei.h	/^    u32 userDataEnabled;$/;"	m	struct:__anon66
+userDataSize	../source/h264/H264Sei.h	/^    u32 userDataSize;$/;"	m	struct:__anon66
+value	../inc/enccommon.h	/^    i32 value;  \/* Value of bits  *\/$/;"	m	struct:__anon4
+vclHrdParametersPresentFlag	../source/h264/H264SequenceParameterSet.h	/^    u32 vclHrdParametersPresentFlag;$/;"	m	struct:__anon67
+verOffsetSrc	../source/common/encpreprocess.h	/^    u32 verOffsetSrc;   \/* ...top  left corner of source image *\/$/;"	m	struct:__anon54
+version	../source/jpeg/EncJpeg.h	/^    u32 version;$/;"	m	struct:JpegEncAppn_t
+videoFullRange	../inc/h264encapi.h	/^        u32 videoFullRange;  \/* Input video signal sample range, [0,1]$/;"	m	struct:__anon18
+videoFullRange	../source/h264/H264SequenceParameterSet.h	/^    u32 videoFullRange;$/;"	m	struct:__anon67
+videoStab	../source/common/encpreprocess.h	/^    u32 videoStab;$/;"	m	struct:__anon54
+videoStabilization	../inc/h264encapi.h	/^        u32 videoStabilization;$/;"	m	struct:__anon23
+viewId	../source/h264/H264NalUnit.h	/^    u32 viewId;$/;"	m	struct:__anon58
+viewMode	../inc/h264encapi.h	/^        H264EncViewMode viewMode;       \/* Mode of stream to be generated and$/;"	m	struct:__anon16
+virtualAddress	../inc/ewl.h	/^        u32 *virtualAddress;$/;"	m	struct:EWLLinearMem
+virtualBitCnt	../source/h264/H264RateControl.h	/^    i32 virtualBitCnt;       \/* virtual (channel) bit count *\/$/;"	m	struct:__anon63
+virtualBuffer	../source/h264/H264RateControl.h	/^    h264VirtualBuffer_s virtualBuffer;$/;"	m	struct:__anon64
+vopFcode	../source/common/encasiccontroller.h	/^    u32 vopFcode;$/;"	m	struct:__anon50
+vop_count	../source/camstab/vidstabinternal.h	/^    u32 vop_count;$/;"	m	struct:RegValues_
+vop_count	../source/common/encasiccontroller.h	/^    u32 vop_count;$/;"	m	struct:__anon50
+vp	../source/common/encasiccontroller.h	/^        EWLLinearMem_t vp;$/;"	m	union:__anon52::__anon53
+vp	../source/common/encasiccontroller.h	/^        u32 vp;$/;"	m	union:__anon50::__anon51
+vpMbBits	../source/common/encasiccontroller.h	/^    u32 vpMbBits;$/;"	m	struct:__anon50
+vpSize	../source/common/encasiccontroller.h	/^    u32 vpSize;$/;"	m	struct:__anon50
+vsEnabled	../inc/ewl.h	/^        u32 vsEnabled;       \/* HW supports video stabilization *\/$/;"	m	struct:EWLHwConfig
+vsHwData	../source/h264/H264Instance.h	/^    HWStabData vsHwData;$/;"	m	struct:__anon56
+vsMode	../source/common/encasiccontroller.h	/^    u32 vsMode;$/;"	m	struct:__anon50
+vsNextLumaBase	../source/common/encasiccontroller.h	/^    u32 vsNextLumaBase;$/;"	m	struct:__anon50
+vsSwData	../source/h264/H264Instance.h	/^    SwStbData vsSwData;$/;"	m	struct:__anon56
+vui	../source/h264/H264SequenceParameterSet.h	/^    vui_t vui;$/;"	m	struct:__anon68
+vuiParametersPresent	../source/h264/H264SequenceParameterSet.h	/^    true_e vuiParametersPresent;$/;"	m	struct:__anon68
+vui_t	../source/h264/H264SequenceParameterSet.h	/^} vui_t;$/;"	t	typeref:struct:__anon67
+weightedBipredIdc	../source/h264/H264PictureParameterSet.h	/^    i32 weightedBipredIdc;$/;"	m	struct:__anon59
+weightedPred	../source/h264/H264PictureParameterSet.h	/^    true_e weightedPred;$/;"	m	struct:__anon59
+width	../inc/h264encapi.h	/^        u32 width;           \/* Encoded picture width in pixels, multiple of 4 *\/$/;"	m	struct:__anon16
+width	../inc/jpegencapi.h	/^        u8 width;            \/* Width in pixels of thumbnail *\/$/;"	m	struct:__anon39
+width	../source/jpeg/EncJpeg.h	/^    i32 width;$/;"	m	struct:__anon74
+windowLen	../source/h264/H264RateControl.h	/^    i32 windowLen;          \/* Bitrate window which tries to match target *\/$/;"	m	struct:__anon64
+windowRem	../source/h264/H264RateControl.h	/^    i32 windowRem;$/;"	m	struct:__anon63
+wordCntPrev	../source/h264/H264RateControl.h	/^    i32 wordCntPrev[CHECK_POINTS_MAX];  \/* Real bit count *\/$/;"	m	struct:__anon62
+wordCntTarget	../source/h264/H264RateControl.h	/^    i32 wordCntTarget[CHECK_POINTS_MAX];    \/* Required bit count *\/$/;"	m	struct:__anon62
+wordError	../source/h264/H264RateControl.h	/^    i32 wordError[CTRL_LEVELS]; \/* Check point error bit *\/$/;"	m	struct:__anon62
+xDensity	../inc/jpegencapi.h	/^        u32 xDensity;        \/* Horizontal pixel density                     *\/$/;"	m	struct:__anon41
+xFill	../source/camstab/vidstabinternal.h	/^    u32 xFill;$/;"	m	struct:RegValues_
+xFill	../source/common/encasiccontroller.h	/^    u32 xFill;$/;"	m	struct:__anon50
+xOffset	../inc/h264encapi.h	/^        u32 xOffset;$/;"	m	struct:__anon23
+xOffset	../inc/jpegencapi.h	/^        u32 xOffset;         \/* Pixels from top-left corner of input image   *\/$/;"	m	struct:__anon41
+yDensity	../inc/jpegencapi.h	/^        u32 yDensity;        \/* Vertical pixel density                       *\/$/;"	m	struct:__anon41
+yFill	../source/camstab/vidstabinternal.h	/^    u32 yFill;$/;"	m	struct:RegValues_
+yFill	../source/common/encasiccontroller.h	/^    u32 yFill;$/;"	m	struct:__anon50
+yOffset	../inc/h264encapi.h	/^        u32 yOffset;$/;"	m	struct:__anon23
+yOffset	../inc/jpegencapi.h	/^        u32 yOffset;         \/*   to top-left corner of encoded image        *\/$/;"	m	struct:__anon41
+yuvFormat	../source/camstab/vidstabinternal.h	/^    VideoStbInputFormat yuvFormat;$/;"	m	struct:VideoStb_
+zeroBytes	../inc/enccommon.h	/^    u32 zeroBytes;  \/* Amount of consecutive zero bytes *\/$/;"	m	struct:__anon5
+zero_div	../source/h264/H264RateControl.h	/^    i32  zero_div;         \/* a1 divisor is 0 *\/$/;"	m	struct:__anon61
+zigzag	../source/jpeg/EncJpeg.c	/^static const u8 zigzag[64] = {$/;"	v	file:

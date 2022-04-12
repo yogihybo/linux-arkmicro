@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "arkn141.dtsi"
+#include "arkn141-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	sound {
+		//compatible = "arkmicro,arkn141-audio";
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "arkn141-audio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		simple-audio-card,dai-link@0 {		/* I2S - dac */
+			reg = <0>;
+			cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			codec {
+				sound-dai = <&sddac>;
+			};
+		};
+
+		simple-audio-card,dai-link@1 {		/* I2S - adc */
+			reg = <1>;
+			format = "i2s";
+			cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			codec {
+				sound-dai = <&sdadc>;
+			};
+		};
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x3000000>;
+			linux,cma-default;
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		key0 {
+			label = "PB_PHOTO";
+			gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+			linux,code = <0x100>;
+			wakeup-source;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led0 {
+			label = "red";
+			gpios = <&gpio3 15 GPIO_ACTIVE_HIGH>;
+		};
+
+		led1 {
+			label = "blue";
+			gpios = <&gpio3 14 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&i2c0 {
+	sensor: imx322@1A {
+		compatible = "arkmicro,imx322";
+		reg = <0x1A>;
+	};
+};
+
+&ecspi {
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "mx25l12805d";
+		reg = <0>; /* Chip select 0 */
+		spi-max-frequency = <50000000>;
+	};
+};
+
+/* cpupll:522M, syspll:342M, audpll:402M */
+&isp_clk {	/* >84M(better select 85M) */
+	index-offset = <0>;
+	index-mask = <7>;
+	index-value = <1>;	/* 1:syspll(342M) */
+	div-offset = <3>;
+	div-mask = <7>;
+	div-value = <4>;	/* 342/4=85.5M */
+};
+
+&sensor_mclk {	/* <=37.125M(better select 37.125M) */
+	index-offset = <15>;
+	index-mask = <0xf>;
+	index-value = <2>;	/* 2:audpll(402M)*/
+	div-offset = <19>;
+	div-mask = <0xf>;
+	div-value = <11>;	/* 402/11=36.54545 */
+};
+
+&isp_camera {
+	sensor-reset-gpios = <&gpio3 28 GPIO_ACTIVE_HIGH>;
+};
+

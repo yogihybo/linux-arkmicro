@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mkdir /tmp/dev
+ln -s /dev/memalloc /tmp/dev/memalloc
+insmod  /lib/modules/galcore.ko registerMemBase=0xe0f00000 irqLine=48 contiguousSize=0x1000000 physSize=0x10000000 powerManagement=0

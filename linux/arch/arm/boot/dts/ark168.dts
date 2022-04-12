@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668.dtsi"
+#include "ark1668-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    carback: carback@0 {
+        compatible = "arkmicro,ark-carback";
+        interrupt-parent = <&gpio0>;
+        interrupts = <5 IRQ_TYPE_EDGE_BOTH>;
+        detect-gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+        debounce-detect = <10>;
+		//status = "disabled";
+    };
+     i2c-gpio-0 {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                compatible = "i2c-gpio";
+                gpios = <&gpio0 3 0             /* SDA */
+                        &gpio0 2 0              /* SCL */
+                >;
+                i2c-gpio,delay-us = <6>;        /* clk freq = 500/delay KHz */
+                i2c-gpio,scl-output-only;
+                //i2c-gpio,sda-open-drain;
+                //i2c-gpio,scl-open-drain;
+
+                dvr_ark7116: dvr_ark7116@B2 {
+                        compatible = "arkmicro,ark1668_ark7116";
+                        reset-gpio = <&gpio0 0 0>;
+                        reg = <0x59>; /* i2c address(7 bits) */
+                        //default-channel = <0>;
+                        carback-config = <1>;
+                };
+        };
+};
+
+&lcdc {
+	display = <&display0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
+
+	display0: display@0 {
+		interface-type = "TTL";
+		lvds-con = <0x160fd>;
+		bits-per-pixel = <32>;
+		power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+		lcd-wiring-mode = "BGR";
+		lcdcon-backlight;
+		pwms = <&pwm0 1 50000>;
+		pwm-names = "backlight";
+		backlight-value = <20>;
+		backlight-delay = <200>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <33000000>;
+				hactive = <800>;
+				vactive = <480>;
+				hback-porch = <16>;
+				hfront-porch = <210>;
+				vback-porch = <12>;
+				vfront-porch = <22>;
+				hsync-len = <30>;
+				vsync-len = <13>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};

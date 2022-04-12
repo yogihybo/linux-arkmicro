@@ -1,0 +1,12 @@
+if TARGET_ARKN141_SQWF
+
+config SYS_BOARD
+	default "arkn141-sqwf"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "arkn141-sqwf"
+
+endif

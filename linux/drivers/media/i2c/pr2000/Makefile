@@ -1,0 +1,1 @@
+obj-$(CONFIG_VIDEO_PR2000) += pr2000.o

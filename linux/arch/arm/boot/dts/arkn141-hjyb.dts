@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "arkn141.dtsi"
+#include "arkn141-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	sound {
+		//compatible = "arkmicro,arkn141-audio";
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "arkn141-audio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		simple-audio-card,dai-link@0 {		/* I2S - dac */
+			reg = <0>;
+			cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			codec {
+				sound-dai = <&sddac>;
+			};
+		};
+
+		simple-audio-card,dai-link@1 {		/* I2S - adc */
+			reg = <1>;
+			format = "i2s";
+			cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			codec {
+				sound-dai = <&sdadc>;
+			};
+		};
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x3000000>;
+			linux,cma-default;
+		};
+	};
+};
+
+&i2c0 {
+    dvr_ark7116: dvr_ark7116@B2 {
+        compatible = "arkmicro,arkn141_ark7116";
+        reg = <0x59>; /* i2c address(7 bits) */
+        reset-gpio = <&gpio0 28 0>;
+        default-channel = <0>;
+    };
+};
+
+&ecspi {
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "mx25l12805d";
+		reg = <0>; /* Chip select 0 */
+		spi-max-frequency = <50000000>;
+	};
+};
+
+&lcdc {
+	display = <&display0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
+
+	display0: display@0 {
+		interface-type = "TTL";
+		bits-per-pixel = <32>;
+		//power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+		lcd-wiring-mode = "BGR";
+		//lcdcon-backlight;
+		//pwms = <&pwm0 1 50000>;
+		//pwm-names = "backlight";
+		//backlight-value = <20>;
+		//backlight-delay = <200>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <32000000>;
+				hactive = <800>;
+				vactive = <480>;
+				hback-porch = <16>;
+				hfront-porch = <210>;
+				vback-porch = <12>;
+				vfront-porch = <22>;
+				hsync-len = <30>;
+				vsync-len = <13>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};

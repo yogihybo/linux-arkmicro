@@ -1,0 +1,745 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+/include/ "skeleton.dtsi"
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "ARM Arkmicro ark1668e SoC";
+	compatible = "arkmicro,ark1668e";
+
+	interrupt-parent = <&gic>;
+
+	aliases {
+		serial0 = &uart0;
+		hsserial0 = &uart4;
+		hsserial1 = &uart5;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk loglevel=8 clk_ignore_unused";
+		stdout-path = "serial0:115200n8";
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		enable-method = "arkmicro,arke-smp";
+
+		cpu0: cpu@0 {
+			compatible = "arm,cortex-a7";
+			device_type = "cpu";
+			reg = <0>;
+			clock-frequency = <24000000>;
+		};
+
+        cpu1: cpu@1 {
+            compatible = "arm,cortex-a7";
+            device_type = "cpu";
+            reg = <1>;
+            clock-frequency = <24000000>;
+        };
+	};
+
+	memory {
+		reg = <0x40000000 0xf000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x8000000>;
+			linux,cma-default;
+		};
+	};
+
+	iram {
+		compatible = "arkmicro,arke-iram";
+		reg = <0x300000 0x8000>;
+	};
+
+	timer {
+		compatible = "arm,armv7-timer";
+		arm,cpu-registers-not-fw-configured;
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+		clock-frequency = <24000000>;
+	};
+
+	sregs@e4900000 {
+		compatible = "arkmicro,ark-sregs";
+		reg = <0xe4900000 0x1000>;
+
+		clocks {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* cpu axi ahb apb */
+			clk24mhz: clk24mhz@24M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24000000>;
+			};
+
+			/* ddr */
+			clk20mhz: clk20mhz@20M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <20000000>;
+			};
+
+			/* lcd */
+			clk15mhz: clk15mhz@15M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <15000000>;
+			};
+
+			/* peripheral */
+			clk12mhz: clk12mhz@12M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24000000>;
+			};
+
+			eth_phy_ref_clk: eth_phy_ref_clk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <25000000>;
+			};
+
+			wm8960_mclk: wm8960_mclk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <12288000>;
+			};
+
+			i2s_dac_clk: i2s_dac_clk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <48000>;
+			};
+
+			i2s_adc_clk: i2s_adc_clk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <48000>;
+			};
+		};
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		gic: interrupt-controller@e0b01000 {
+			compatible = "arm,cortex-a7-gic";
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			reg = <0xe0b01000 0x1000>,
+			      <0xe0b02000 0x2000>,
+			      <0xe0b04000 0x2000>,
+			      <0xe0b06000 0x2000>;
+			//interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+		};
+
+		pinctrl0: pinctrl@e4900000 {
+			compatible = "arkmicro,arke-pinctrl";
+			reg = <0xe4900000 0x1000>;
+			pad-reg-offset = <0x1c0>;
+			npins = <192>;
+			gpio-mux-pins = <182>;
+		};
+
+		dmac: dmac@e0000000 {
+			compatible = "snps,axi-dma-1.01a";
+			reg = <0xe0000000 0x1000>;
+			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk24mhz>, <&clk24mhz>;
+			clock-names = "core-clk", "cfgr-clk";
+			#dma-cells = <3>;
+
+			dma-channels = <8>;
+			snps,dma-masters = <2>;
+			snps,data-width = <3>;
+			snps,block-size = <65536 65536 65536 65536
+								65536 65536 65536 65536>;
+			snps,priority = <0 1 2 3 4 5 6 7>;
+			snps,axi-max-burst-len = <16>;
+		};
+
+		i2s_adc: i2s-adc@e4000000 {
+			compatible = "arkmicro,ark1668e-i2s";
+			reg = <0xe4000000 0x1000
+					0xe4900000 0x1000>;
+			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
+			nco-reg = <0x4040815c>;
+			dmas = <&dmac 0 1 0>, <&dmac 1 0 1>;
+			dma-names = "rx", "tx";
+			clocks = <&i2s_adc_clk>;
+			pinctrl-0 = <&pinctrl_i2sadc_sync &pinctrl_i2sadc_sadata
+							&pinctrl_i2sadc_mclk &pinctrl_i2sadc_bclk>;
+			pinctrl-names = "default";
+			#sound-dai-cells = <0>;
+		};
+
+		i2s_dac: i2s-dac@e4200000 {
+			compatible = "arkmicro,ark1668e-i2s";
+			reg = <0xe4200000 0x1000
+					0xE4900000 0x1000>;
+			interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
+			nco-reg = <0x4040816c>;
+			dmas = <&dmac 25 1 0>, <&dmac 26 0 1>;
+			dma-names = "rx", "tx";
+			clocks = <&i2s_dac_clk>;
+			pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata
+							&pinctrl_i2sdac_mclk &pinctrl_i2sdac_bclk>;
+			pinctrl-names = "default";
+			#sound-dai-cells = <0>;
+		};
+
+		uart0: uart@e8200000 {
+			compatible = "arkmicro,ark-uart";
+			reg = <0xe8200000 0x1000>;
+			interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+			current-speed = <115200>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart0>;
+			clocks = <&clk12mhz>;
+			//dmas = <&dmac 6 1 0>, <&dmac 7 0 1>;
+			//dma-names = "rx", "tx";
+		};
+
+		uart1: uart@e8300000 {
+			compatible = "arkmicro,ark-uart";
+			reg = <0xe8300000 0x1000>;
+			interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
+			current-speed = <115200>;
+			clocks = <&clk12mhz>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart1>;
+			dmas = <&dmac 12 1 0>, <&dmac 13 0 1>;
+			dma-names = "rx", "tx";
+		};
+
+		uart2: uart@e8400000 {
+			compatible = "arkmicro,ark-uart";
+			reg = <0xe8400000 0x1000>;
+			interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
+			current-speed = <115200>;
+			clocks = <&clk12mhz>;
+			//pinctrl-names = "default";
+			//pinctrl-0 = <&pinctrl_uart2>;
+			dmas = <&dmac 19 1 0>, <&dmac 20 0 1>;
+			dma-names = "rx", "tx";
+		};
+
+		uart3: uart@e8500000 {
+			compatible = "arkmicro,ark-uart";
+			reg = <0xe8500000 0x1000>;
+			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
+			current-speed = <115200>;
+			//pinctrl-names = "default";
+			//pinctrl-0 = <&pinctrl_uart3>;
+			clocks = <&clk12mhz>;
+			dmas = <&dmac 21 1 0>, <&dmac 22 0 1>;
+			dma-names = "rx", "tx";
+		};
+
+		uart4: uart@e8000000 {
+			compatible = "arkmicro,ark-hsuart";
+			reg = <0xe8000000 0x4000>;
+			interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk12mhz>;
+			//pinctrl-names = "default";
+			//pinctrl-0 = <&pinctrl_uart4>;
+			dmas = <&dmac 14 1 0>, <&dmac 15 0 1>;
+			dma-names = "rx", "tx";
+		};
+
+		uart5: uart@e8100000 {
+			compatible = "arkmicro,ark-hsuart";
+			reg = <0xe8100000 0x4000>;
+			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk12mhz>;
+			//pinctrl-names = "default";
+			//pinctrl-0 = <&pinctrl_uart5>;
+			dmas = <&dmac 16 1 0>, <&dmac 17 0 1>;
+			dma-names = "rx", "tx";
+		};
+
+        timer: timer@e8600000 {
+            compatible = "snps,dw-apb-timer-osc";
+            reg = <0xe8600000 0x1000>;
+            interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+            clocks = <&clk12mhz>, <&clk24mhz>;
+            clock-names = "timer", "pclk";
+        };
+
+		watchdog: watchdog@e4b00000 {
+			compatible = "arkmicro,ark-wdt";
+			reg = <0xe4b00000 0x20>;
+			interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk24mhz>;
+		};
+
+		gpio0: gpio@e4600000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600000 0x80>;
+
+			gporta: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <0>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-ranges = <&pinctrl0 0 0 32>;
+			};
+		};
+
+		gpio1: gpio@e4600080 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600080 0x80>;
+
+			gportb: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <32>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-ranges = <&pinctrl0 0 32 32>;
+			};
+		};
+
+		gpio2: gpio@e4600100 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600100 0x80>;
+
+			gportc: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <64>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-ranges = <&pinctrl0 0 64 32>;
+			};
+		};
+
+		gpio3: gpio@e4600180 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600180 0x80>;
+
+			gportd: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <96>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-ranges = <&pinctrl0 0 96 32>;
+			};
+		};
+
+		gpio4: gpio@e4600200 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600200 0x80>;
+
+			gporte: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <128>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-ranges = <&pinctrl0 0 128 32>;
+			};
+		};
+
+		gpio5: gpio@e4600280 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600280 0x80>;
+
+			gportf: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <160>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
+				gpio-ranges = <&pinctrl0 0 160 32>;
+			};
+		};
+
+		pwm0: pwm@e4d00000 {
+			compatible = "arkmicro,ark-pwm";
+			reg = <0xe4d00000 0x100>;
+			#pwm-cells = <2>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_pwm0 &pinctrl_pwm1 &pinctrl_pwm2 
+							&pinctrl_pwm3 &pinctrl_pwm4 &pinctrl_pwm5>;
+			clocks = <&clk12mhz>;
+		};
+
+        nfc: nand@ec000000 {
+            compatible = "arkmicro,ark-nand";
+            reg = <0xec000000 0x1000>;
+            max-chips = <1>;
+            interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+            nand-bus-width = <8>;
+            nand-ecc-mode = "hw_syndrome";
+            nand-on-flash-bbt;
+        };
+
+		mmc0: mmc@ec400000 {
+			compatible = "snps,dw-mshc";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0xec400000 0x1000>;
+            interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+			fifo-depth = <64>;
+			bus-width = <8>;
+            cap-mmc-highspeed;
+            disable-wp;
+            non-removable;
+			clocks = <&clk12mhz>;
+			clock-names = "ciu";
+		};
+
+		mmc1: mmc@ec800000 {
+			compatible = "snps,dw-mshc";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0xec800000 0x1000>;
+            interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
+			fifo-depth = <64>;
+			bus-width = <4>;
+			clocks = <&clk12mhz>;
+			clock-names = "ciu";
+		};
+
+		i2c0: i2c@e4300000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-i2c";
+			reg = <0xe4300000 0x1000>;
+			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c0>;
+			clocks = <&clk12mhz>;
+
+			eeprom0: eeprom@50 {
+				compatible = "atmel,24c02";
+				reg = <0x50>;
+				pagesize = <8>;
+			};
+		};
+
+		i2c-gpio-0 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "i2c-gpio";
+			gpios = <&gporte 15 0		/* SDA */
+				&gporte 14 0		/* SCL */
+			>;
+			i2c-gpio,delay-us = <2>;	/* clk freq = 500/delay KHz */
+			i2c-gpio,scl-output-only;
+			//i2c-gpio,sda-open-drain;
+			//i2c-gpio,scl-open-drain;
+
+			codec: wm8960@1a {
+				compatible = "wlf,wm8960";
+				reg = <0x1a>;
+				clocks = <&wm8960_mclk>;
+				clock-names = "mclk";
+				//wlf,shared-lrclk;
+				#sound-dai-cells = <0>;
+			};
+		};
+
+		ecspi: ecspi@e4f00000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "arkmicro,arke-ecspi";
+			reg = <0xe4f00000 0x1000>;
+			num-chipselect = <1>;
+			chipselects = <101>;
+			interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
+			//dmas = <&dmac 8 1 0>; //<&dmac 9 0 1>
+			//dma-names = "rx"; //"tx"
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_ecspi>;
+			clocks = <&clk12mhz>, <&clk12mhz>;
+			clock-names = "ipg", "per";
+            status = "disabled";
+
+			m25p80@0 {
+                #address-cells = <1>;
+                #size-cells = <1>;
+                compatible = "w25q256";
+                reg = <0>; /* Chip select 0 */
+                spi-max-frequency = <3000000>;
+                status = "disabled";
+			};
+
+			gd5f@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "gd5f";
+				reg = <0>; /* Chip select 0 */
+				spi-max-frequency = <3000000>;
+                status = "disabled";
+			};
+		};
+
+		dwssi: dwssi@e4100000 {
+			compatible = "arkmicro,ark-dw-ssi";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0xe4100000 0x100>;
+			interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
+			num-cs = <1>;
+			cs-gpios = <&gportd 5 0>;
+
+			//tx-dma-channel = <&pdma 16>;
+			//rx-dma-channel = <&pdma 17>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_dwssi>;
+			clocks = <&clk12mhz>;
+            status = "disabled";
+
+			m25p80@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "w25q256";
+				reg = <0>; /* Chip select 0 */
+				spi-max-frequency = <3000000>;
+				//spi-tx-bus-width = <1>;
+				//spi-rx-bus-width = <4>;
+                status = "disabled";
+			};
+
+			gd5f@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "gd5f";
+				reg = <0>; /* Chip select 0 */
+				spi-max-frequency = <3000000>;
+                status = "disabled";
+			};
+		};
+
+		vdec0: vdec@e0900000 {
+			compatible = "on2,ark-vdec";
+			reg = <0xe0900000 0x1000>;
+			interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk24mhz>;
+			clock-names = "vdec_clk";
+			status = "disabled";
+		};
+
+		ethernet: ethernet@e0300000 {
+			compatible = "snps,dwc-qos-ethernet-4.10";
+			reg = <0xe0300000 0x4000>;
+			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+			snps,write-requests = <2>;
+			snps,read-requests = <16>;
+			snps,txpbl = <8>;
+			snps,rxpbl = <2>;
+			snps,reset-gpio = <&gportd 15 GPIO_ACTIVE_LOW>;
+			snps,reset-active-low;
+			snps,reset-delays-us = <0 10000 1000000>;
+			clocks = <&eth_phy_ref_clk>, <&eth_phy_ref_clk>;
+			clock-names = "phy_ref_clk", "apb_pclk";
+			status = "disabled";
+
+
+			phy-handle = <&phy1>;
+			phy-mode = "rgmii";
+
+			mdio {
+				#address-cells = <0x1>;
+				#size-cells = <0x0>;
+				phy1: phy@0 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					device_type = "ethernet-phy";
+					reg = <0x5>;
+				};
+			};
+		};
+
+		gpu@e9000000 {
+			compatible = "arm,mali-400", "arm,mali-utgard";
+			reg = <0xe9000000 0x30000>;
+			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "IRQGP", "IRQGPMMU", "IRQPP", "IRQPP0", "IRQPPMMU0", "IRQPP1", "IRQPPMMU1";
+			//pmu_domain_config = <0x1 0x4 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x2 0x0 0x0>;
+			//pmu_switch_delay = <0xff>;
+			clocks = <&clk24mhz>, <&clk24mhz>;
+			clock-names = "mali_parent", "mali";
+			status = "disabled";
+		};
+
+		lcdc: lcd@e0500000 {
+			compatible = "arkmicro,ark1668e-lcdc";
+			reg = <0xe0500000 0x1000
+					0x4f000000 0x1000000>;
+			interrupts = <GIC_SPI 9 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk15mhz>;
+			clock-names = "lcdc_clk";
+
+			display = <&display0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_lcd_rgb888>;
+
+			display0: display@0 {
+				interface-type = "TTL";
+				bits-per-pixel = <32>;
+				//power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+				lcd-wiring-mode = "RGB";
+				//lcdcon-backlight;
+				//pwms = <&pwm0 1 50000>;
+				//pwm-names = "backlight";
+				//backlight-value = <20>;
+				//backlight-delay = <200>;
+
+				display-timings {
+					native-mode = <&timing0>;
+					timing0: timing0 {
+						clock-frequency = <15000000>;
+						hactive = <800>;
+						vactive = <480>;
+						hback-porch = <17>;
+						hfront-porch = <210>;
+						vback-porch = <12>;
+						vfront-porch = <22>;
+						hsync-len = <30>;
+						vsync-len = <13>;
+						hsync-active = <1>;
+						vsync-active = <1>;
+						de-active = <0>;
+						pixelclk-active = <0>;
+					};
+				};
+			};
+		};
+
+
+		usb0_phy: usb0-phy {
+            compatible = "usb-nop-xceiv";
+            #phy-cells = <0>;
+            //status = "disabled";
+        };
+
+		usb0: usb@e0100000 {
+			compatible = "snps,dwc2";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0xe0100000 0x40000>;
+			interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+			phys = <&usb0_phy>;
+			phy-names = "usb0-phy";
+			dr_mode = "host";
+		};
+	};
+
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "ark1668e fpga audio";
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Line", "Line In",
+			"Headphone", "Headphone Jack";
+		simple-audio-card,routing =
+			"Headphone Jack", "HP_L",
+			"Headphone Jack", "HP_R",
+			"LINPUT1", "Mic Jack",
+			"LINPUT2", "Mic Jack",
+			"RINPUT1", "Mic Jack",
+			"RINPUT2", "Mic Jack";
+
+		simple-audio-card,dai-link@0 {		/* I2S - adc */
+			format = "i2s";
+			bitclock-master = <&capture_codec>;
+			frame-master = <&capture_codec>;
+			capture_cpu: cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			capture_codec: codec {
+				sound-dai = <&codec>;
+			};
+		};
+
+		simple-audio-card,dai-link@1 {		/* I2S - dac */
+			format = "i2s";
+			bitclock-master = <&playback_codec>;
+			frame-master = <&playback_codec>;
+			playback_cpu: cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			playback_codec: codec {
+				sound-dai = <&codec>;
+			};
+		};
+	};
+
+    carback: carback@0 {
+        compatible = "arkmicro,ark-carback";
+        interrupt-parent = <&gportf>;
+        interrupts = <25 IRQ_TYPE_EDGE_BOTH>;
+        detect-gpios = <&gportf 25 GPIO_ACTIVE_HIGH>;
+        debounce-detect = <20>;
+		//status = "disabled";
+    };
+};
+
+#include "ark1668e-pinctrl.dtsi"

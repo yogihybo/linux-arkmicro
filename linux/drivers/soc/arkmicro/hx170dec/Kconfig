@@ -1,0 +1,10 @@
+#
+# Hx170dec controller Kconfig
+#
+
+config ARK_HX170DEC
+	tristate "ARK hx170dec controller"
+	help
+		Say Y here if you want to use the hx170dec controller on the Arkmicro
+		platform.
+

@@ -1,0 +1,472 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+/include/ "skeleton.dtsi"
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/clock/ark-clk.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "ARM Arkmicro arkn141s SoC";
+	compatible = "arkmicro,arkn141s";
+
+	aliases {
+		Hsserial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		gpio0 = &gpio0;
+		gpio1 = &gpio1;
+//		gpio2 = &gpio2;
+//		gpio3 = &gpio3;
+		usb0 = &usb0;
+		phy0 = &usb0_phy;
+	};
+
+	chosen {
+		bootargs = "console=ttyS1,115200 earlyprintk loglevel=8 clk_ignore_unused";
+		stdout-path = "serial1:115200n8";
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a5";
+			reg = <0>;
+			//next-level-cache = <&L2>;
+		};
+	};
+
+	memory {
+		/*reg = <0x80000000 0x4000000>;	//512Mb */
+		reg = <0x80000000 0x7000000>;	//1Gb
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x2000000>;
+			linux,cma-default;
+		};
+	};
+
+	/* L2: cache-controller@70000000 {
+		compatible = "arm,pl310-cache";
+		reg = <0x70000000 0x1000>;
+		cache-unified;
+		cache-level = <2>;
+	}; */
+
+	intc: interrupt-controller@40400000 {
+		compatible = "arkmicro,ark-intc";
+		interrupt-controller;
+		reg = <0x40400000 0x1000>;
+		#interrupt-cells = <1>;
+	};
+
+	sregs@40408000 {
+		compatible = "arkmicro,ark-sregs";
+		reg = <0x40408000 0x1000>;
+
+		clocks {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* cpu axi ahb apb */
+			clk24mhz: clk24mhz@24M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24000000>;
+			};
+
+			/* ddr */
+			clk20mhz: clk20mhz@20M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <20000000>;
+			};
+
+			/* lcd */
+			clk15mhz: clk15mhz@15M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <15000000>;
+			};
+
+			/* peripheral */
+			clk12mhz: clk12mhz@12M {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <12000000>;
+			};
+			
+			wm8960_mclk: wm8960_mclk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <12288000>;
+			};
+
+		};
+	};
+
+	ahb {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		pinctrl0: pinctrl@40408000 {
+			compatible = "arkmicro,arkn141-pinctrl";
+			reg = <0x40408000 0x1000>;
+		};
+
+		ecspi: ecspi@48002000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "arkmicro,arke-ecspi";
+			reg = <0x48002000 0x1000>;
+			num-chipselect = <1>;
+			chipselects = <20>;
+			//cs-gpios = <&gpio0 20 0>;
+			interrupt-parent = <&intc>;
+			interrupts = <21>;
+			//dmas = <&dwdma0 8 1 0>; //<&dwdma0 9 0 1>
+			//dma-names = "rx"; //"tx"
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_ecspi>;
+			clocks = <&clk12mhz>, <&clk12mhz>;
+			clock-names = "ipg", "per";
+
+			m25p80@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "w25q256";
+				reg = <0>; /* Chip select 0 */
+				spi-max-frequency = <3000000>;
+			};
+
+		};
+
+
+		gpio0: gpio@40409000 {
+			compatible = "arkmicro,ark-gpio";
+			reg = <0x40409000 0x20>;
+			interrupt-parent = <&intc>;
+			interrupts = <24>;
+			#gpio-cells = <2>;
+			gpio-controller;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			//clocks = <&xtal24mhz>, <&xtal32k>;
+			clock-names = "24mhz", "rtc";
+			gpio-ranges = <&pinctrl0 0 0 32>;
+		};
+
+		gpio1: gpio@40409020 {
+			compatible = "arkmicro,ark-gpio";
+			reg = <0x40409020 0x20>;
+			interrupt-parent = <&intc>;
+			interrupts = <24>;
+			#gpio-cells = <2>;
+			gpio-controller;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			gpio-ranges = <&pinctrl0 0 32 32>;
+		};
+
+	
+		dwdma0: dma@70020000 {
+			compatible = "arkmicro,ark-dma";
+			reg = <0x70020000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <5>;
+			dma-channels = <8>;
+			dma-masters = <2>;
+			chan_allocation_order = <1>;
+			chan_priority = <1>;
+			block_size = <0xfff>;
+			data-width = <4 4>;
+			/* multi-block = <1 1 1 1 1 1 1 1>; */
+			//clocks = <&ahbclk>;
+			clocks = <&clk24mhz>, <&clk24mhz>;
+			clock-names = "core-clk", "cfgr-clk";
+			#dma-cells = <3>;
+		};
+
+		uart0: uart0@4040a000 {
+			compatible = "arkmicro,ark-uart";
+			reg = <0x4040a000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <25>;
+			current-speed = <115200>;
+			clocks = <&clk12mhz>;
+			//dmas = <&dwdma0 4 1 0>, <&dwdma0 5 0 1>;
+			//dma-names = "rx", "tx";
+			//pinctrl-names = "default";
+			//pinctrl-0 = <&pinctrl_uart0>;
+		};
+
+        uart1: uart1@4040b000 {
+            compatible = "arkmicro,ark-uart";
+            reg = <0x4040b000 0x1000>;
+            interrupt-parent = <&intc>;
+            interrupts = <26>;
+            current-speed = <115200>;
+            clocks = <&clk12mhz>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_uart1>;
+        };
+
+        uart2: uart2@4040c000 {
+            compatible = "arkmicro,ark-uart";
+            reg = <0x4040c000 0x1000>;
+            interrupt-parent = <&intc>;
+            interrupts = <8>;
+            current-speed = <115200>;
+            clocks = <&clk12mhz>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_uart2>;
+        };
+
+		timer: timer@40405000 {
+			compatible = "snps,dw-apb-timer-osc";
+			reg = <0x40405000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <18 8 7>,<19 8 7>,<6 8 7>,<7 8 7>;
+			clocks = <&clk12mhz>, <&clk24mhz>;
+		        clock-names = "timer", "pclk";
+		};
+
+		watchdog: watchdog@40404000 {
+			compatible = "arkmicro,ark-wdt";
+			reg = <0x40404000 0x20>;
+			interrupt-parent = <&intc>;
+			interrupts = <17>;
+			clocks = <&clk12mhz>;
+		};
+
+//		rtc: rtc@40406000 {
+//			compatible = "arkmicro,ark-rtc";
+//			reg = <0x40406000 0x100>;
+//			interrupt-parent = <&intc>;
+//			interrupts = <22>;
+//			clocks = <&clk12mhz>;
+//		};
+
+		mmc0: mmc@70070000 {
+			compatible = "snps,dw-mshc";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x70070000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <9>;
+			fifo-depth = <64>;
+			bus-width = <4>;
+			clocks = <&clk12mhz>;
+			clock-names = "ciu";
+			//status = "disabled";
+		};
+
+		mmc1: mmc@70080000 {
+			compatible = "snps,dw-mshc";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x70080000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <11>;
+			fifo-depth = <64>;
+			bus-width = <4>;
+            		cap-mmc-highspeed;
+           		disable-wp;
+           		non-removable;
+			clocks = <&clk12mhz>;
+			clock-names = "ciu";
+			//status = "disabled";
+		};
+
+		usb0_phy: usb0-phy {
+		    compatible = "usb-nop-xceiv";
+		    #phy-cells = <0>;
+		    //status = "disabled";
+		};
+
+
+		usb0: usb@700C0000 {
+			compatible = "snps,dwc2";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x700C0000 0x40000>;
+			interrupt-parent = <&intc>;
+		    	interrupts = <3>;
+			phys = <&usb0_phy>;
+			phy-names = "usb0-phy";
+			dr_mode = "host";
+			//status = "disabled";
+		};
+
+		i2c0: i2c@4040f000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-i2c";
+			reg = <0x4040f000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <29>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c0>;
+			//clocks = <&pclk>;
+		};
+
+//		isp_camera: isp-camera@70090000 {
+//			compatible = "arkmicro,isp-camera";
+//			reg = <0x70090000 0x1000
+//				   0x70098000 0x1000
+//				   0x40408000 0x1000>;
+//			interrupt-parent = <&intc>;
+//			interrupts = <27>;
+//			sensor-reset-gpios = <&gpio2 10 GPIO_ACTIVE_HIGH>;
+			/*sensor-standby-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;*/
+//			clocks = <&clk12mhz>;
+			//clock-names = "isp-clk", "sensor-mclk";
+//			pinctrl-names = "default";
+//			pinctrl-0 = <&pinctrl_sen_mclk &pinctrl_sen_itu>;
+//		};
+
+//		isp-scale@70098000 {
+//			compatible = "arkmicro,isp-scale";
+//			reg = <0x70098000 0x1000
+//				   0x40408000 0x1000>;
+//			interrupt-parent = <&intc>;
+//			interrupts = <20>;
+//			clocks = <&clk12mhz>;
+//		};
+		
+	
+		axi-scale@701a0000 {
+			compatible = "arkmicro,arkn141-axi-scale";
+			reg = <0x701a0000 0x1000
+				   0x40408000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <28>;
+			//clocks = <&axi_scale_clk>;
+		};
+
+		i2s_dac: i2s-dac@48401000 {
+			compatible = "arkmicro,ark-i2s";
+			reg = <0x48401000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <30>;
+//			nco-reg = <0x4040816c>;
+			dmas = <&dwdma0 20 1 0>, <&dwdma0 19 0 1>;
+			dma-names = "rx", "tx";
+			clocks = <&clk12mhz>;
+			#sound-dai-cells = <0>;
+		};
+
+		i2s_adc: i2s-adc@48401000 {
+			compatible = "arkmicro,ark-i2s";
+			reg = <0x48401000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <14>;
+//			nco-reg = <0x4040815c>;
+			dmas = <&dwdma0 0 1 0>, <&dwdma0 1 0 1>;
+			dma-names = "rx", "tx";
+			clocks = <&clk12mhz>;
+			#sound-dai-cells = <0>;
+		};
+
+		sdadc: sdadc@0 {
+			compatible = "arkmicro,ark-sdadc";
+			#sound-dai-cells = <0>;
+		};
+
+		sddac: sddac@48400000 {
+			compatible = "arkmicro,ark-sddac";
+			reg = <48400000 0x1000>;
+			#sound-dai-cells = <0>;
+		};
+
+		venc: venc@48003000 {
+			compatible = "arkmicro,mae-enc";
+			reg = <0x48003000 0x1000>;
+			interrupt-parent = <&intc>;
+			interrupts = <1>;
+			clocks = <&clk12mhz>;
+ 			status = "disabled";
+		};
+
+//		vdec: vdec@70070000 {
+//			compatible = "on2,ark-vdec";
+//			status = "disabled";
+//			reg = <0x70070000 0x1000>;
+//			interrupt-parent = <&intc>;
+//			interrupts = <6>;
+//			clocks = <&clk12mhz>;
+//			clock-names = "vdec_clk";
+//		};
+
+//		lcdc: lcd@70050000 {
+//			compatible = "arkmicro,arkn141s-lcdc";
+//			reg = <0x70050000 0x1000
+//					0x0 0x800000>;
+//			interrupt-parent = <&intc>;
+//			interrupts = <0>;
+//			clocks = <&clk12mhz>;
+//			clock-names = "lcdc_clk";
+//		};
+		lcdc: lcd@70050000 {
+			compatible = "arkmicro,arkn141s-lcdc";
+			reg = <0x70050000 0x1000
+					0x87000000 0x1000000>;
+			interrupt-parent = <&intc>;
+			interrupts = <0>;
+			clocks = <&clk15mhz>;
+			clock-names = "lcdc_clk";
+
+			display = <&display0>;
+			//pinctrl-names = "default";
+			//pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
+
+			display0: display@0 {
+				interface-type = "TTL";
+				bits-per-pixel = <32>;
+				//power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+				lcd-wiring-mode = "RGB";
+				//lcdcon-backlight;
+				//pwms = <&pwm0 1 50000>;
+				//pwm-names = "backlight";
+				//backlight-value = <20>;
+				//backlight-delay = <200>;
+
+				display-timings {
+					native-mode = <&timing0>;
+					timing0: timing0 {
+						clock-frequency = <15000000>;
+						hactive = <800>;
+						vactive = <480>;
+						hback-porch = <17>;
+						hfront-porch = <210>;
+						vback-porch = <12>;
+						vfront-porch = <22>;
+						hsync-len = <30>;
+						vsync-len = <13>;
+						hsync-active = <1>;
+						vsync-active = <1>;
+						de-active = <0>;
+						pixelclk-active = <0>;
+					};
+				};
+			};
+		};
+
+
+	};
+};
+#include "arkn141s_fpga-pinctrl.dtsi"

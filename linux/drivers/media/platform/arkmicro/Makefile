@@ -1,0 +1,1 @@
+obj-$(CONFIG_VIDEO_ARK1668E_VIN) += ark1668e_vin.o

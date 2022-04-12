@@ -1,0 +1,174 @@
+/*
+ *  Header file for ARKN141 LCD Controller
+ *
+ */
+
+#ifndef __ARKN_LCDC_COMMON_H__
+#define __ARKN_LCDC_COMMON_H__
+
+#include <linux/workqueue.h>
+#include <linux/pwm.h>
+
+/* Way LCD wires are connected to the chip:
+ * A swapped wiring onboard can bring to RGB mode.
+ */
+#define ATOMIC_SET_LAYER_POS                    (1 << 0)
+#define ATOMIC_SET_LAYER_SIZE                   (1 << 1)
+#define ATOMIC_SET_LAYER_FMT                    (1 << 2)
+#define ATOMIC_SET_LAYER_ADDR                   (1 << 3)
+#define ATOMIC_SET_LAYER_SCALER                 (1 << 4)
+
+/* Way LCD wires are connected to the chip:
+ * A swapped wiring onboard can bring to RGB mode.
+ */
+#define ARK_LCDC_WIRING_BGR	0
+#define ARK_LCDC_WIRING_GBR	1
+#define ARK_LCDC_WIRING_RBG	2
+#define ARK_LCDC_WIRING_BRG	3
+#define ARK_LCDC_WIRING_GRB	4
+#define ARK_LCDC_WIRING_RGB	5
+
+enum ark_lcdc_rgb_order {
+	ARK_LCDC_ORDER_RGB,
+	ARK_LCDC_ORDER_RBG,
+	ARK_LCDC_ORDER_GRB,
+	ARK_LCDC_ORDER_GBR,
+	ARK_LCDC_ORDER_BRG,
+	ARK_LCDC_ORDER_BGR,
+};
+
+enum ark_platform_type {
+        ARK_PLATFORM_ARK1668,
+        ARK_PLATFORM_ARKN141,
+        ARK_PLATFORM_ARK1668E,
+        ARK_PLATFORM_MAX
+};
+
+enum ark_disp_format {
+	ARK_LCDC_FORMAT_YUV422,
+	ARK_LCDC_FORMAT_YUV420,
+	ARK_LCDC_FORMAT_VYUY,
+	ARK_LCDC_FORMAT_YUV,
+	ARK_LCDC_FORMAT_RGBI555,
+	ARK_LCDC_FORMAT_R5G6B5,
+	ARK_LCDC_FORMAT_RGBA888,
+	ARK_LCDC_FORMAT_RGB888,
+
+	ARK_LCDC_FORMAT_Y_UV422 = 0x10,
+	ARK_LCDC_FORMAT_Y_UV420 = 0x11,
+};
+
+enum ark_lcdc_yuv_order {
+	ARK_LCDC_ORDER_VYUY,
+	ARK_LCDC_ORDER_UYVY,
+	ARK_LCDC_ORDER_YVYU,
+	ARK_LCDC_ORDER_YUYV,
+};
+
+
+struct ark_disp_scaler {
+	int src_w;
+	int src_h;
+	int win_x;
+	int win_y;
+	int win_w;
+	int win_h;
+	int out_x;
+	int out_y;
+	int out_w;
+	int out_h;
+	int cut_top;
+	int cut_bottom;
+	int cut_left;
+	int cut_right;
+};
+
+struct ark_disp_addr {
+	unsigned int  yaddr;
+	unsigned int  cbaddr;
+	unsigned int  craddr;
+	unsigned int  wait_vsync;
+};
+
+struct ark_disp_reg {
+	unsigned int  addr;
+	unsigned int  value;
+};
+
+struct ark_screen {
+	unsigned int  type;
+	unsigned int  width;
+	unsigned int  height;
+	unsigned int  disp_x;
+	unsigned int  disp_y;
+	unsigned int  disp_width;
+	unsigned int  disp_height;
+};
+
+struct ark_platform_info {
+	int type;
+	int reserve[32];
+};
+
+struct ark_disp_color {
+	u8 contrast;
+	u8 brightness;
+	u8 saturation;
+	u8 hue;
+};
+
+struct ark_disp_vp {
+	struct ark_disp_color color;
+	int reg[6];
+};
+
+struct ark_disp_atomic {
+	 int layer;
+	 int atomic_stat;
+	 int pos_x;
+	 int pos_y;
+	 int width;
+	 int height;
+	 int format;
+	 int yuyv_order;
+	 int rgb_order;
+	 struct ark_disp_addr addr;
+	 struct ark_disp_scaler scaler;
+};
+
+#define ARK_IOW(num, dtype)				_IOW('O', num, dtype)
+#define ARK_IOR(num, dtype)				_IOR('O', num, dtype)
+#define ARK_IOWR(num, dtype)			_IOWR('O', num, dtype)
+#define ARK_IO(num)						_IO('O', num)
+
+#define ARKFB_GET_VSYNC_STATUS			ARK_IOW(37, unsigned int)
+#define ARKFB_WAITFORVSYNC				ARK_IO(38)
+#define ARKFB_SHOW_WINDOW	        	ARK_IO(39)
+#define ARKFB_HIDE_WINDOW	        	ARK_IO(40)
+#define ARKFB_SET_WINDOW_POS			ARK_IOW(41, unsigned int)
+#define ARKFB_SET_WINDOW_SIZE			ARK_IOW(42, unsigned int)
+#define ARKFB_SET_WINDOW_FORMAT			ARK_IOW(43, unsigned int)
+#define ARKFB_SET_WINDOW_ADDR           ARK_IOW(44, struct ark_disp_addr)
+#define ARKFB_SET_WINDOW_SCALER         ARK_IOW(45, struct ark_disp_scaler)
+#define ARKFB_SET_WINDOW_ATOMIC         ARK_IOW(46, struct ark_disp_atomic)
+#define ARKFB_SET_REG_VALUE             ARK_IOW(47, struct ark_disp_reg)
+#define ARKFB_GET_REG_VALUE             ARK_IOR(48, struct ark_disp_reg)
+#define ARKFB_GET_WINDOW_ADDR           ARK_IOR(49, struct ark_disp_addr)
+#define ARKFB_GET_SCREEN_INFO           ARK_IOR(50, struct ark_screen)
+#define ARKFB_SET_SCREEN_INFO           ARK_IOW(51, struct ark_screen)
+#define ARKFB_GET_PLATFORM_INFO         ARK_IOR(52, struct ark_platform_info)
+#define ARKFB_GET_WINDOW_FORMAT			ARK_IOR(53, unsigned int)
+#define ARKFB_SET_VP_INFO				ARK_IOW(54, struct ark_disp_vp)
+#define ARKFB_GET_VP_INFO				ARK_IOW(55, struct ark_disp_vp)
+#define ARKFB_SET_WINDOW_PRIORITY		ARK_IOW(63, unsigned int)
+
+
+#define VIN_SHOW_WINDOW	        			ARK_IO(55)
+#define VIN_HIDE_WINDOW	        			ARK_IO(56)
+#define VIN_SET_WINDOW_POS					ARK_IO(57)
+#define VIN_SET_SOURCE_SIZE					ARK_IO(58)
+#define VIN_SET_WINDOW_FORMAT					ARK_IO(59)
+#define VIN_SET_WINDOW_ADDR        		    ARK_IO(60)
+#define VIN_SET_WINDOW_SCALER         		ARK_IO(61)
+#define VIN_SET_LAYER_SIZE					ARK_IO(62)
+#endif /* __ARKN141_LCDC_H__ */

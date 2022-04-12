@@ -1,0 +1,12 @@
+{
+	"attribute" : {
+		"pos" : "0,0,1024,600",
+		"effect" : 0,
+		"hastitle" : 0
+	},			
+	"win001-backgd" : {
+		"name" : "m01bg",
+		"pos" : "0,0,1024,600",
+	  	"imgall" : "dashboard/classic_bg.png"
+	}
+}

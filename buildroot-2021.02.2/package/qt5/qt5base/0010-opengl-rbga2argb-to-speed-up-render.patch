@@ -1,0 +1,80 @@
+diff --git a/src/gui/opengl/qopenglgradientcache.cpp b/src/gui/opengl/qopenglgradientcache.cpp
+index 3aa4c0d..f686b61 100644
+--- a/src/gui/opengl/qopenglgradientcache.cpp
++++ b/src/gui/opengl/qopenglgradientcache.cpp
+@@ -232,7 +232,8 @@ void QOpenGL2GradientCache::generateGradientColorTable(const QGradient& gradient
+     uint current_color = ARGB_COMBINE_ALPHA(s[0].second.rgba(), alpha);
+     qreal incr = 1.0 / qreal(size);
+     qreal fpos = 1.5 * incr;
+-    colorTable[pos++] = ARGB2RGBA(qPremultiply(current_color));
++    // colorTable[pos++] = ARGB2RGBA(qPremultiply(current_color));
++	colorTable[pos++] = qPremultiply(current_color);
+ 
+     while (fpos <= s.first().first) {
+         colorTable[pos] = colorTable[pos - 1];
+@@ -254,9 +255,11 @@ void QOpenGL2GradientCache::generateGradientColorTable(const QGradient& gradient
+             int dist = int(256 * ((fpos - s[i].first) * delta));
+             int idist = 256 - dist;
+             if (colorInterpolation)
+-                colorTable[pos] = ARGB2RGBA(INTERPOLATE_PIXEL_256(current_color, idist, next_color, dist));
++                // colorTable[pos] = ARGB2RGBA(INTERPOLATE_PIXEL_256(current_color, idist, next_color, dist));
++				colorTable[pos] = INTERPOLATE_PIXEL_256(current_color, idist, next_color, dist);
+             else
+-                colorTable[pos] = ARGB2RGBA(qPremultiply(INTERPOLATE_PIXEL_256(current_color, idist, next_color, dist)));
++                // colorTable[pos] = ARGB2RGBA(qPremultiply(INTERPOLATE_PIXEL_256(current_color, idist, next_color, dist)));
++				colorTable[pos] = qPremultiply(INTERPOLATE_PIXEL_256(current_color, idist, next_color, dist));
+             ++pos;
+             fpos += incr;
+         }
+@@ -265,7 +268,8 @@ void QOpenGL2GradientCache::generateGradientColorTable(const QGradient& gradient
+ 
+     Q_ASSERT(s.size() > 0);
+ 
+-    uint last_color = ARGB2RGBA(qPremultiply(ARGB_COMBINE_ALPHA(s[sLast].second.rgba(), alpha)));
++    // uint last_color = ARGB2RGBA(qPremultiply(ARGB_COMBINE_ALPHA(s[sLast].second.rgba(), alpha)));
++	uint last_color = qPremultiply(ARGB_COMBINE_ALPHA(s[sLast].second.rgba(), alpha));
+     for (;pos < size; ++pos)
+         colorTable[pos] = last_color;
+ 
+diff --git a/src/gui/opengl/qopengltexture.cpp b/src/gui/opengl/qopengltexture.cpp
+index 5490ad8..c85c450 100644
+--- a/src/gui/opengl/qopengltexture.cpp
++++ b/src/gui/opengl/qopengltexture.cpp
+@@ -3735,7 +3735,7 @@ void QOpenGLTexture::setData(const QImage& image, MipMapGeneration genMipMaps)
+     allocateStorage(QOpenGLTexture::RGBA, QOpenGLTexture::UInt8);
+ 
+     // Upload pixel data and generate mipmaps
+-    QImage glImage = image.convertToFormat(QImage::Format_RGBA8888);
++    QImage glImage = image.convertToFormat(/*QImage::Format_RGBA8888*/QImage::Format_ARGB32);
+     QOpenGLPixelTransferOptions uploadOptions;
+     uploadOptions.setAlignment(1);
+     setData(0, QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, glImage.constBits(), &uploadOptions);
+diff --git a/src/gui/opengl/qopengltextureglyphcache.cpp b/src/gui/opengl/qopengltextureglyphcache.cpp
+index 41027d2..c3e50cc 100644
+--- a/src/gui/opengl/qopengltextureglyphcache.cpp
++++ b/src/gui/opengl/qopengltextureglyphcache.cpp
+@@ -223,9 +223,9 @@ static void load_glyph_image_to_texture(QOpenGLContext *ctx,
+                     src[x] = qRgba(r, g, b, avg);
+                     // swizzle the bits to accommodate for the GL_RGBA upload.
+ #if Q_BYTE_ORDER != Q_BIG_ENDIAN
+-                    if (ctx->isOpenGLES())
++                    // if (ctx->isOpenGLES())
+ #endif
+-                        src[x] = ARGB2RGBA(src[x]);
++                        // src[x] = ARGB2RGBA(src[x]);
+                 }
+             }
+         }
+diff --git a/src/platformsupport/platformcompositor/qopenglcompositorbackingstore.cpp b/src/platformsupport/platformcompositor/qopenglcompositorbackingstore.cpp
+index 40400e2..3bbce5e 100644
+--- a/src/platformsupport/platformcompositor/qopenglcompositorbackingstore.cpp
++++ b/src/platformsupport/platformcompositor/qopenglcompositorbackingstore.cpp
+@@ -272,7 +272,7 @@ void QOpenGLCompositorBackingStore::resize(const QSize &size, const QRegion &sta
+     if (!dstWin)
+         return;
+ 
+-    m_image = QImage(size, QImage::Format_RGBA8888);
++    m_image = QImage(size, /* QImage::Format_RGBA8888 */QImage::Format_ARGB32);
+ 
+     m_window->create();
+ 

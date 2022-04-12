@@ -1,0 +1,4690 @@
+diff -urpN android-tools-4.2.2+git20130218/core/include/android/log.h b/core/include/android/log.h
+--- android-tools-4.2.2+git20130218/core/include/android/log.h	1970-01-01 08:00:00.000000000 +0800
++++ b/core/include/android/log.h	2021-12-30 14:33:49.976292000 +0800
+@@ -0,0 +1,128 @@
++/*
++ * Copyright (C) 2009 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef _ANDROID_LOG_H
++#define _ANDROID_LOG_H
++
++/******************************************************************
++ *
++ * IMPORTANT NOTICE:
++ *
++ *   This file is part of Android's set of stable system headers
++ *   exposed by the Android NDK (Native Development Kit) since
++ *   platform release 1.5
++ *
++ *   Third-party source AND binary code relies on the definitions
++ *   here to be FROZEN ON ALL UPCOMING PLATFORM RELEASES.
++ *
++ *   - DO NOT MODIFY ENUMS (EXCEPT IF YOU ADD NEW 32-BIT VALUES)
++ *   - DO NOT MODIFY CONSTANTS OR FUNCTIONAL MACROS
++ *   - DO NOT CHANGE THE SIGNATURE OF FUNCTIONS IN ANY WAY
++ *   - DO NOT CHANGE THE LAYOUT OR SIZE OF STRUCTURES
++ */
++
++/*
++ * Support routines to send messages to the Android in-kernel log buffer,
++ * which can later be accessed through the 'logcat' utility.
++ *
++ * Each log message must have
++ *   - a priority
++ *   - a log tag
++ *   - some text
++ *
++ * The tag normally corresponds to the component that emits the log message,
++ * and should be reasonably small.
++ *
++ * Log message text may be truncated to less than an implementation-specific
++ * limit (e.g. 1023 characters max).
++ *
++ * Note that a newline character ("\n") will be appended automatically to your
++ * log message, if not already there. It is not possible to send several messages
++ * and have them appear on a single line in logcat.
++ *
++ * PLEASE USE LOGS WITH MODERATION:
++ *
++ *  - Sending log messages eats CPU and slow down your application and the
++ *    system.
++ *
++ *  - The circular log buffer is pretty small (<64KB), sending many messages
++ *    might push off other important log messages from the rest of the system.
++ *
++ *  - In release builds, only send log messages to account for exceptional
++ *    conditions.
++ *
++ * NOTE: These functions MUST be implemented by /system/lib/liblog.so
++ */
++
++#include <stdarg.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/*
++ * Android log priority values, in ascending priority order.
++ */
++typedef enum android_LogPriority {
++    ANDROID_LOG_UNKNOWN = 0,
++    ANDROID_LOG_DEFAULT,    /* only for SetMinPriority() */
++    ANDROID_LOG_VERBOSE,
++    ANDROID_LOG_DEBUG,
++    ANDROID_LOG_INFO,
++    ANDROID_LOG_WARN,
++    ANDROID_LOG_ERROR,
++    ANDROID_LOG_FATAL,
++    ANDROID_LOG_SILENT,     /* only for SetMinPriority(); must be last */
++} android_LogPriority;
++
++/*
++ * Send a simple string to the log.
++ */
++int __android_log_write(int prio, const char *tag, const char *text);
++
++/*
++ * Send a formatted string to the log, used like printf(fmt,...)
++ */
++int __android_log_print(int prio, const char *tag,  const char *fmt, ...)
++#if defined(__GNUC__)
++    __attribute__ ((format(printf, 3, 4)))
++#endif
++    ;
++
++/*
++ * A variant of __android_log_print() that takes a va_list to list
++ * additional parameters.
++ */
++int __android_log_vprint(int prio, const char *tag,
++                         const char *fmt, va_list ap);
++
++/*
++ * Log an assertion failure and SIGTRAP the process to have a chance
++ * to inspect it, if a debugger is attached. This uses the FATAL priority.
++ */
++void __android_log_assert(const char *cond, const char *tag,
++			  const char *fmt, ...)    
++#if defined(__GNUC__)
++    __attribute__ ((noreturn))
++    __attribute__ ((format(printf, 3, 4)))
++#endif
++    ;
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _ANDROID_LOG_H */
+diff -urpN android-tools-4.2.2+git20130218/core/include/cutils/logger.h b/core/include/cutils/logger.h
+--- android-tools-4.2.2+git20130218/core/include/cutils/logger.h	2013-02-18 22:49:03.000000000 +0800
++++ b/core/include/cutils/logger.h	2021-12-30 14:33:49.976292000 +0800
+@@ -42,12 +42,17 @@ struct logger_entry_v2 {
+     uint32_t    euid;      /* effective UID of logger */
+     char        msg[0];    /* the entry's payload */
+ };
+-
++#if 0
+ #define LOGGER_LOG_MAIN		"log/main"
+ #define LOGGER_LOG_RADIO	"log/radio"
+ #define LOGGER_LOG_EVENTS	"log/events"
+ #define LOGGER_LOG_SYSTEM	"log/system"
+-
++#else
++#define LOGGER_LOG_MAIN		"log_main"
++#define LOGGER_LOG_RADIO	"log_radio"
++#define LOGGER_LOG_EVENTS	"log_events"
++#define LOGGER_LOG_SYSTEM	"log_system"
++#endif
+ /*
+  * The maximum size of the log entry payload that can be
+  * written to the kernel logger driver. An attempt to write
+diff -urpN android-tools-4.2.2+git20130218/core/include/logwrap/logwrap.h b/core/include/logwrap/logwrap.h
+--- android-tools-4.2.2+git20130218/core/include/logwrap/logwrap.h	1970-01-01 08:00:00.000000000 +0800
++++ b/core/include/logwrap/logwrap.h	2021-12-30 16:02:21.396306000 +0800
+@@ -0,0 +1,87 @@
++/* system/core/include/logwrap/logwrap.h
++ *
++ * Copyright 2013, The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef __LIBS_LOGWRAP_H
++#define __LIBS_LOGWRAP_H
++
++#include <stdbool.h>
++
++__BEGIN_DECLS
++
++/*
++ * Run a command while logging its stdout and stderr
++ *
++ * WARNING: while this function is running it will clear all SIGCHLD handlers
++ * if you rely on SIGCHLD in the caller there is a chance zombies will be
++ * created if you're not calling waitpid after calling this. This function will
++ * log a warning when it clears SIGCHLD for processes other than the child it
++ * created.
++ *
++ * Arguments:
++ *   argc:   the number of elements in argv
++ *   argv:   an array of strings containing the command to be executed and its
++ *           arguments as separate strings. argv does not need to be
++ *           NULL-terminated
++ *   status: the equivalent child status as populated by wait(status). This
++ *           value is only valid when logwrap successfully completes. If NULL
++ *           the return value of the child will be the function's return value.
++ *   ignore_int_quit: set to true if you want to completely ignore SIGINT and
++ *           SIGQUIT while logwrap is running. This may force the end-user to
++ *           send a signal twice to signal the caller (once for the child, and
++ *           once for the caller)
++ *   log_target: Specify where to log the output of the child, either LOG_NONE,
++ *           LOG_ALOG (for the Android system log), LOG_KLOG (for the kernel
++ *           log), or LOG_FILE (and you need to specify a pathname in the
++ *           file_path argument, otherwise pass NULL).  These are bit fields,
++ *           and can be OR'ed together to log to multiple places.
++ *   abbreviated: If true, capture up to the first 100 lines and last 4K of
++ *           output from the child.  The abbreviated output is not dumped to
++ *           the specified log until the child has exited.
++ *   file_path: if log_target has the LOG_FILE bit set, then this parameter
++ *           must be set to the pathname of the file to log to.
++ *
++ * Return value:
++ *   0 when logwrap successfully run the child process and captured its status
++ *   -1 when an internal error occurred
++ *   -ECHILD if status is NULL and the child didn't exit properly
++ *   the return value of the child if it exited properly and status is NULL
++ *
++ */
++
++/* Values for the log_target parameter android_fork_execvp_ext() */
++#define LOG_NONE        0
++#define LOG_ALOG        1
++#define LOG_KLOG        2
++#define LOG_FILE        4
++
++int android_fork_execvp_ext(int argc, char* argv[], int *status, bool ignore_int_quit,
++        int log_target, bool abbreviated, char *file_path);
++
++/* Similar to above, except abbreviated logging is not available, and if logwrap
++ * is true, logging is to the Android system log, and if false, there is no
++ * logging.
++ */
++static inline int android_fork_execvp(int argc, char* argv[], int *status,
++                                     bool ignore_int_quit, bool logwrap)
++{
++    return android_fork_execvp_ext(argc, argv, status, ignore_int_quit,
++                                   (logwrap ? LOG_ALOG : LOG_NONE), false, NULL);
++}
++
++__END_DECLS
++
++#endif /* __LIBS_LOGWRAP_H */
+diff -urpN android-tools-4.2.2+git20130218/core/include/private/android_filesystem_config.h b/core/include/private/android_filesystem_config.h
+--- android-tools-4.2.2+git20130218/core/include/private/android_filesystem_config.h	1970-01-01 08:00:00.000000000 +0800
++++ b/core/include/private/android_filesystem_config.h	2015-09-25 15:36:09.000000000 +0800
+@@ -0,0 +1,255 @@
++/*
++ * Copyright (C) 2007 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++/* This file is used to define the properties of the filesystem
++** images generated by build tools (mkbootfs and mkyaffs2image) and
++** by the device side of adb.
++*/
++
++#ifndef _ANDROID_FILESYSTEM_CONFIG_H_
++#define _ANDROID_FILESYSTEM_CONFIG_H_
++
++#include <string.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++
++/* This is the master Users and Groups config for the platform.
++** DO NOT EVER RENUMBER.
++*/
++
++#define AID_ROOT             0  /* traditional unix root user */
++
++#define AID_SYSTEM        1000  /* system server */
++
++#define AID_RADIO         1001  /* telephony subsystem, RIL */
++#define AID_BLUETOOTH     1002  /* bluetooth subsystem */
++#define AID_GRAPHICS      1003  /* graphics devices */
++#define AID_INPUT         1004  /* input devices */
++#define AID_AUDIO         1005  /* audio devices */
++#define AID_CAMERA        1006  /* camera devices */
++#define AID_LOG           1007  /* log devices */
++#define AID_COMPASS       1008  /* compass device */
++#define AID_MOUNT         1009  /* mountd socket */
++#define AID_WIFI          1010  /* wifi subsystem */
++#define AID_ADB           1011  /* android debug bridge (adbd) */
++#define AID_INSTALL       1012  /* group for installing packages */
++#define AID_MEDIA         1013  /* mediaserver process */
++#define AID_DHCP          1014  /* dhcp client */
++#define AID_SDCARD_RW     1015  /* external storage write access */
++#define AID_VPN           1016  /* vpn system */
++#define AID_KEYSTORE      1017  /* keystore subsystem */
++#define AID_USB           1018  /* USB devices */
++#define AID_DRM           1019  /* DRM server */
++#define AID_AVAILABLE     1020  /* available for use */
++#define AID_GPS           1021  /* GPS daemon */
++#define AID_UNUSED1       1022  /* deprecated, DO NOT USE */
++#define AID_MEDIA_RW      1023  /* internal media storage write access */
++#define AID_MTP           1024  /* MTP USB driver access */
++#define AID_UNUSED2       1025  /* deprecated, DO NOT USE */
++#define AID_DRMRPC        1026  /* group for drm rpc */
++#define AID_NFC           1027  /* nfc subsystem */
++
++#define AID_SHELL         2000  /* adb and debug shell user */
++#define AID_CACHE         2001  /* cache access */
++#define AID_DIAG          2002  /* access to diagnostic resources */
++
++/* The 3000 series are intended for use as supplemental group id's only.
++ * They indicate special Android capabilities that the kernel is aware of. */
++#define AID_NET_BT_ADMIN  3001  /* bluetooth: create any socket */
++#define AID_NET_BT        3002  /* bluetooth: create sco, rfcomm or l2cap sockets */
++#define AID_INET          3003  /* can create AF_INET and AF_INET6 sockets */
++#define AID_NET_RAW       3004  /* can create raw INET sockets */
++#define AID_NET_ADMIN     3005  /* can configure interfaces and routing tables. */
++#define AID_NET_BW_STATS  3006  /* read bandwidth statistics */
++#define AID_NET_BW_ACCT   3007  /* change bandwidth statistics accounting */
++
++#define AID_MISC          9998  /* access to misc storage */
++#define AID_NOBODY        9999
++
++#define AID_APP          10000 /* first app user */
++
++#if !defined(EXCLUDE_FS_CONFIG_STRUCTURES)
++struct android_id_info {
++    const char *name;
++    unsigned aid;
++};
++
++static const struct android_id_info android_ids[] = {
++    { "root",      AID_ROOT, },
++    { "system",    AID_SYSTEM, },
++    { "radio",     AID_RADIO, },
++    { "bluetooth", AID_BLUETOOTH, },
++    { "graphics",  AID_GRAPHICS, },
++    { "input",     AID_INPUT, },
++    { "audio",     AID_AUDIO, },
++    { "camera",    AID_CAMERA, },
++    { "log",       AID_LOG, },
++    { "compass",   AID_COMPASS, },
++    { "mount",     AID_MOUNT, },
++    { "wifi",      AID_WIFI, },
++    { "dhcp",      AID_DHCP, },
++    { "adb",       AID_ADB, },
++    { "install",   AID_INSTALL, },
++    { "media",     AID_MEDIA, },
++    { "drm",       AID_DRM, },
++    { "available", AID_AVAILABLE, },
++    { "nfc",       AID_NFC, },
++    { "drmrpc",    AID_DRMRPC, },
++    { "shell",     AID_SHELL, },
++    { "cache",     AID_CACHE, },
++    { "diag",      AID_DIAG, },
++    { "net_bt_admin", AID_NET_BT_ADMIN, },
++    { "net_bt",    AID_NET_BT, },
++    { "sdcard_rw", AID_SDCARD_RW, },
++    { "media_rw",  AID_MEDIA_RW, },
++    { "vpn",       AID_VPN, },
++    { "keystore",  AID_KEYSTORE, },
++    { "usb",       AID_USB, },
++    { "mtp",       AID_MTP, },
++    { "gps",       AID_GPS, },
++    { "inet",      AID_INET, },
++    { "net_raw",   AID_NET_RAW, },
++    { "net_admin", AID_NET_ADMIN, },
++    { "net_bw_stats", AID_NET_BW_STATS, },
++    { "net_bw_acct", AID_NET_BW_ACCT, },
++    { "misc",      AID_MISC, },
++    { "nobody",    AID_NOBODY, },
++};
++
++#define android_id_count \
++    (sizeof(android_ids) / sizeof(android_ids[0]))
++    
++struct fs_path_config {
++    unsigned mode;
++    unsigned uid;
++    unsigned gid;
++    const char *prefix;
++};
++
++/* Rules for directories.
++** These rules are applied based on "first match", so they
++** should start with the most specific path and work their
++** way up to the root.
++*/
++
++static struct fs_path_config android_dirs[] = {
++    { 00770, AID_SYSTEM, AID_CACHE,  "cache" },
++    { 00771, AID_SYSTEM, AID_SYSTEM, "data/app" },
++    { 00771, AID_SYSTEM, AID_SYSTEM, "data/app-private" },
++    { 00771, AID_SYSTEM, AID_SYSTEM, "data/dalvik-cache" },
++    { 00771, AID_SYSTEM, AID_SYSTEM, "data/data" },
++    { 00771, AID_SHELL,  AID_SHELL,  "data/local/tmp" },
++    { 00771, AID_SHELL,  AID_SHELL,  "data/local" },
++    { 01771, AID_SYSTEM, AID_MISC,   "data/misc" },
++    { 00770, AID_DHCP,   AID_DHCP,   "data/misc/dhcp" },
++    { 00775, AID_MEDIA_RW, AID_MEDIA_RW, "data/media" },
++    { 00775, AID_MEDIA_RW, AID_MEDIA_RW, "data/media/Music" },
++    { 00771, AID_SYSTEM, AID_SYSTEM, "data" },
++    { 00750, AID_ROOT,   AID_SHELL,  "sbin" },
++    { 00755, AID_ROOT,   AID_SHELL,  "system/bin" },
++    { 00755, AID_ROOT,   AID_SHELL,  "system/vendor" },
++    { 00755, AID_ROOT,   AID_SHELL,  "system/xbin" },
++    { 00755, AID_ROOT,   AID_ROOT,   "system/etc/ppp" },
++    { 00777, AID_ROOT,   AID_ROOT,   "sdcard" },
++    { 00755, AID_ROOT,   AID_ROOT,   0 },
++};
++
++/* Rules for files.
++** These rules are applied based on "first match", so they
++** should start with the most specific path and work their
++** way up to the root. Prefixes ending in * denotes wildcard
++** and will allow partial matches.
++*/
++static struct fs_path_config android_files[] = {
++    { 00440, AID_ROOT,      AID_SHELL,     "system/etc/init.goldfish.rc" },
++    { 00550, AID_ROOT,      AID_SHELL,     "system/etc/init.goldfish.sh" },
++    { 00440, AID_ROOT,      AID_SHELL,     "system/etc/init.trout.rc" },
++    { 00550, AID_ROOT,      AID_SHELL,     "system/etc/init.ril" },
++    { 00550, AID_ROOT,      AID_SHELL,     "system/etc/init.testmenu" },
++    { 00550, AID_DHCP,      AID_SHELL,     "system/etc/dhcpcd/dhcpcd-run-hooks" },
++    { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/dbus.conf" },
++    { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/main.conf" },
++    { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/input.conf" },
++    { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/audio.conf" },
++    { 00440, AID_BLUETOOTH, AID_BLUETOOTH, "system/etc/bluetooth/network.conf" },
++    { 00444, AID_NET_BT,    AID_NET_BT,    "system/etc/bluetooth/blacklist.conf" },
++    { 00640, AID_SYSTEM,    AID_SYSTEM,    "system/etc/bluetooth/auto_pairing.conf" },
++    { 00444, AID_RADIO,     AID_AUDIO,     "system/etc/AudioPara4.csv" },
++    { 00555, AID_ROOT,      AID_ROOT,      "system/etc/ppp/*" },
++    { 00555, AID_ROOT,      AID_ROOT,      "system/etc/rc.*" },
++    { 00644, AID_SYSTEM,    AID_SYSTEM,    "data/app/*" },
++    { 00644, AID_MEDIA_RW,  AID_MEDIA_RW,  "data/media/*" },
++    { 00644, AID_SYSTEM,    AID_SYSTEM,    "data/app-private/*" },
++    { 00644, AID_APP,       AID_APP,       "data/data/*" },
++        /* the following two files are INTENTIONALLY set-gid and not set-uid.
++         * Do not change. */
++    { 02755, AID_ROOT,      AID_NET_RAW,   "system/bin/ping" },
++    { 02750, AID_ROOT,      AID_INET,      "system/bin/netcfg" },
++    	/* the following five files are INTENTIONALLY set-uid, but they
++	 * are NOT included on user builds. */
++    { 06755, AID_ROOT,      AID_ROOT,      "system/xbin/su" },
++    { 06755, AID_ROOT,      AID_ROOT,      "system/xbin/librank" },
++    { 06755, AID_ROOT,      AID_ROOT,      "system/xbin/procrank" },
++    { 06755, AID_ROOT,      AID_ROOT,      "system/xbin/procmem" },
++    { 06755, AID_ROOT,      AID_ROOT,      "system/xbin/tcpdump" },
++    { 04770, AID_ROOT,      AID_RADIO,     "system/bin/pppd-ril" },
++		/* the following file is INTENTIONALLY set-uid, and IS included
++		 * in user builds. */
++    { 06750, AID_ROOT,      AID_SHELL,     "system/bin/run-as" },
++    { 00755, AID_ROOT,      AID_SHELL,     "system/bin/*" },
++    { 00755, AID_ROOT,      AID_ROOT,      "system/lib/valgrind/*" },
++    { 00755, AID_ROOT,      AID_SHELL,     "system/xbin/*" },
++    { 00755, AID_ROOT,      AID_SHELL,     "system/vendor/bin/*" },
++    { 00750, AID_ROOT,      AID_SHELL,     "sbin/*" },
++    { 00755, AID_ROOT,      AID_ROOT,      "bin/*" },
++    { 00750, AID_ROOT,      AID_SHELL,     "init*" },
++    { 00750, AID_ROOT,      AID_SHELL,     "charger*" },
++    { 00644, AID_ROOT,      AID_ROOT,       0 },
++};
++
++static inline void fs_config(const char *path, int dir,
++                             unsigned *uid, unsigned *gid, unsigned *mode)
++{
++    struct fs_path_config *pc;
++    int plen;
++    
++    pc = dir ? android_dirs : android_files;
++    plen = strlen(path);
++    for(; pc->prefix; pc++){
++        int len = strlen(pc->prefix);
++        if (dir) {
++            if(plen < len) continue;
++            if(!strncmp(pc->prefix, path, len)) break;
++            continue;
++        }
++        /* If name ends in * then allow partial matches. */
++        if (pc->prefix[len -1] == '*') {
++            if(!strncmp(pc->prefix, path, len - 1)) break;
++        } else if (plen == len){
++            if(!strncmp(pc->prefix, path, len)) break;
++        }
++    }
++    *uid = pc->uid;
++    *gid = pc->gid;
++    *mode = (*mode & (~07777)) | pc->mode;
++    
++#if 0
++    fprintf(stderr,"< '%s' '%s' %d %d %o >\n", 
++            path, pc->prefix ? pc->prefix : "", *uid, *gid, *mode);
++#endif
++}
++#endif
++#endif
+diff -urpN android-tools-4.2.2+git20130218/core/include/private/pixelflinger/ggl_context.h b/core/include/private/pixelflinger/ggl_context.h
+--- android-tools-4.2.2+git20130218/core/include/private/pixelflinger/ggl_context.h	1970-01-01 08:00:00.000000000 +0800
++++ b/core/include/private/pixelflinger/ggl_context.h	2015-09-25 15:36:09.000000000 +0800
+@@ -0,0 +1,543 @@
++/*
++ * Copyright (C) 2006 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef ANDROID_GGL_CONTEXT_H
++#define ANDROID_GGL_CONTEXT_H
++
++#include <stdint.h>
++#include <stddef.h>
++#include <string.h>
++#include <sys/types.h>
++#include <endian.h>
++
++#include <pixelflinger/pixelflinger.h>
++#include <private/pixelflinger/ggl_fixed.h>
++
++namespace android {
++
++// ----------------------------------------------------------------------------
++
++#if BYTE_ORDER == LITTLE_ENDIAN
++
++inline uint32_t GGL_RGBA_TO_HOST(uint32_t v) {
++    return v;
++}
++inline uint32_t GGL_HOST_TO_RGBA(uint32_t v) {
++    return v;
++}
++
++#else
++
++inline uint32_t GGL_RGBA_TO_HOST(uint32_t v) {
++    return (v<<24) | (v>>24) | ((v<<8)&0xff0000) | ((v>>8)&0xff00);
++}
++inline uint32_t GGL_HOST_TO_RGBA(uint32_t v) {
++    return (v<<24) | (v>>24) | ((v<<8)&0xff0000) | ((v>>8)&0xff00);
++}
++
++#endif
++
++// ----------------------------------------------------------------------------
++
++const int GGL_DITHER_BITS = 6;  // dither weights stored on 6 bits
++const int GGL_DITHER_ORDER_SHIFT= 3;
++const int GGL_DITHER_ORDER      = (1<<GGL_DITHER_ORDER_SHIFT);
++const int GGL_DITHER_SIZE       = GGL_DITHER_ORDER * GGL_DITHER_ORDER;
++const int GGL_DITHER_MASK       = GGL_DITHER_ORDER-1;
++
++// ----------------------------------------------------------------------------
++
++const int GGL_SUBPIXEL_BITS = 4;
++
++// TRI_FRACTION_BITS defines the number of bits we want to use
++// for the sub-pixel coordinates during the edge stepping, the
++// value shouldn't be more than 7, or bad things are going to
++// happen when drawing large triangles (8 doesn't work because
++// 32 bit muls will loose the sign bit)
++
++#define  TRI_FRACTION_BITS  (GGL_SUBPIXEL_BITS)
++#define  TRI_ONE            (1 << TRI_FRACTION_BITS)
++#define  TRI_HALF           (1 << (TRI_FRACTION_BITS-1))
++#define  TRI_FROM_INT(x)    ((x) << TRI_FRACTION_BITS)
++#define  TRI_FRAC(x)        ((x)                 &  (TRI_ONE-1))
++#define  TRI_FLOOR(x)       ((x)                 & ~(TRI_ONE-1))
++#define  TRI_CEIL(x)        (((x) + (TRI_ONE-1)) & ~(TRI_ONE-1))
++#define  TRI_ROUND(x)       (((x) +  TRI_HALF  ) & ~(TRI_ONE-1))
++
++#define  TRI_ROUDNING       (1 << (16 - TRI_FRACTION_BITS - 1))
++#define  TRI_FROM_FIXED(x)  (((x)+TRI_ROUDNING) >> (16-TRI_FRACTION_BITS))
++
++#define  TRI_SNAP_NEXT_HALF(x)   (TRI_CEIL((x)+TRI_HALF) - TRI_HALF)
++#define  TRI_SNAP_PREV_HALF(x)   (TRI_CEIL((x)-TRI_HALF) - TRI_HALF)
++
++// ----------------------------------------------------------------------------
++
++const int GGL_COLOR_BITS = 24;
++
++// To maintain 8-bits color chanels, with a maximum GGLSurface
++// size of 4096 and GGL_SUBPIXEL_BITS=4, we need 8 + 12 + 4 = 24 bits
++// for encoding the color iterators
++
++inline GGLcolor gglFixedToIteratedColor(GGLfixed c) {
++    return (c << 8) - c;
++}
++
++// ----------------------------------------------------------------------------
++
++template<bool> struct CTA;
++template<> struct CTA<true> { };
++
++#define GGL_CONTEXT(con, c)         context_t *con = static_cast<context_t *>(c)
++#define GGL_OFFSETOF(field)         int(&(((context_t*)0)->field))
++#define GGL_INIT_PROC(p, f)         p.f = ggl_ ## f;
++#define GGL_BETWEEN(x, L, H)        (uint32_t((x)-(L)) <= ((H)-(L)))
++
++#define ggl_likely(x)	__builtin_expect(!!(x), 1)
++#define ggl_unlikely(x)	__builtin_expect(!!(x), 0)
++
++const int GGL_TEXTURE_UNIT_COUNT    = 2;
++const int GGL_TMU_STATE             = 0x00000001;
++const int GGL_CB_STATE              = 0x00000002;
++const int GGL_PIXEL_PIPELINE_STATE  = 0x00000004;
++
++// ----------------------------------------------------------------------------
++
++#define GGL_RESERVE_NEEDS(name, l, s)                               \
++    const uint32_t  GGL_NEEDS_##name##_MASK = (((1LU<<(s))-1)<<l);  \
++    const uint32_t  GGL_NEEDS_##name##_SHIFT = (l);
++
++#define GGL_BUILD_NEEDS(val, name)                                  \
++    (((val)<<(GGL_NEEDS_##name##_SHIFT)) & GGL_NEEDS_##name##_MASK)
++
++#define GGL_READ_NEEDS(name, n)                                     \
++    (uint32_t(n & GGL_NEEDS_##name##_MASK) >> GGL_NEEDS_##name##_SHIFT)
++
++#define GGL_NEED_MASK(name)     (uint32_t(GGL_NEEDS_##name##_MASK))
++#define GGL_NEED(name, val)     GGL_BUILD_NEEDS(val, name)
++
++GGL_RESERVE_NEEDS( CB_FORMAT,       0, 6 )
++GGL_RESERVE_NEEDS( SHADE,           6, 1 )
++GGL_RESERVE_NEEDS( W,               7, 1 )
++GGL_RESERVE_NEEDS( BLEND_SRC,       8, 4 )
++GGL_RESERVE_NEEDS( BLEND_DST,      12, 4 )
++GGL_RESERVE_NEEDS( BLEND_SRCA,     16, 4 )
++GGL_RESERVE_NEEDS( BLEND_DSTA,     20, 4 )
++GGL_RESERVE_NEEDS( LOGIC_OP,       24, 4 )
++GGL_RESERVE_NEEDS( MASK_ARGB,      28, 4 )
++
++GGL_RESERVE_NEEDS( P_ALPHA_TEST,    0, 3 )
++GGL_RESERVE_NEEDS( P_AA,            3, 1 )
++GGL_RESERVE_NEEDS( P_DEPTH_TEST,    4, 3 )
++GGL_RESERVE_NEEDS( P_MASK_Z,        7, 1 )
++GGL_RESERVE_NEEDS( P_DITHER,        8, 1 )
++GGL_RESERVE_NEEDS( P_FOG,           9, 1 )
++GGL_RESERVE_NEEDS( P_RESERVED1,    10,22 )
++
++GGL_RESERVE_NEEDS( T_FORMAT,        0, 6 )
++GGL_RESERVE_NEEDS( T_RESERVED0,     6, 1 )
++GGL_RESERVE_NEEDS( T_POT,           7, 1 )
++GGL_RESERVE_NEEDS( T_S_WRAP,        8, 2 )
++GGL_RESERVE_NEEDS( T_T_WRAP,       10, 2 )
++GGL_RESERVE_NEEDS( T_ENV,          12, 3 )
++GGL_RESERVE_NEEDS( T_LINEAR,       15, 1 )
++
++const int GGL_NEEDS_WRAP_CLAMP_TO_EDGE  = 0;
++const int GGL_NEEDS_WRAP_REPEAT         = 1;
++const int GGL_NEEDS_WRAP_11             = 2;
++
++inline uint32_t ggl_wrap_to_needs(uint32_t e) {
++    switch (e) {
++    case GGL_CLAMP:         return GGL_NEEDS_WRAP_CLAMP_TO_EDGE;
++    case GGL_REPEAT:        return GGL_NEEDS_WRAP_REPEAT;
++    }
++    return 0;
++}
++
++inline uint32_t ggl_blendfactor_to_needs(uint32_t b) {
++    if (b <= 1) return b;
++    return (b & 0xF)+2;
++}
++
++inline uint32_t ggl_needs_to_blendfactor(uint32_t n) {
++    if (n <= 1) return n;
++    return (n - 2) + 0x300;
++}
++
++inline uint32_t ggl_env_to_needs(uint32_t e) {
++    switch (e) {
++    case GGL_REPLACE:   return 0;
++    case GGL_MODULATE:  return 1;
++    case GGL_DECAL:     return 2;
++    case GGL_BLEND:     return 3;
++    case GGL_ADD:       return 4;
++    }
++    return 0;
++}
++
++inline uint32_t ggl_needs_to_env(uint32_t n) {
++    const uint32_t envs[] = { GGL_REPLACE, GGL_MODULATE, 
++            GGL_DECAL, GGL_BLEND, GGL_ADD };
++    return envs[n];
++
++}
++
++// ----------------------------------------------------------------------------
++
++enum {
++    GGL_ENABLE_BLENDING     = 0x00000001,
++    GGL_ENABLE_SMOOTH       = 0x00000002,
++    GGL_ENABLE_AA           = 0x00000004,
++    GGL_ENABLE_LOGIC_OP     = 0x00000008,
++    GGL_ENABLE_ALPHA_TEST   = 0x00000010,
++    GGL_ENABLE_SCISSOR_TEST = 0x00000020,
++    GGL_ENABLE_TMUS         = 0x00000040,
++    GGL_ENABLE_DEPTH_TEST   = 0x00000080,
++    GGL_ENABLE_STENCIL_TEST = 0x00000100,
++    GGL_ENABLE_W            = 0x00000200,
++    GGL_ENABLE_DITHER       = 0x00000400,
++    GGL_ENABLE_FOG          = 0x00000800,
++    GGL_ENABLE_POINT_AA_NICE= 0x00001000
++};
++
++// ----------------------------------------------------------------------------
++
++class needs_filter_t;
++struct needs_t {
++    inline int match(const needs_filter_t& filter);
++    inline bool operator == (const needs_t& rhs) const {
++        return  (n==rhs.n) &&
++                (p==rhs.p) &&
++                (t[0]==rhs.t[0]) &&
++                (t[1]==rhs.t[1]);
++    }
++    inline bool operator != (const needs_t& rhs) const {
++        return !operator == (rhs);
++    }
++    uint32_t    n;
++    uint32_t    p;
++    uint32_t    t[GGL_TEXTURE_UNIT_COUNT];
++};
++
++inline int compare_type(const needs_t& lhs, const needs_t& rhs) {
++    return memcmp(&lhs, &rhs, sizeof(needs_t));
++}
++
++struct needs_filter_t {
++    needs_t     value;
++    needs_t     mask;
++};
++
++int needs_t::match(const needs_filter_t& filter) {
++    uint32_t result = 
++        ((filter.value.n ^ n)       & filter.mask.n)    |
++        ((filter.value.p ^ p)       & filter.mask.p)    |
++        ((filter.value.t[0] ^ t[0]) & filter.mask.t[0]) |
++        ((filter.value.t[1] ^ t[1]) & filter.mask.t[1]);
++    return (result == 0);
++}
++
++// ----------------------------------------------------------------------------
++
++struct context_t;
++class Assembly;
++
++struct blend_state_t {
++	uint32_t			src;
++	uint32_t			dst;
++	uint32_t			src_alpha;
++	uint32_t			dst_alpha;
++	uint8_t				reserved;
++	uint8_t				alpha_separate;
++	uint8_t				operation;
++	uint8_t				equation;
++};
++
++struct mask_state_t {
++    uint8_t             color;
++    uint8_t             depth;
++    uint32_t            stencil;
++};
++
++struct clear_state_t {
++    GGLclampx           r;
++    GGLclampx           g;
++    GGLclampx           b;
++    GGLclampx           a;
++    GGLclampx           depth;
++    GGLint              stencil;
++    uint32_t            colorPacked;
++    uint32_t            depthPacked;
++    uint32_t            stencilPacked;
++    uint32_t            dirty;
++};
++
++struct fog_state_t {
++    uint8_t     color[4];
++};
++
++struct logic_op_state_t {
++    uint16_t            opcode;
++};
++
++struct alpha_test_state_t {
++    uint16_t            func;
++    GGLcolor            ref;
++};
++
++struct depth_test_state_t {
++    uint16_t            func;
++    GGLclampx           clearValue;
++};
++
++struct scissor_t {
++    uint32_t            user_left;
++    uint32_t            user_right;
++    uint32_t            user_top;
++    uint32_t            user_bottom;
++    uint32_t            left;
++    uint32_t            right;
++    uint32_t            top;
++    uint32_t            bottom;
++};
++
++struct pixel_t {
++    uint32_t    c[4];
++    uint8_t     s[4];
++};
++
++struct surface_t {
++    union {
++        GGLSurface      s;
++        struct {
++        uint32_t            reserved;
++        uint32_t			width;
++        uint32_t			height;
++        int32_t             stride;
++        uint8_t*			data;	
++        uint8_t				format;
++        uint8_t				dirty;
++        uint8_t				pad[2];
++        };
++    };
++    void                (*read) (const surface_t* s, context_t* c,
++                                uint32_t x, uint32_t y, pixel_t* pixel);
++    void                (*write)(const surface_t* s, context_t* c,
++                                uint32_t x, uint32_t y, const pixel_t* pixel);
++};
++
++// ----------------------------------------------------------------------------
++
++struct texture_shade_t {
++    union {
++        struct {
++            int32_t             is0;
++            int32_t             idsdx;
++            int32_t             idsdy;
++            int                 sscale;
++            int32_t             it0;
++            int32_t             idtdx;
++            int32_t             idtdy;
++            int                 tscale;
++        };
++        struct {
++            int32_t             v;
++            int32_t             dx;
++            int32_t             dy;
++            int                 scale;
++        } st[2];
++    };
++};
++
++struct texture_iterators_t {
++    // these are not encoded in the same way than in the
++    // texture_shade_t structure
++    union {
++        struct {
++            GGLfixed			ydsdy;
++            GGLfixed            dsdx;
++            GGLfixed            dsdy;
++            int                 sscale;
++            GGLfixed			ydtdy;
++            GGLfixed            dtdx;
++            GGLfixed            dtdy;
++            int                 tscale;
++        };
++        struct {
++            GGLfixed			ydvdy;
++            GGLfixed            dvdx;
++            GGLfixed            dvdy;
++            int                 scale;
++        } st[2];
++    };
++};
++
++struct texture_t {
++	surface_t			surface;
++	texture_iterators_t	iterators;
++    texture_shade_t     shade;
++	uint32_t			s_coord;
++	uint32_t            t_coord;
++	uint16_t			s_wrap;
++	uint16_t            t_wrap;
++	uint16_t            min_filter;
++	uint16_t            mag_filter;
++    uint16_t            env;
++    uint8_t             env_color[4];
++	uint8_t				enable;
++	uint8_t				dirty;
++};
++
++struct raster_t {
++    GGLfixed            x;
++    GGLfixed            y;
++};
++
++struct framebuffer_t {
++    surface_t           color;
++    surface_t           read;
++	surface_t			depth;
++	surface_t			stencil;
++    int16_t             *coverage;
++    size_t              coverageBufferSize;
++};
++
++// ----------------------------------------------------------------------------
++
++struct iterators_t {
++	int32_t             xl;
++	int32_t             xr;
++    int32_t             y;
++	GGLcolor			ydady;
++	GGLcolor			ydrdy;
++	GGLcolor			ydgdy;
++	GGLcolor			ydbdy;
++	GGLfixed			ydzdy;
++	GGLfixed			ydwdy;
++	GGLfixed			ydfdy;
++};
++
++struct shade_t {
++	GGLcolor			a0;
++    GGLcolor            dadx;
++    GGLcolor            dady;
++	GGLcolor			r0;
++    GGLcolor            drdx;
++    GGLcolor            drdy;
++	GGLcolor			g0;
++    GGLcolor            dgdx;
++    GGLcolor            dgdy;
++	GGLcolor			b0;
++    GGLcolor            dbdx;
++    GGLcolor            dbdy;
++	uint32_t            z0;
++    GGLfixed32          dzdx;
++    GGLfixed32          dzdy;
++	GGLfixed            w0;
++    GGLfixed            dwdx;
++    GGLfixed            dwdy;
++	uint32_t			f0;
++    GGLfixed            dfdx;
++    GGLfixed            dfdy;
++};
++
++// these are used in the generated code
++// we use this mirror structure to improve
++// data locality in the pixel pipeline
++struct generated_tex_vars_t {
++    uint32_t    width;
++    uint32_t    height;
++    uint32_t    stride;
++    int32_t     data;
++    int32_t     dsdx;
++    int32_t     dtdx;
++    int32_t     spill[2];
++};
++
++struct generated_vars_t {
++    struct {
++        int32_t c;
++        int32_t dx;
++    } argb[4];
++    int32_t     aref;
++    int32_t     dzdx;
++    int32_t     zbase;
++    int32_t     f;
++    int32_t     dfdx;
++    int32_t     spill[3];
++    generated_tex_vars_t    texture[GGL_TEXTURE_UNIT_COUNT];
++    int32_t     rt;
++    int32_t     lb;
++};
++
++// ----------------------------------------------------------------------------
++
++struct state_t {
++	framebuffer_t		buffers;
++	texture_t			texture[GGL_TEXTURE_UNIT_COUNT];
++    scissor_t           scissor;
++    raster_t            raster;
++	blend_state_t		blend;
++    alpha_test_state_t  alpha_test;
++    depth_test_state_t  depth_test;
++    mask_state_t        mask;
++    clear_state_t       clear;
++    fog_state_t         fog;
++    logic_op_state_t    logic_op;
++    uint32_t            enables;
++    uint32_t            enabled_tmu;
++    needs_t             needs;
++};
++
++// ----------------------------------------------------------------------------
++
++struct context_t {
++	GGLContext          procs;
++	state_t             state;
++    shade_t             shade;
++	iterators_t         iterators;
++    generated_vars_t    generated_vars                __attribute__((aligned(32)));
++    uint8_t             ditherMatrix[GGL_DITHER_SIZE] __attribute__((aligned(32)));
++    uint32_t            packed;
++    uint32_t            packed8888;
++    const GGLFormat*    formats;
++    uint32_t            dirty;
++    texture_t*          activeTMU;
++    uint32_t            activeTMUIndex;
++
++    void                (*init_y)(context_t* c, int32_t y);
++	void                (*step_y)(context_t* c);
++	void                (*scanline)(context_t* c);
++    void                (*span)(context_t* c);
++    void                (*rect)(context_t* c, size_t yc);
++    
++    void*               base;
++    Assembly*           scanline_as;
++    GGLenum             error;
++};
++
++// ----------------------------------------------------------------------------
++
++void ggl_init_context(context_t* context);
++void ggl_uninit_context(context_t* context);
++void ggl_error(context_t* c, GGLenum error);
++int64_t ggl_system_time();
++
++// ----------------------------------------------------------------------------
++
++};
++
++#endif // ANDROID_GGL_CONTEXT_H
++
+diff -urpN android-tools-4.2.2+git20130218/core/include/private/pixelflinger/ggl_fixed.h b/core/include/private/pixelflinger/ggl_fixed.h
+--- android-tools-4.2.2+git20130218/core/include/private/pixelflinger/ggl_fixed.h	1970-01-01 08:00:00.000000000 +0800
++++ b/core/include/private/pixelflinger/ggl_fixed.h	2015-09-25 15:36:09.000000000 +0800
+@@ -0,0 +1,302 @@
++/*
++ * Copyright (C) 2005 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef ANDROID_GGL_FIXED_H
++#define ANDROID_GGL_FIXED_H
++
++#include <math.h>
++#include <pixelflinger/pixelflinger.h>
++
++// ----------------------------------------------------------------------------
++
++#define CONST           __attribute__((const))
++#define ALWAYS_INLINE   __attribute__((always_inline))
++
++const GGLfixed FIXED_BITS = 16;
++const GGLfixed FIXED_EPSILON  = 1;
++const GGLfixed FIXED_ONE  = 1L<<FIXED_BITS;
++const GGLfixed FIXED_HALF = 1L<<(FIXED_BITS-1);
++const GGLfixed FIXED_MIN  = 0x80000000L;
++const GGLfixed FIXED_MAX  = 0x7FFFFFFFL;
++
++inline GGLfixed gglIntToFixed(GGLfixed i)       ALWAYS_INLINE ;
++inline GGLfixed gglFixedToIntRound(GGLfixed f)  ALWAYS_INLINE ;
++inline GGLfixed gglFixedToIntFloor(GGLfixed f)  ALWAYS_INLINE ;
++inline GGLfixed gglFixedToIntCeil(GGLfixed f)   ALWAYS_INLINE ;
++inline GGLfixed gglFracx(GGLfixed v)            ALWAYS_INLINE ;
++inline GGLfixed gglFloorx(GGLfixed v)           ALWAYS_INLINE ;
++inline GGLfixed gglCeilx(GGLfixed v)            ALWAYS_INLINE ;
++inline GGLfixed gglCenterx(GGLfixed v)          ALWAYS_INLINE ;
++inline GGLfixed gglRoundx(GGLfixed v)           ALWAYS_INLINE ;
++
++GGLfixed gglIntToFixed(GGLfixed i) {
++    return i<<FIXED_BITS;
++}
++GGLfixed gglFixedToIntRound(GGLfixed f) {
++    return (f + FIXED_HALF)>>FIXED_BITS;
++}
++GGLfixed gglFixedToIntFloor(GGLfixed f) {
++    return f>>FIXED_BITS;
++}
++GGLfixed gglFixedToIntCeil(GGLfixed f) {
++    return (f + ((1<<FIXED_BITS) - 1))>>FIXED_BITS;
++}
++
++GGLfixed gglFracx(GGLfixed v) {
++    return v & ((1<<FIXED_BITS)-1);
++}
++GGLfixed gglFloorx(GGLfixed v) {
++    return gglFixedToIntFloor(v)<<FIXED_BITS;
++}
++GGLfixed gglCeilx(GGLfixed v) {
++    return gglFixedToIntCeil(v)<<FIXED_BITS;
++}
++GGLfixed gglCenterx(GGLfixed v) {
++    return gglFloorx(v + FIXED_HALF) | FIXED_HALF;
++}
++GGLfixed gglRoundx(GGLfixed v) {
++    return gglFixedToIntRound(v)<<FIXED_BITS;
++}
++
++// conversion from (unsigned) int, short, byte to fixed...
++#define GGL_B_TO_X(_x)      GGLfixed( ((int32_t(_x)+1)>>1)<<10 )
++#define GGL_S_TO_X(_x)      GGLfixed( ((int32_t(_x)+1)>>1)<<2 )
++#define GGL_I_TO_X(_x)      GGLfixed( ((int32_t(_x)>>1)+1)>>14 )
++#define GGL_UB_TO_X(_x)     GGLfixed(   uint32_t(_x) +      \
++                                        (uint32_t(_x)<<8) + \
++                                        (uint32_t(_x)>>7) )
++#define GGL_US_TO_X(_x)     GGLfixed( (_x) + ((_x)>>15) )
++#define GGL_UI_TO_X(_x)     GGLfixed( (((_x)>>1)+1)>>15 )
++
++// ----------------------------------------------------------------------------
++
++GGLfixed gglPowx(GGLfixed x, GGLfixed y) CONST;
++GGLfixed gglSqrtx(GGLfixed a) CONST;
++GGLfixed gglSqrtRecipx(GGLfixed x) CONST;
++GGLfixed gglFastDivx(GGLfixed n, GGLfixed d) CONST;
++int32_t gglMulDivi(int32_t a, int32_t b, int32_t c);
++
++int32_t gglRecipQNormalized(int32_t x, int* exponent);
++int32_t gglRecipQ(GGLfixed x, int q) CONST;
++
++inline GGLfixed gglRecip(GGLfixed x) CONST;
++inline GGLfixed gglRecip(GGLfixed x) {
++    return gglRecipQ(x, 16);
++}
++
++inline GGLfixed gglRecip28(GGLfixed x) CONST;
++int32_t gglRecip28(GGLfixed x) {
++    return gglRecipQ(x, 28);
++}
++
++// ----------------------------------------------------------------------------
++
++#if defined(__arm__) && !defined(__thumb__)
++
++// inline ARM implementations
++inline GGLfixed gglMulx(GGLfixed x, GGLfixed y, int shift) CONST;
++inline GGLfixed gglMulx(GGLfixed x, GGLfixed y, int shift) {
++    GGLfixed result, t;
++    if (__builtin_constant_p(shift)) {
++    asm("smull  %[lo], %[hi], %[x], %[y]            \n"
++        "movs   %[lo], %[lo], lsr %[rshift]         \n"
++        "adc    %[lo], %[lo], %[hi], lsl %[lshift]  \n"
++        : [lo]"=r"(result), [hi]"=r"(t), [x]"=r"(x)
++        : "%[x]"(x), [y]"r"(y), [lshift] "I"(32-shift), [rshift] "I"(shift)
++        : "cc"
++        );
++    } else {
++    asm("smull  %[lo], %[hi], %[x], %[y]            \n"
++        "movs   %[lo], %[lo], lsr %[rshift]         \n"
++        "adc    %[lo], %[lo], %[hi], lsl %[lshift]  \n"
++        : [lo]"=&r"(result), [hi]"=&r"(t), [x]"=&r"(x)
++        : "%[x]"(x), [y]"r"(y), [lshift] "r"(32-shift), [rshift] "r"(shift)
++        : "cc"
++        );
++    }
++    return result;
++}
++
++inline GGLfixed gglMulAddx(GGLfixed x, GGLfixed y, GGLfixed a, int shift) CONST;
++inline GGLfixed gglMulAddx(GGLfixed x, GGLfixed y, GGLfixed a, int shift) {
++    GGLfixed result, t;
++    if (__builtin_constant_p(shift)) {
++    asm("smull  %[lo], %[hi], %[x], %[y]            \n"
++        "add    %[lo], %[a],  %[lo], lsr %[rshift]  \n"
++        "add    %[lo], %[lo], %[hi], lsl %[lshift]  \n"
++        : [lo]"=&r"(result), [hi]"=&r"(t), [x]"=&r"(x)
++        : "%[x]"(x), [y]"r"(y), [a]"r"(a), [lshift] "I"(32-shift), [rshift] "I"(shift)
++        );
++    } else {
++    asm("smull  %[lo], %[hi], %[x], %[y]            \n"
++        "add    %[lo], %[a],  %[lo], lsr %[rshift]  \n"
++        "add    %[lo], %[lo], %[hi], lsl %[lshift]  \n"
++        : [lo]"=&r"(result), [hi]"=&r"(t), [x]"=&r"(x)
++        : "%[x]"(x), [y]"r"(y), [a]"r"(a), [lshift] "r"(32-shift), [rshift] "r"(shift)
++        );
++    }
++    return result;
++}
++
++inline GGLfixed gglMulSubx(GGLfixed x, GGLfixed y, GGLfixed a, int shift) CONST;
++inline GGLfixed gglMulSubx(GGLfixed x, GGLfixed y, GGLfixed a, int shift) {
++    GGLfixed result, t;
++    if (__builtin_constant_p(shift)) {
++    asm("smull  %[lo], %[hi], %[x], %[y]            \n"
++        "rsb    %[lo], %[a],  %[lo], lsr %[rshift]  \n"
++        "add    %[lo], %[lo], %[hi], lsl %[lshift]  \n"
++        : [lo]"=&r"(result), [hi]"=&r"(t), [x]"=&r"(x)
++        : "%[x]"(x), [y]"r"(y), [a]"r"(a), [lshift] "I"(32-shift), [rshift] "I"(shift)
++        );
++    } else {
++    asm("smull  %[lo], %[hi], %[x], %[y]            \n"
++        "rsb    %[lo], %[a],  %[lo], lsr %[rshift]  \n"
++        "add    %[lo], %[lo], %[hi], lsl %[lshift]  \n"
++        : [lo]"=&r"(result), [hi]"=&r"(t), [x]"=&r"(x)
++        : "%[x]"(x), [y]"r"(y), [a]"r"(a), [lshift] "r"(32-shift), [rshift] "r"(shift)
++        );
++    }
++    return result;
++}
++
++inline int64_t gglMulii(int32_t x, int32_t y) CONST;
++inline int64_t gglMulii(int32_t x, int32_t y)
++{
++    // 64-bits result: r0=low, r1=high
++    union {
++        struct {
++            int32_t lo;
++            int32_t hi;
++        } s;
++        int64_t res;
++    };
++    asm("smull %0, %1, %2, %3   \n"
++        : "=r"(s.lo), "=&r"(s.hi)
++        : "%r"(x), "r"(y)
++        :
++        );
++    return res;
++}
++
++#else // ----------------------------------------------------------------------
++
++inline GGLfixed gglMulx(GGLfixed a, GGLfixed b, int shift) CONST;
++inline GGLfixed gglMulx(GGLfixed a, GGLfixed b, int shift) {
++    return GGLfixed((int64_t(a)*b + (1<<(shift-1)))>>shift);
++}
++inline GGLfixed gglMulAddx(GGLfixed a, GGLfixed b, GGLfixed c, int shift) CONST;
++inline GGLfixed gglMulAddx(GGLfixed a, GGLfixed b, GGLfixed c, int shift) {
++    return GGLfixed((int64_t(a)*b)>>shift) + c;
++}
++inline GGLfixed gglMulSubx(GGLfixed a, GGLfixed b, GGLfixed c, int shift) CONST;
++inline GGLfixed gglMulSubx(GGLfixed a, GGLfixed b, GGLfixed c, int shift) {
++    return GGLfixed((int64_t(a)*b)>>shift) - c;
++}
++inline int64_t gglMulii(int32_t a, int32_t b) CONST;
++inline int64_t gglMulii(int32_t a, int32_t b) {
++    return int64_t(a)*b;
++}
++
++#endif
++
++// ------------------------------------------------------------------------
++
++inline GGLfixed gglMulx(GGLfixed a, GGLfixed b) CONST;
++inline GGLfixed gglMulx(GGLfixed a, GGLfixed b) {
++    return gglMulx(a, b, 16);
++}
++inline GGLfixed gglMulAddx(GGLfixed a, GGLfixed b, GGLfixed c) CONST;
++inline GGLfixed gglMulAddx(GGLfixed a, GGLfixed b, GGLfixed c) {
++    return gglMulAddx(a, b, c, 16);
++}
++inline GGLfixed gglMulSubx(GGLfixed a, GGLfixed b, GGLfixed c) CONST;
++inline GGLfixed gglMulSubx(GGLfixed a, GGLfixed b, GGLfixed c) {
++    return gglMulSubx(a, b, c, 16);
++}
++
++// ------------------------------------------------------------------------
++
++inline int32_t gglClz(int32_t x) CONST;
++inline int32_t gglClz(int32_t x)
++{
++#if defined(__arm__) && !defined(__thumb__)
++    return __builtin_clz(x);
++#else
++    if (!x) return 32;
++    int32_t exp = 31;
++    if (x & 0xFFFF0000) { exp -=16; x >>= 16; }
++    if (x & 0x0000ff00) { exp -= 8; x >>= 8; }
++    if (x & 0x000000f0) { exp -= 4; x >>= 4; }
++    if (x & 0x0000000c) { exp -= 2; x >>= 2; }
++    if (x & 0x00000002) { exp -= 1; }
++    return exp;
++#endif
++}
++
++// ------------------------------------------------------------------------
++
++int32_t gglDivQ(GGLfixed n, GGLfixed d, int32_t i) CONST;
++
++inline int32_t gglDivQ16(GGLfixed n, GGLfixed d) CONST;
++inline int32_t gglDivQ16(GGLfixed n, GGLfixed d) {
++    return gglDivQ(n, d, 16);
++}
++
++inline int32_t gglDivx(GGLfixed n, GGLfixed d) CONST;
++inline int32_t gglDivx(GGLfixed n, GGLfixed d) {
++    return gglDivQ(n, d, 16);
++}
++
++// ------------------------------------------------------------------------
++
++inline GGLfixed gglRecipFast(GGLfixed x) CONST;
++inline GGLfixed gglRecipFast(GGLfixed x)
++{
++    // This is a really bad approximation of 1/x, but it's also
++    // very fast. x must be strictly positive.
++    // if x between [0.5, 1[ , then 1/x = 3-2*x
++    // (we use 2.30 fixed-point)
++    const int32_t lz = gglClz(x);
++    return (0xC0000000 - (x << (lz - 1))) >> (30-lz);
++}
++
++// ------------------------------------------------------------------------
++
++inline GGLfixed gglClampx(GGLfixed c) CONST;
++inline GGLfixed gglClampx(GGLfixed c)
++{
++#if defined(__thumb__)
++    // clamp without branches
++    c &= ~(c>>31);  c = FIXED_ONE - c;
++    c &= ~(c>>31);  c = FIXED_ONE - c;
++#else
++#if defined(__arm__)
++    // I don't know why gcc thinks its smarter than me! The code below
++    // clamps to zero in one instruction, but gcc won't generate it and
++    // replace it by a cmp + movlt (it's quite amazing actually).
++    asm("bic %0, %1, %1, asr #31\n" : "=r"(c) : "r"(c));
++#else
++    c &= ~(c>>31);
++#endif
++    if (c>FIXED_ONE)
++        c = FIXED_ONE;
++#endif
++    return c;
++}
++
++// ------------------------------------------------------------------------
++
++#endif // ANDROID_GGL_FIXED_H
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/event_tag_map.c b/core/logcat/event_tag_map.c
+--- android-tools-4.2.2+git20130218/core/logcat/event_tag_map.c	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/event_tag_map.c	2021-12-30 14:33:49.980292000 +0800
+@@ -0,0 +1,439 @@
++/*
++ * Copyright (C) 2007 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#include "cutils/event_tag_map.h"
++#include "cutils/log.h"
++
++#include <stdlib.h>
++#include <string.h>
++#include <fcntl.h>
++#include <sys/mman.h>
++#include <errno.h>
++#include <assert.h>
++#include <sys/ioctl.h>
++
++#define OUT_TAG "EventTagMap"
++
++/*
++ * Single entry.
++ */
++typedef struct EventTag {
++    unsigned int    tagIndex;
++    const char*     tagStr;
++} EventTag;
++
++/*
++ * Map.
++ */
++struct EventTagMap {
++    /* memory-mapped source file; we get strings from here */
++    void*           mapAddr;
++    size_t          mapLen;
++
++    /* array of event tags, sorted numerically by tag index */
++    EventTag*       tagArray;
++    int             numTags;
++};
++
++/* fwd */
++static int processFile(EventTagMap* map);
++static int countMapLines(const EventTagMap* map);
++static int parseMapLines(EventTagMap* map);
++static int scanTagLine(char** pData, EventTag* tag, int lineNum);
++static int sortTags(EventTagMap* map);
++static void dumpTags(const EventTagMap* map);
++
++
++/*
++ * Open the map file and allocate a structure to manage it.
++ *
++ * We create a private mapping because we want to terminate the log tag
++ * strings with '\0'.
++ */
++EventTagMap* android_openEventTagMap(const char* fileName)
++{
++    EventTagMap* newTagMap;
++    off_t end;
++    int fd = -1;
++
++    newTagMap = calloc(1, sizeof(EventTagMap));
++    if (newTagMap == NULL)
++        return NULL;
++
++    fd = open(fileName, O_RDONLY);
++    if (fd < 0) {
++        fprintf(stderr, "%s: unable to open map '%s': %s\n",
++            OUT_TAG, fileName, strerror(errno));
++        goto fail;
++    }
++
++    end = lseek(fd, 0L, SEEK_END);
++    (void) lseek(fd, 0L, SEEK_SET);
++    if (end < 0) {
++        fprintf(stderr, "%s: unable to seek map '%s'\n", OUT_TAG, fileName);
++        goto fail;
++    }
++
++    newTagMap->mapAddr = mmap(NULL, end, PROT_READ | PROT_WRITE, MAP_PRIVATE,
++                                fd, 0);
++    if (newTagMap->mapAddr == MAP_FAILED) {
++        fprintf(stderr, "%s: mmap(%s) failed: %s\n",
++            OUT_TAG, fileName, strerror(errno));
++        goto fail;
++    }
++    newTagMap->mapLen = end;
++
++    if (processFile(newTagMap) != 0)
++        goto fail;
++
++    return newTagMap;
++
++fail:
++    android_closeEventTagMap(newTagMap);
++    if (fd >= 0)
++        close(fd);
++    return NULL;
++}
++
++/*
++ * Close the map.
++ */
++void android_closeEventTagMap(EventTagMap* map)
++{
++    if (map == NULL)
++        return;
++
++    munmap(map->mapAddr, map->mapLen);
++    free(map);
++}
++
++/*
++ * Look up an entry in the map.
++ *
++ * The entries are sorted by tag number, so we can do a binary search.
++ */
++const char* android_lookupEventTag(const EventTagMap* map, int tag)
++{
++    int hi, lo, mid;
++
++    lo = 0;
++    hi = map->numTags-1;
++
++    while (lo <= hi) {
++        int cmp;
++
++        mid = (lo+hi)/2;
++        cmp = map->tagArray[mid].tagIndex - tag;
++        if (cmp < 0) {
++            /* tag is bigger */
++            lo = mid + 1;
++        } else if (cmp > 0) {
++            /* tag is smaller */
++            hi = mid - 1;
++        } else {
++            /* found */
++            return map->tagArray[mid].tagStr;
++        }
++    }
++
++    return NULL;
++}
++
++
++
++/*
++ * Determine whether "c" is a whitespace char.
++ */
++static inline int isCharWhitespace(char c)
++{
++    return (c == ' ' || c == '\n' || c == '\r' || c == '\t');
++}
++
++/*
++ * Determine whether "c" is a valid tag char.
++ */
++static inline int isCharValidTag(char c)
++{
++    return ((c >= 'A' && c <= 'Z') ||
++            (c >= 'a' && c <= 'z') ||
++            (c >= '0' && c <= '9') ||
++            (c == '_'));
++}
++
++/*
++ * Determine whether "c" is a valid decimal digit.
++ */
++static inline int isCharDigit(char c)
++{
++    return (c >= '0' && c <= '9');
++}
++
++
++/*
++ * Crunch through the file, parsing the contents and creating a tag index.
++ */
++static int processFile(EventTagMap* map)
++{
++    EventTag* tagArray = NULL;
++
++    /* get a tag count */
++    map->numTags = countMapLines(map);
++    if (map->numTags < 0)
++        return -1;
++
++    //printf("+++ found %d tags\n", map->numTags);
++
++    /* allocate storage for the tag index array */
++    map->tagArray = calloc(1, sizeof(EventTag) * map->numTags);
++    if (map->tagArray == NULL)
++        return -1;
++
++    /* parse the file, null-terminating tag strings */
++    if (parseMapLines(map) != 0) {
++        fprintf(stderr, "%s: file parse failed\n", OUT_TAG);
++        return -1;
++    }
++
++    /* sort the tags and check for duplicates */
++    if (sortTags(map) != 0)
++        return -1;
++
++    return 0;
++}
++
++/*
++ * Run through all lines in the file, determining whether they're blank,
++ * comments, or possibly have a tag entry.
++ *
++ * This is a very "loose" scan.  We don't try to detect syntax errors here.
++ * The later pass is more careful, but the number of tags found there must
++ * match the number of tags found here.
++ *
++ * Returns the number of potential tag entries found.
++ */
++static int countMapLines(const EventTagMap* map)
++{
++    int numTags, unknown;
++    const char* cp;
++    const char* endp;
++
++    cp = (const char*) map->mapAddr;
++    endp = cp + map->mapLen;
++
++    numTags = 0;
++    unknown = 1;
++    while (cp < endp) {
++        if (*cp == '\n') {
++            unknown = 1;
++        } else if (unknown) {
++            if (isCharDigit(*cp)) {
++                /* looks like a tag to me */
++                numTags++;
++                unknown = 0;
++            } else if (isCharWhitespace(*cp)) {
++                /* might be leading whitespace before tag num, keep going */
++            } else {
++                /* assume comment; second pass can complain in detail */
++                unknown = 0;
++            }
++        } else {
++            /* we've made up our mind; just scan to end of line */
++        }
++        cp++;
++    }
++
++    return numTags;
++}
++
++/*
++ * Parse the tags out of the file.
++ */
++static int parseMapLines(EventTagMap* map)
++{
++    int tagNum, lineStart, lineNum;
++    char* cp;
++    char* endp;
++
++    cp = (char*) map->mapAddr;
++    endp = cp + map->mapLen;
++
++    /* insist on EOL at EOF; simplifies parsing and null-termination */
++    if (*(endp-1) != '\n') {
++        fprintf(stderr, "%s: map file missing EOL on last line\n", OUT_TAG);
++        return -1;
++    }
++
++    tagNum = 0;
++    lineStart = 1;
++    lineNum = 1;
++    while (cp < endp) {
++        //printf("{%02x}", *cp); fflush(stdout);
++        if (*cp == '\n') {
++            lineStart = 1;
++            lineNum++;
++        } else if (lineStart) {
++            if (*cp == '#') {
++                /* comment; just scan to end */
++                lineStart = 0;
++            } else if (isCharDigit(*cp)) {
++                /* looks like a tag; scan it out */
++                if (tagNum >= map->numTags) {
++                    fprintf(stderr,
++                        "%s: more tags than expected (%d)\n", OUT_TAG, tagNum);
++                    return -1;
++                }
++                if (scanTagLine(&cp, &map->tagArray[tagNum], lineNum) != 0)
++                    return -1;
++                tagNum++;
++                lineNum++;      // we eat the '\n'
++                /* leave lineStart==1 */
++            } else if (isCharWhitespace(*cp)) {
++                /* looks like leading whitespace; keep scanning */
++            } else {
++                fprintf(stderr,
++                    "%s: unexpected chars (0x%02x) in tag number on line %d\n",
++                    OUT_TAG, *cp, lineNum);
++                return -1;
++            }
++        } else {
++            /* this is a blank or comment line */
++        }
++        cp++;
++    }
++
++    if (tagNum != map->numTags) {
++        fprintf(stderr, "%s: parsed %d tags, expected %d\n",
++            OUT_TAG, tagNum, map->numTags);
++        return -1;
++    }
++
++    return 0;
++}
++
++/*
++ * Scan one tag line.
++ *
++ * "*pData" should be pointing to the first digit in the tag number.  On
++ * successful return, it will be pointing to the last character in the
++ * tag line (i.e. the character before the start of the next line).
++ *
++ * Returns 0 on success, nonzero on failure.
++ */
++static int scanTagLine(char** pData, EventTag* tag, int lineNum)
++{
++    char* cp = *pData;
++    char* startp;
++    char* endp;
++    unsigned long val;
++
++    startp = cp;
++    while (isCharDigit(*++cp))
++        ;
++    *cp = '\0';
++
++    val = strtoul(startp, &endp, 10);
++    assert(endp == cp);
++    if (endp != cp)
++        fprintf(stderr, "ARRRRGH\n");
++
++    tag->tagIndex = val;
++
++    while (*++cp != '\n' && isCharWhitespace(*cp))
++        ;
++
++    if (*cp == '\n') {
++        fprintf(stderr,
++            "%s: missing tag string on line %d\n", OUT_TAG, lineNum);
++        return -1;
++    }
++
++    tag->tagStr = cp;
++
++    while (isCharValidTag(*++cp))
++        ;
++
++    if (*cp == '\n') {
++        /* null terminate and return */
++        *cp = '\0';
++    } else if (isCharWhitespace(*cp)) {
++        /* CRLF or trailin spaces; zap this char, then scan for the '\n' */
++        *cp = '\0';
++
++        /* just ignore the rest of the line till \n
++        TODO: read the tag description that follows the tag name
++        */
++        while (*++cp != '\n') {
++        }
++    } else {
++        fprintf(stderr,
++            "%s: invalid tag chars on line %d\n", OUT_TAG, lineNum);
++        return -1;
++    }
++
++    *pData = cp;
++
++    //printf("+++ Line %d: got %d '%s'\n", lineNum, tag->tagIndex, tag->tagStr);
++    return 0;
++}
++
++/*
++ * Compare two EventTags.
++ */
++static int compareEventTags(const void* v1, const void* v2)
++{
++    const EventTag* tag1 = (const EventTag*) v1;
++    const EventTag* tag2 = (const EventTag*) v2;
++
++    return tag1->tagIndex - tag2->tagIndex;
++}
++
++/*
++ * Sort the EventTag array so we can do fast lookups by tag index.  After
++ * the sort we do a quick check for duplicate tag indices.
++ *
++ * Returns 0 on success.
++ */
++static int sortTags(EventTagMap* map)
++{
++    int i;
++
++    qsort(map->tagArray, map->numTags, sizeof(EventTag), compareEventTags);
++
++    for (i = 1; i < map->numTags; i++) {
++        if (map->tagArray[i].tagIndex == map->tagArray[i-1].tagIndex) {
++            fprintf(stderr, "%s: duplicate tag entries (%d:%s and %d:%s)\n",
++                OUT_TAG,
++                map->tagArray[i].tagIndex, map->tagArray[i].tagStr,
++                map->tagArray[i-1].tagIndex, map->tagArray[i-1].tagStr);
++            return -1;
++        }
++    }
++
++    return 0;
++}
++
++/*
++ * Dump the tag array for debugging.
++ */
++static void dumpTags(const EventTagMap* map)
++{
++    int i;
++
++    for (i = 0; i < map->numTags; i++) {
++        const EventTag* tag = &map->tagArray[i];
++        printf("  %3d: %6d '%s'\n", i, tag->tagIndex, tag->tagStr);
++    }
++}
++
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/klog.c b/core/logcat/klog.c
+--- android-tools-4.2.2+git20130218/core/logcat/klog.c	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/klog.c	2013-02-18 22:49:03.000000000 +0800
+@@ -0,0 +1,60 @@
++/*
++ * Copyright (C) 2008 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <sys/stat.h>
++#include <sys/types.h>
++#include <fcntl.h>
++#include <stdarg.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++
++#include <cutils/klog.h>
++
++static int klog_fd = -1;
++static int klog_level = KLOG_DEFAULT_LEVEL;
++
++void klog_set_level(int level) {
++    klog_level = level;
++}
++
++void klog_init(void)
++{
++    static const char *name = "/dev/__kmsg__";
++    if (mknod(name, S_IFCHR | 0600, (1 << 8) | 11) == 0) {
++        klog_fd = open(name, O_WRONLY);
++        fcntl(klog_fd, F_SETFD, FD_CLOEXEC);
++        unlink(name);
++    }
++}
++
++#define LOG_BUF_MAX 512
++
++void klog_write(int level, const char *fmt, ...)
++{
++    char buf[LOG_BUF_MAX];
++    va_list ap;
++
++    if (level > klog_level) return;
++    if (klog_fd < 0) return;
++
++    va_start(ap, fmt);
++    vsnprintf(buf, LOG_BUF_MAX, fmt, ap);
++    buf[LOG_BUF_MAX - 1] = 0;
++    va_end(ap);
++    write(klog_fd, buf, strlen(buf));
++}
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/logcat.cpp b/core/logcat/logcat.cpp
+--- android-tools-4.2.2+git20130218/core/logcat/logcat.cpp	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/logcat.cpp	2021-12-30 14:33:49.980292000 +0800
+@@ -0,0 +1,789 @@
++// Copyright 2006 The Android Open Source Project
++
++#include <cutils/logger.h>
++#include <cutils/logd.h>
++#include <cutils/sockets.h>
++#include <cutils/logprint.h>
++#include <cutils/event_tag_map.h>
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <stdarg.h>
++#include <string.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <time.h>
++#include <errno.h>
++#include <assert.h>
++#include <ctype.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <arpa/inet.h>
++
++#define DEFAULT_LOG_ROTATE_SIZE_KBYTES 16
++#define DEFAULT_MAX_ROTATED_LOGS 4
++
++static AndroidLogFormat * g_logformat;
++static bool g_nonblock = false;
++static int g_tail_lines = 0;
++
++/* logd prefixes records with a length field */
++#define RECORD_LENGTH_FIELD_SIZE_BYTES sizeof(uint32_t)
++
++#define LOG_FILE_DIR    "/dev/log/"
++
++struct queued_entry_t {
++    union {
++        unsigned char buf[LOGGER_ENTRY_MAX_LEN + 1] __attribute__((aligned(4)));
++        struct logger_entry entry __attribute__((aligned(4)));
++    };
++    queued_entry_t* next;
++
++    queued_entry_t() {
++        next = NULL;
++    }
++};
++
++static int cmp(queued_entry_t* a, queued_entry_t* b) {
++    int n = a->entry.sec - b->entry.sec;
++    if (n != 0) {
++        return n;
++    }
++    return a->entry.nsec - b->entry.nsec;
++}
++
++struct log_device_t {
++    char* device;
++    bool binary;
++    int fd;
++    bool printed;
++    char label;
++
++    queued_entry_t* queue;
++    log_device_t* next;
++
++    log_device_t(char* d, bool b, char l) {
++        device = d;
++        binary = b;
++        label = l;
++        queue = NULL;
++        next = NULL;
++        printed = false;
++    }
++
++    void enqueue(queued_entry_t* entry) {
++        if (this->queue == NULL) {
++            this->queue = entry;
++        } else {
++            queued_entry_t** e = &this->queue;
++            while (*e && cmp(entry, *e) >= 0) {
++                e = &((*e)->next);
++            }
++            entry->next = *e;
++            *e = entry;
++        }
++    }
++};
++
++namespace android {
++
++/* Global Variables */
++
++static const char * g_outputFileName = NULL;
++static int g_logRotateSizeKBytes = 0;                   // 0 means "no log rotation"
++static int g_maxRotatedLogs = DEFAULT_MAX_ROTATED_LOGS; // 0 means "unbounded"
++static int g_outFD = -1;
++static off_t g_outByteCount = 0;
++static int g_printBinary = 0;
++static int g_devCount = 0;
++
++static EventTagMap* g_eventTagMap = NULL;
++
++static int openLogFile (const char *pathname)
++{
++    return open(g_outputFileName, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR);
++}
++
++static void rotateLogs()
++{
++    int err;
++
++    // Can't rotate logs if we're not outputting to a file
++    if (g_outputFileName == NULL) {
++        return;
++    }
++
++    close(g_outFD);
++
++    for (int i = g_maxRotatedLogs ; i > 0 ; i--) {
++        char *file0, *file1;
++
++        asprintf(&file1, "%s.%d", g_outputFileName, i);
++
++        if (i - 1 == 0) {
++            asprintf(&file0, "%s", g_outputFileName);
++        } else {
++            asprintf(&file0, "%s.%d", g_outputFileName, i - 1);
++        }
++
++        err = rename (file0, file1);
++
++        if (err < 0 && errno != ENOENT) {
++            perror("while rotating log files");
++        }
++
++        free(file1);
++        free(file0);
++    }
++
++    g_outFD = openLogFile (g_outputFileName);
++
++    if (g_outFD < 0) {
++        perror ("couldn't open output file");
++        exit(-1);
++    }
++
++    g_outByteCount = 0;
++
++}
++
++void printBinary(struct logger_entry *buf)
++{
++    size_t size = sizeof(logger_entry) + buf->len;
++    int ret;
++    
++    do {
++        ret = write(g_outFD, buf, size);
++    } while (ret < 0 && errno == EINTR);
++}
++
++static void processBuffer(log_device_t* dev, struct logger_entry *buf)
++{
++    int bytesWritten = 0;
++    int err;
++    AndroidLogEntry entry;
++    char binaryMsgBuf[1024];
++
++    if (dev->binary) {
++        err = android_log_processBinaryLogBuffer(buf, &entry, g_eventTagMap,
++                binaryMsgBuf, sizeof(binaryMsgBuf));
++        //printf(">>> pri=%d len=%d msg='%s'\n",
++        //    entry.priority, entry.messageLen, entry.message);
++    } else {
++        err = android_log_processLogBuffer(buf, &entry);
++    }
++    if (err < 0) {
++        goto error;
++    }
++
++    if (android_log_shouldPrintLine(g_logformat, entry.tag, entry.priority)) {
++        if (false && g_devCount > 1) {
++            binaryMsgBuf[0] = dev->label;
++            binaryMsgBuf[1] = ' ';
++            bytesWritten = write(g_outFD, binaryMsgBuf, 2);
++            if (bytesWritten < 0) {
++                perror("output error");
++                exit(-1);
++            }
++        }
++
++        bytesWritten = android_log_printLogLine(g_logformat, g_outFD, &entry);
++
++        if (bytesWritten < 0) {
++            perror("output error");
++            exit(-1);
++        }
++    }
++
++    g_outByteCount += bytesWritten;
++
++    if (g_logRotateSizeKBytes > 0 
++        && (g_outByteCount / 1024) >= g_logRotateSizeKBytes
++    ) {
++        rotateLogs();
++    }
++
++error:
++    //fprintf (stderr, "Error processing record\n");
++    return;
++}
++
++static void chooseFirst(log_device_t* dev, log_device_t** firstdev) {
++    for (*firstdev = NULL; dev != NULL; dev = dev->next) {
++        if (dev->queue != NULL && (*firstdev == NULL || cmp(dev->queue, (*firstdev)->queue) < 0)) {
++            *firstdev = dev;
++        }
++    }
++}
++
++static void maybePrintStart(log_device_t* dev) {
++    if (!dev->printed) {
++        dev->printed = true;
++        if (g_devCount > 1 && !g_printBinary) {
++            char buf[1024];
++            snprintf(buf, sizeof(buf), "--------- beginning of %s\n", dev->device);
++            if (write(g_outFD, buf, strlen(buf)) < 0) {
++                perror("output error");
++                exit(-1);
++            }
++        }
++    }
++}
++
++static void skipNextEntry(log_device_t* dev) {
++    maybePrintStart(dev);
++    queued_entry_t* entry = dev->queue;
++    dev->queue = entry->next;
++    delete entry;
++}
++
++static void printNextEntry(log_device_t* dev) {
++    maybePrintStart(dev);
++    if (g_printBinary) {
++        printBinary(&dev->queue->entry);
++    } else {
++        processBuffer(dev, &dev->queue->entry);
++    }
++    skipNextEntry(dev);
++}
++
++static void readLogLines(log_device_t* devices)
++{
++    log_device_t* dev;
++    int max = 0;
++    int ret;
++    int queued_lines = 0;
++    bool sleep = true;
++
++    int result;
++    fd_set readset;
++
++    for (dev=devices; dev; dev = dev->next) {
++        if (dev->fd > max) {
++            max = dev->fd;
++        }
++    }
++
++    while (1) {
++        do {
++            timeval timeout = { 0, 5000 /* 5ms */ }; // If we oversleep it's ok, i.e. ignore EINTR.
++            FD_ZERO(&readset);
++            for (dev=devices; dev; dev = dev->next) {
++                FD_SET(dev->fd, &readset);
++            }
++            result = select(max + 1, &readset, NULL, NULL, sleep ? NULL : &timeout);
++        } while (result == -1 && errno == EINTR);
++
++        if (result >= 0) {
++            for (dev=devices; dev; dev = dev->next) {
++                if (FD_ISSET(dev->fd, &readset)) {
++                    queued_entry_t* entry = new queued_entry_t();
++                    /* NOTE: driver guarantees we read exactly one full entry */
++                    ret = read(dev->fd, entry->buf, LOGGER_ENTRY_MAX_LEN);
++                    if (ret < 0) {
++                        if (errno == EINTR) {
++                            delete entry;
++                            goto next;
++                        }
++                        if (errno == EAGAIN) {
++                            delete entry;
++                            break;
++                        }
++                        perror("logcat read");
++                        exit(EXIT_FAILURE);
++                    }
++                    else if (!ret) {
++                        fprintf(stderr, "read: Unexpected EOF!\n");
++                        exit(EXIT_FAILURE);
++                    }
++                    else if (entry->entry.len != ret - sizeof(struct logger_entry)) {
++                        fprintf(stderr, "read: unexpected length. Expected %d, got %d\n",
++                                entry->entry.len, ret - sizeof(struct logger_entry));
++                        exit(EXIT_FAILURE);
++                    }
++
++                    entry->entry.msg[entry->entry.len] = '\0';
++
++                    dev->enqueue(entry);
++                    ++queued_lines;
++                }
++            }
++
++            if (result == 0) {
++                // we did our short timeout trick and there's nothing new
++                // print everything we have and wait for more data
++                sleep = true;
++                while (true) {
++                    chooseFirst(devices, &dev);
++                    if (dev == NULL) {
++                        break;
++                    }
++                    if (g_tail_lines == 0 || queued_lines <= g_tail_lines) {
++                        printNextEntry(dev);
++                    } else {
++                        skipNextEntry(dev);
++                    }
++                    --queued_lines;
++                }
++
++                // the caller requested to just dump the log and exit
++                if (g_nonblock) {
++                    return;
++                }
++            } else {
++                // print all that aren't the last in their list
++                sleep = false;
++                while (g_tail_lines == 0 || queued_lines > g_tail_lines) {
++                    chooseFirst(devices, &dev);
++                    if (dev == NULL || dev->queue->next == NULL) {
++                        break;
++                    }
++                    if (g_tail_lines == 0) {
++                        printNextEntry(dev);
++                    } else {
++                        skipNextEntry(dev);
++                    }
++                    --queued_lines;
++                }
++            }
++        }
++next:
++        ;
++    }
++}
++
++static int clearLog(int logfd)
++{
++    return ioctl(logfd, LOGGER_FLUSH_LOG);
++}
++
++/* returns the total size of the log's ring buffer */
++static int getLogSize(int logfd)
++{
++    return ioctl(logfd, LOGGER_GET_LOG_BUF_SIZE);
++}
++
++/* returns the readable size of the log's ring buffer (that is, amount of the log consumed) */
++static int getLogReadableSize(int logfd)
++{
++    return ioctl(logfd, LOGGER_GET_LOG_LEN);
++}
++
++static void setupOutput()
++{
++
++    if (g_outputFileName == NULL) {
++        g_outFD = STDOUT_FILENO;
++
++    } else {
++        struct stat statbuf;
++
++        g_outFD = openLogFile (g_outputFileName);
++
++        if (g_outFD < 0) {
++            perror ("couldn't open output file");
++            exit(-1);
++        }
++
++        fstat(g_outFD, &statbuf);
++
++        g_outByteCount = statbuf.st_size;
++    }
++}
++
++static void show_help(const char *cmd)
++{
++    fprintf(stderr,"Usage: %s [options] [filterspecs]\n", cmd);
++
++    fprintf(stderr, "options include:\n"
++                    "  -s              Set default filter to silent.\n"
++                    "                  Like specifying filterspec '*:s'\n"
++                    "  -f <filename>   Log to file. Default to stdout\n"
++                    "  -r [<kbytes>]   Rotate log every kbytes. (16 if unspecified). Requires -f\n"
++                    "  -n <count>      Sets max number of rotated logs to <count>, default 4\n"
++                    "  -v <format>     Sets the log print format, where <format> is one of:\n\n"
++                    "                  brief process tag thread raw time threadtime long\n\n"
++                    "  -c              clear (flush) the entire log and exit\n"
++                    "  -d              dump the log and then exit (don't block)\n"
++                    "  -t <count>      print only the most recent <count> lines (implies -d)\n"
++                    "  -g              get the size of the log's ring buffer and exit\n"
++                    "  -b <buffer>     Request alternate ring buffer, 'main', 'system', 'radio'\n"
++                    "                  or 'events'. Multiple -b parameters are allowed and the\n"
++                    "                  results are interleaved. The default is -b main -b system.\n"
++                    "  -B              output the log in binary");
++
++
++    fprintf(stderr,"\nfilterspecs are a series of \n"
++                   "  <tag>[:priority]\n\n"
++                   "where <tag> is a log component tag (or * for all) and priority is:\n"
++                   "  V    Verbose\n"
++                   "  D    Debug\n"
++                   "  I    Info\n"
++                   "  W    Warn\n"
++                   "  E    Error\n"
++                   "  F    Fatal\n"
++                   "  S    Silent (supress all output)\n"
++                   "\n'*' means '*:d' and <tag> by itself means <tag>:v\n"
++                   "\nIf not specified on the commandline, filterspec is set from ANDROID_LOG_TAGS.\n"
++                   "If no filterspec is found, filter defaults to '*:I'\n"
++                   "\nIf not specified with -v, format is set from ANDROID_PRINTF_LOG\n"
++                   "or defaults to \"brief\"\n\n");
++
++
++
++}
++
++
++} /* namespace android */
++
++static int setLogFormat(const char * formatString)
++{
++    static AndroidLogPrintFormat format;
++
++    format = android_log_formatFromString(formatString);
++
++    if (format == FORMAT_OFF) {
++        // FORMAT_OFF means invalid string
++        return -1;
++    }
++
++    android_log_setPrintFormat(g_logformat, format);
++
++    return 0;
++}
++
++extern "C" void logprint_run_tests(void);
++
++int main(int argc, char **argv)
++{
++    int err;
++    int hasSetLogFormat = 0;
++    int clearLog = 0;
++    int getLogSize = 0;
++    int mode = O_RDONLY;
++    const char *forceFilters = NULL;
++    log_device_t* devices = NULL;
++    log_device_t* dev;
++    bool needBinary = false;
++
++    g_logformat = android_log_format_new();
++
++    if (argc == 2 && 0 == strcmp(argv[1], "--test")) {
++        logprint_run_tests();
++        exit(0);
++    }
++
++    if (argc == 2 && 0 == strcmp(argv[1], "--help")) {
++        android::show_help(argv[0]);
++        exit(0);
++    }
++
++    for (;;) {
++        int ret;
++
++        ret = getopt(argc, argv, "cdt:gsQf:r::n:v:b:B");
++
++        if (ret < 0) {
++            break;
++        }
++
++        switch(ret) {
++            case 's': 
++                // default to all silent
++                android_log_addFilterRule(g_logformat, "*:s");
++            break;
++
++            case 'c':
++                clearLog = 1;
++                mode = O_WRONLY;
++            break;
++
++            case 'd':
++                g_nonblock = true;
++            break;
++
++            case 't':
++                g_nonblock = true;
++                g_tail_lines = atoi(optarg);
++            break;
++
++            case 'g':
++                getLogSize = 1;
++            break;
++
++            case 'b': {
++                char* buf = (char*) malloc(strlen(LOG_FILE_DIR) + strlen(optarg) + 1);
++                strcpy(buf, LOG_FILE_DIR);
++                strcat(buf, optarg);
++
++                bool binary = strcmp(optarg, "events") == 0;
++                if (binary) {
++                    needBinary = true;
++                }
++
++                if (devices) {
++                    dev = devices;
++                    while (dev->next) {
++                        dev = dev->next;
++                    }
++                    dev->next = new log_device_t(buf, binary, optarg[0]);
++                } else {
++                    devices = new log_device_t(buf, binary, optarg[0]);
++                }
++                android::g_devCount++;
++            }
++            break;
++
++            case 'B':
++                android::g_printBinary = 1;
++            break;
++
++            case 'f':
++                // redirect output to a file
++
++                android::g_outputFileName = optarg;
++
++            break;
++
++            case 'r':
++                if (optarg == NULL) {                
++                    android::g_logRotateSizeKBytes 
++                                = DEFAULT_LOG_ROTATE_SIZE_KBYTES;
++                } else {
++                    long logRotateSize;
++                    char *lastDigit;
++
++                    if (!isdigit(optarg[0])) {
++                        fprintf(stderr,"Invalid parameter to -r\n");
++                        android::show_help(argv[0]);
++                        exit(-1);
++                    }
++                    android::g_logRotateSizeKBytes = atoi(optarg);
++                }
++            break;
++
++            case 'n':
++                if (!isdigit(optarg[0])) {
++                    fprintf(stderr,"Invalid parameter to -r\n");
++                    android::show_help(argv[0]);
++                    exit(-1);
++                }
++
++                android::g_maxRotatedLogs = atoi(optarg);
++            break;
++
++            case 'v':
++                err = setLogFormat (optarg);
++                if (err < 0) {
++                    fprintf(stderr,"Invalid parameter to -v\n");
++                    android::show_help(argv[0]);
++                    exit(-1);
++                }
++
++                hasSetLogFormat = 1;
++            break;
++
++            case 'Q':
++                /* this is a *hidden* option used to start a version of logcat                 */
++                /* in an emulated device only. it basically looks for androidboot.logcat=      */
++                /* on the kernel command line. If something is found, it extracts a log filter */
++                /* and uses it to run the program. If nothing is found, the program should     */
++                /* quit immediately                                                            */
++#define  KERNEL_OPTION  "androidboot.logcat="
++#define  CONSOLE_OPTION "androidboot.console="
++                {
++                    int          fd;
++                    char*        logcat;
++                    char*        console;
++                    int          force_exit = 1;
++                    static char  cmdline[1024];
++
++                    fd = open("/proc/cmdline", O_RDONLY);
++                    if (fd >= 0) {
++                        int  n = read(fd, cmdline, sizeof(cmdline)-1 );
++                        if (n < 0) n = 0;
++                        cmdline[n] = 0;
++                        close(fd);
++                    } else {
++                        cmdline[0] = 0;
++                    }
++
++                    logcat  = strstr( cmdline, KERNEL_OPTION );
++                    console = strstr( cmdline, CONSOLE_OPTION );
++                    if (logcat != NULL) {
++                        char*  p = logcat + sizeof(KERNEL_OPTION)-1;;
++                        char*  q = strpbrk( p, " \t\n\r" );;
++
++                        if (q != NULL)
++                            *q = 0;
++
++                        forceFilters = p;
++                        force_exit   = 0;
++                    }
++                    /* if nothing found or invalid filters, exit quietly */
++                    if (force_exit)
++                        exit(0);
++
++                    /* redirect our output to the emulator console */
++                    if (console) {
++                        char*  p = console + sizeof(CONSOLE_OPTION)-1;
++                        char*  q = strpbrk( p, " \t\n\r" );
++                        char   devname[64];
++                        int    len;
++
++                        if (q != NULL) {
++                            len = q - p;
++                        } else
++                            len = strlen(p);
++
++                        len = snprintf( devname, sizeof(devname), "/dev/%.*s", len, p );
++                        fprintf(stderr, "logcat using %s (%d)\n", devname, len);
++                        if (len < (int)sizeof(devname)) {
++                            fd = open( devname, O_WRONLY );
++                            if (fd >= 0) {
++                                dup2(fd, 1);
++                                dup2(fd, 2);
++                                close(fd);
++                            }
++                        }
++                    }
++                }
++                break;
++
++            default:
++                fprintf(stderr,"Unrecognized Option\n");
++                android::show_help(argv[0]);
++                exit(-1);
++            break;
++        }
++    }
++
++    if (!devices) {
++        devices = new log_device_t(strdup("/dev/"LOGGER_LOG_MAIN), false, 'm');
++        android::g_devCount = 1;
++        int accessmode =
++                  (mode & O_RDONLY) ? R_OK : 0
++                | (mode & O_WRONLY) ? W_OK : 0;
++        // only add this if it's available
++        if (0 == access("/dev/"LOGGER_LOG_SYSTEM, accessmode)) {
++            devices->next = new log_device_t(strdup("/dev/"LOGGER_LOG_SYSTEM), false, 's');
++            android::g_devCount++;
++        }
++    }
++
++    if (android::g_logRotateSizeKBytes != 0 
++        && android::g_outputFileName == NULL
++    ) {
++        fprintf(stderr,"-r requires -f as well\n");
++        android::show_help(argv[0]);
++        exit(-1);
++    }
++
++    android::setupOutput();
++
++    if (hasSetLogFormat == 0) {
++        const char* logFormat = getenv("ANDROID_PRINTF_LOG");
++
++        if (logFormat != NULL) {
++            err = setLogFormat(logFormat);
++
++            if (err < 0) {
++                fprintf(stderr, "invalid format in ANDROID_PRINTF_LOG '%s'\n", 
++                                    logFormat);
++            }
++        }
++    }
++
++    if (forceFilters) {
++        err = android_log_addFilterString(g_logformat, forceFilters);
++        if (err < 0) {
++            fprintf (stderr, "Invalid filter expression in -logcat option\n");
++            exit(0);
++        }
++    } else if (argc == optind) {
++        // Add from environment variable
++        char *env_tags_orig = getenv("ANDROID_LOG_TAGS");
++
++        if (env_tags_orig != NULL) {
++            err = android_log_addFilterString(g_logformat, env_tags_orig);
++
++            if (err < 0) { 
++                fprintf(stderr, "Invalid filter expression in" 
++                                    " ANDROID_LOG_TAGS\n");
++                android::show_help(argv[0]);
++                exit(-1);
++            }
++        }
++    } else {
++        // Add from commandline
++        for (int i = optind ; i < argc ; i++) {
++            err = android_log_addFilterString(g_logformat, argv[i]);
++
++            if (err < 0) { 
++                fprintf (stderr, "Invalid filter expression '%s'\n", argv[i]);
++                android::show_help(argv[0]);
++                exit(-1);
++            }
++        }
++    }
++
++    dev = devices;
++    while (dev) {
++        dev->fd = open(dev->device, mode);
++        if (dev->fd < 0) {
++            fprintf(stderr, "Unable to open log device '%s': %s\n",
++                dev->device, strerror(errno));
++            exit(EXIT_FAILURE);
++        }
++
++        if (clearLog) {
++            int ret;
++            ret = android::clearLog(dev->fd);
++            if (ret) {
++                perror("ioctl");
++                exit(EXIT_FAILURE);
++            }
++        }
++
++        if (getLogSize) {
++            int size, readable;
++
++            size = android::getLogSize(dev->fd);
++            if (size < 0) {
++                perror("ioctl");
++                exit(EXIT_FAILURE);
++            }
++
++            readable = android::getLogReadableSize(dev->fd);
++            if (readable < 0) {
++                perror("ioctl");
++                exit(EXIT_FAILURE);
++            }
++
++            printf("%s: ring buffer is %dKb (%dKb consumed), "
++                   "max entry is %db, max payload is %db\n", dev->device,
++                   size / 1024, readable / 1024,
++                   (int) LOGGER_ENTRY_MAX_LEN, (int) LOGGER_ENTRY_MAX_PAYLOAD);
++        }
++
++        dev = dev->next;
++    }
++
++    if (getLogSize) {
++        exit(0);
++    }
++    if (clearLog) {
++        exit(0);
++    }
++
++    //LOG_EVENT_INT(10, 12345);
++    //LOG_EVENT_LONG(11, 0x1122334455667788LL);
++    //LOG_EVENT_STRING(0, "whassup, doc?");
++
++    if (needBinary)
++        android::g_eventTagMap = android_openEventTagMap(EVENT_TAG_MAP_FILE);
++
++    android::readLogLines(devices);
++
++    return 0;
++}
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/logd_write.c b/core/logcat/logd_write.c
+--- android-tools-4.2.2+git20130218/core/logcat/logd_write.c	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/logd_write.c	2021-12-30 14:33:49.980292000 +0800
+@@ -0,0 +1,279 @@
++/*
++ * Copyright (C) 2007 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#include <time.h>
++#include <stdio.h>
++#ifdef HAVE_PTHREADS
++#include <pthread.h>
++#endif
++#include <unistd.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <string.h>
++#include <stdlib.h>
++#include <stdarg.h>
++
++#include <cutils/logger.h>
++#include <cutils/logd.h>
++#include <cutils/log.h>
++
++#define LOG_BUF_SIZE	1024
++
++#if FAKE_LOG_DEVICE
++// This will be defined when building for the host.
++#define log_open(pathname, flags) fakeLogOpen(pathname, flags)
++#define log_writev(filedes, vector, count) fakeLogWritev(filedes, vector, count)
++#define log_close(filedes) fakeLogClose(filedes)
++#else
++#define log_open(pathname, flags) open(pathname, flags)
++#define log_writev(filedes, vector, count) writev(filedes, vector, count)
++#define log_close(filedes) close(filedes)
++#endif
++
++static int __write_to_log_init(log_id_t, struct iovec *vec, size_t nr);
++static int (*write_to_log)(log_id_t, struct iovec *vec, size_t nr) = __write_to_log_init;
++#ifdef HAVE_PTHREADS
++static pthread_mutex_t log_init_lock = PTHREAD_MUTEX_INITIALIZER;
++#endif
++
++static int log_fds[(int)LOG_ID_MAX] = { -1, -1, -1, -1 };
++
++/*
++ * This is used by the C++ code to decide if it should write logs through
++ * the C code.  Basically, if /dev/log/... is available, we're running in
++ * the simulator rather than a desktop tool and want to use the device.
++ */
++static enum {
++    kLogUninitialized, kLogNotAvailable, kLogAvailable
++} g_log_status = kLogUninitialized;
++int __android_log_dev_available(void)
++{
++    if (g_log_status == kLogUninitialized) {
++        if (access("/dev/"LOGGER_LOG_MAIN, W_OK) == 0)
++            g_log_status = kLogAvailable;
++        else
++            g_log_status = kLogNotAvailable;
++    }
++
++    return (g_log_status == kLogAvailable);
++}
++
++static int __write_to_log_null(log_id_t log_fd, struct iovec *vec, size_t nr)
++{
++    return -1;
++}
++
++static int __write_to_log_kernel(log_id_t log_id, struct iovec *vec, size_t nr)
++{
++    ssize_t ret;
++    int log_fd;
++
++    if (/*(int)log_id >= 0 &&*/ (int)log_id < (int)LOG_ID_MAX) {
++        log_fd = log_fds[(int)log_id];
++    } else {
++        return EBADF;
++    }
++
++    do {
++        ret = log_writev(log_fd, vec, nr);
++    } while (ret < 0 && errno == EINTR);
++
++    return ret;
++}
++
++static int __write_to_log_init(log_id_t log_id, struct iovec *vec, size_t nr)
++{
++#ifdef HAVE_PTHREADS
++    pthread_mutex_lock(&log_init_lock);
++#endif
++
++    if (write_to_log == __write_to_log_init) {
++        log_fds[LOG_ID_MAIN] = log_open("/dev/"LOGGER_LOG_MAIN, O_WRONLY);
++        log_fds[LOG_ID_RADIO] = log_open("/dev/"LOGGER_LOG_RADIO, O_WRONLY);
++        log_fds[LOG_ID_EVENTS] = log_open("/dev/"LOGGER_LOG_EVENTS, O_WRONLY);
++        log_fds[LOG_ID_SYSTEM] = log_open("/dev/"LOGGER_LOG_SYSTEM, O_WRONLY);
++
++        write_to_log = __write_to_log_kernel;
++
++        if (log_fds[LOG_ID_MAIN] < 0 || log_fds[LOG_ID_RADIO] < 0 ||
++                log_fds[LOG_ID_EVENTS] < 0) {
++            log_close(log_fds[LOG_ID_MAIN]);
++            log_close(log_fds[LOG_ID_RADIO]);
++            log_close(log_fds[LOG_ID_EVENTS]);
++            log_fds[LOG_ID_MAIN] = -1;
++            log_fds[LOG_ID_RADIO] = -1;
++            log_fds[LOG_ID_EVENTS] = -1;
++            write_to_log = __write_to_log_null;
++        }
++
++        if (log_fds[LOG_ID_SYSTEM] < 0) {
++            log_fds[LOG_ID_SYSTEM] = log_fds[LOG_ID_MAIN];
++        }
++    }
++
++#ifdef HAVE_PTHREADS
++    pthread_mutex_unlock(&log_init_lock);
++#endif
++
++    return write_to_log(log_id, vec, nr);
++}
++
++int __android_log_write(int prio, const char *tag, const char *msg)
++{
++    struct iovec vec[3];
++    log_id_t log_id = LOG_ID_MAIN;
++
++    if (!tag)
++        tag = "";
++
++    /* XXX: This needs to go! */
++    if (!strcmp(tag, "HTC_RIL") ||
++        !strncmp(tag, "RIL", 3) || /* Any log tag with "RIL" as the prefix */
++        !strcmp(tag, "AT") ||
++        !strcmp(tag, "GSM") ||
++        !strcmp(tag, "STK") ||
++        !strcmp(tag, "CDMA") ||
++        !strcmp(tag, "PHONE") ||
++        !strcmp(tag, "SMS"))
++            log_id = LOG_ID_RADIO;
++
++    vec[0].iov_base   = (unsigned char *) &prio;
++    vec[0].iov_len    = 1;
++    vec[1].iov_base   = (void *) tag;
++    vec[1].iov_len    = strlen(tag) + 1;
++    vec[2].iov_base   = (void *) msg;
++    vec[2].iov_len    = strlen(msg) + 1;
++
++    return write_to_log(log_id, vec, 3);
++}
++
++int __android_log_buf_write(int bufID, int prio, const char *tag, const char *msg)
++{
++    struct iovec vec[3];
++
++    if (!tag)
++        tag = "";
++
++    /* XXX: This needs to go! */
++    if (!strcmp(tag, "HTC_RIL") ||
++        !strncmp(tag, "RIL", 3) || /* Any log tag with "RIL" as the prefix */
++        !strcmp(tag, "AT") ||
++        !strcmp(tag, "GSM") ||
++        !strcmp(tag, "STK") ||
++        !strcmp(tag, "CDMA") ||
++        !strcmp(tag, "PHONE") ||
++        !strcmp(tag, "SMS"))
++            bufID = LOG_ID_RADIO;
++
++    vec[0].iov_base   = (unsigned char *) &prio;
++    vec[0].iov_len    = 1;
++    vec[1].iov_base   = (void *) tag;
++    vec[1].iov_len    = strlen(tag) + 1;
++    vec[2].iov_base   = (void *) msg;
++    vec[2].iov_len    = strlen(msg) + 1;
++
++    return write_to_log(bufID, vec, 3);
++}
++
++int __android_log_vprint(int prio, const char *tag, const char *fmt, va_list ap)
++{
++    char buf[LOG_BUF_SIZE];
++
++    vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
++
++    return __android_log_write(prio, tag, buf);
++}
++
++int __android_log_print(int prio, const char *tag, const char *fmt, ...)
++{
++    va_list ap;
++    char buf[LOG_BUF_SIZE];
++
++    va_start(ap, fmt);
++    vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
++    va_end(ap);
++
++    return __android_log_write(prio, tag, buf);
++}
++
++int __android_log_buf_print(int bufID, int prio, const char *tag, const char *fmt, ...)
++{
++    va_list ap;
++    char buf[LOG_BUF_SIZE];
++
++    va_start(ap, fmt);
++    vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
++    va_end(ap);
++
++    return __android_log_buf_write(bufID, prio, tag, buf);
++}
++
++void __android_log_assert(const char *cond, const char *tag,
++			  const char *fmt, ...)
++{
++    char buf[LOG_BUF_SIZE];
++
++    if (fmt) {
++        va_list ap;
++        va_start(ap, fmt);
++        vsnprintf(buf, LOG_BUF_SIZE, fmt, ap);
++        va_end(ap);
++    } else {
++        /* Msg not provided, log condition.  N.B. Do not use cond directly as
++         * format string as it could contain spurious '%' syntax (e.g.
++         * "%d" in "blocks%devs == 0").
++         */
++        if (cond)
++            snprintf(buf, LOG_BUF_SIZE, "Assertion failed: %s", cond);
++        else
++            strcpy(buf, "Unspecified assertion failed");
++    }
++
++    __android_log_write(ANDROID_LOG_FATAL, tag, buf);
++
++    __builtin_trap(); /* trap so we have a chance to debug the situation */
++}
++
++int __android_log_bwrite(int32_t tag, const void *payload, size_t len)
++{
++    struct iovec vec[2];
++
++    vec[0].iov_base = &tag;
++    vec[0].iov_len = sizeof(tag);
++    vec[1].iov_base = (void*)payload;
++    vec[1].iov_len = len;
++
++    return write_to_log(LOG_ID_EVENTS, vec, 2);
++}
++
++/*
++ * Like __android_log_bwrite, but takes the type as well.  Doesn't work
++ * for the general case where we're generating lists of stuff, but very
++ * handy if we just want to dump an integer into the log.
++ */
++int __android_log_btwrite(int32_t tag, char type, const void *payload,
++    size_t len)
++{
++    struct iovec vec[3];
++
++    vec[0].iov_base = &tag;
++    vec[0].iov_len = sizeof(tag);
++    vec[1].iov_base = &type;
++    vec[1].iov_len = sizeof(type);
++    vec[2].iov_base = (void*)payload;
++    vec[2].iov_len = len;
++
++    return write_to_log(LOG_ID_EVENTS, vec, 3);
++}
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/logprint.c b/core/logcat/logprint.c
+--- android-tools-4.2.2+git20130218/core/logcat/logprint.c	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/logprint.c	2021-12-30 14:33:49.980292000 +0800
+@@ -0,0 +1,1016 @@
++/* //device/libs/cutils/logprint.c
++**
++** Copyright 2006, The Android Open Source Project
++**
++** Licensed under the Apache License, Version 2.0 (the "License");
++** you may not use this file except in compliance with the License.
++** You may obtain a copy of the License at
++**
++**     http://www.apache.org/licenses/LICENSE-2.0
++**
++** Unless required by applicable law or agreed to in writing, software
++** distributed under the License is distributed on an "AS IS" BASIS,
++** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++** See the License for the specific language governing permissions and
++** limitations under the License.
++*/
++
++#define _GNU_SOURCE /* for asprintf */
++
++#include <ctype.h>
++#include <stdio.h>
++#include <errno.h>
++#include <stdlib.h>
++#include <stdint.h>
++#include <string.h>
++#include <assert.h>
++#include <arpa/inet.h>
++
++#include <cutils/logd.h>
++#include <cutils/logprint.h>
++
++typedef struct FilterInfo_t {
++    char *mTag;
++    android_LogPriority mPri;
++    struct FilterInfo_t *p_next;
++} FilterInfo;
++
++struct AndroidLogFormat_t {
++    android_LogPriority global_pri;
++    FilterInfo *filters;
++    AndroidLogPrintFormat format;
++};
++
++static FilterInfo * filterinfo_new(const char * tag, android_LogPriority pri)
++{
++    FilterInfo *p_ret;
++
++    p_ret = (FilterInfo *)calloc(1, sizeof(FilterInfo));
++    p_ret->mTag = strdup(tag);
++    p_ret->mPri = pri;
++
++    return p_ret;
++}
++
++static void filterinfo_free(FilterInfo *p_info)
++{
++    if (p_info == NULL) {
++        return;
++    }
++
++    free(p_info->mTag);
++    p_info->mTag = NULL;
++}
++
++/*
++ * Note: also accepts 0-9 priorities
++ * returns ANDROID_LOG_UNKNOWN if the character is unrecognized
++ */
++static android_LogPriority filterCharToPri (char c)
++{
++    android_LogPriority pri;
++
++    c = tolower(c);
++
++    if (c >= '0' && c <= '9') {
++        if (c >= ('0'+ANDROID_LOG_SILENT)) {
++            pri = ANDROID_LOG_VERBOSE;
++        } else {
++            pri = (android_LogPriority)(c - '0');
++        }
++    } else if (c == 'v') {
++        pri = ANDROID_LOG_VERBOSE;
++    } else if (c == 'd') {
++        pri = ANDROID_LOG_DEBUG;
++    } else if (c == 'i') {
++        pri = ANDROID_LOG_INFO;
++    } else if (c == 'w') {
++        pri = ANDROID_LOG_WARN;
++    } else if (c == 'e') {
++        pri = ANDROID_LOG_ERROR;
++    } else if (c == 'f') {
++        pri = ANDROID_LOG_FATAL;
++    } else if (c == 's') {
++        pri = ANDROID_LOG_SILENT;
++    } else if (c == '*') {
++        pri = ANDROID_LOG_DEFAULT;
++    } else {
++        pri = ANDROID_LOG_UNKNOWN;
++    }
++
++    return pri;
++}
++
++static char filterPriToChar (android_LogPriority pri)
++{
++    switch (pri) {
++        case ANDROID_LOG_VERBOSE:       return 'V';
++        case ANDROID_LOG_DEBUG:         return 'D';
++        case ANDROID_LOG_INFO:          return 'I';
++        case ANDROID_LOG_WARN:          return 'W';
++        case ANDROID_LOG_ERROR:         return 'E';
++        case ANDROID_LOG_FATAL:         return 'F';
++        case ANDROID_LOG_SILENT:        return 'S';
++
++        case ANDROID_LOG_DEFAULT:
++        case ANDROID_LOG_UNKNOWN:
++        default:                        return '?';
++    }
++}
++
++static android_LogPriority filterPriForTag(
++        AndroidLogFormat *p_format, const char *tag)
++{
++    FilterInfo *p_curFilter;
++
++    for (p_curFilter = p_format->filters
++            ; p_curFilter != NULL
++            ; p_curFilter = p_curFilter->p_next
++    ) {
++        if (0 == strcmp(tag, p_curFilter->mTag)) {
++            if (p_curFilter->mPri == ANDROID_LOG_DEFAULT) {
++                return p_format->global_pri;
++            } else {
++                return p_curFilter->mPri;
++            }
++        }
++    }
++
++    return p_format->global_pri;
++}
++
++/** for debugging */
++static void dumpFilters(AndroidLogFormat *p_format)
++{
++    FilterInfo *p_fi;
++
++    for (p_fi = p_format->filters ; p_fi != NULL ; p_fi = p_fi->p_next) {
++        char cPri = filterPriToChar(p_fi->mPri);
++        if (p_fi->mPri == ANDROID_LOG_DEFAULT) {
++            cPri = filterPriToChar(p_format->global_pri);
++        }
++        fprintf(stderr,"%s:%c\n", p_fi->mTag, cPri);
++    }
++
++    fprintf(stderr,"*:%c\n", filterPriToChar(p_format->global_pri));
++
++}
++
++/**
++ * returns 1 if this log line should be printed based on its priority
++ * and tag, and 0 if it should not
++ */
++int android_log_shouldPrintLine (
++        AndroidLogFormat *p_format, const char *tag, android_LogPriority pri)
++{
++    return pri >= filterPriForTag(p_format, tag);
++}
++
++AndroidLogFormat *android_log_format_new()
++{
++    AndroidLogFormat *p_ret;
++
++    p_ret = calloc(1, sizeof(AndroidLogFormat));
++
++    p_ret->global_pri = ANDROID_LOG_VERBOSE;
++    p_ret->format = FORMAT_BRIEF;
++
++    return p_ret;
++}
++
++void android_log_format_free(AndroidLogFormat *p_format)
++{
++    FilterInfo *p_info, *p_info_old;
++
++    p_info = p_format->filters;
++
++    while (p_info != NULL) {
++        p_info_old = p_info;
++        p_info = p_info->p_next;
++
++        free(p_info_old);
++    }
++
++    free(p_format);
++}
++
++
++
++void android_log_setPrintFormat(AndroidLogFormat *p_format,
++        AndroidLogPrintFormat format)
++{
++    p_format->format=format;
++}
++
++/**
++ * Returns FORMAT_OFF on invalid string
++ */
++AndroidLogPrintFormat android_log_formatFromString(const char * formatString)
++{
++    static AndroidLogPrintFormat format;
++
++    if (strcmp(formatString, "brief") == 0) format = FORMAT_BRIEF;
++    else if (strcmp(formatString, "process") == 0) format = FORMAT_PROCESS;
++    else if (strcmp(formatString, "tag") == 0) format = FORMAT_TAG;
++    else if (strcmp(formatString, "thread") == 0) format = FORMAT_THREAD;
++    else if (strcmp(formatString, "raw") == 0) format = FORMAT_RAW;
++    else if (strcmp(formatString, "time") == 0) format = FORMAT_TIME;
++    else if (strcmp(formatString, "threadtime") == 0) format = FORMAT_THREADTIME;
++    else if (strcmp(formatString, "long") == 0) format = FORMAT_LONG;
++    else format = FORMAT_OFF;
++
++    return format;
++}
++
++/**
++ * filterExpression: a single filter expression
++ * eg "AT:d"
++ *
++ * returns 0 on success and -1 on invalid expression
++ *
++ * Assumes single threaded execution
++ */
++
++int android_log_addFilterRule(AndroidLogFormat *p_format,
++        const char *filterExpression)
++{
++    size_t i=0;
++    size_t tagNameLength;
++    android_LogPriority pri = ANDROID_LOG_DEFAULT;
++
++    tagNameLength = strcspn(filterExpression, ":");
++
++    if (tagNameLength == 0) {
++        goto error;
++    }
++
++    if(filterExpression[tagNameLength] == ':') {
++        pri = filterCharToPri(filterExpression[tagNameLength+1]);
++
++        if (pri == ANDROID_LOG_UNKNOWN) {
++            goto error;
++        }
++    }
++
++    if(0 == strncmp("*", filterExpression, tagNameLength)) {
++        // This filter expression refers to the global filter
++        // The default level for this is DEBUG if the priority
++        // is unspecified
++        if (pri == ANDROID_LOG_DEFAULT) {
++            pri = ANDROID_LOG_DEBUG;
++        }
++
++        p_format->global_pri = pri;
++    } else {
++        // for filter expressions that don't refer to the global
++        // filter, the default is verbose if the priority is unspecified
++        if (pri == ANDROID_LOG_DEFAULT) {
++            pri = ANDROID_LOG_VERBOSE;
++        }
++
++        char *tagName;
++
++// Presently HAVE_STRNDUP is never defined, so the second case is always taken
++// Darwin doesn't have strnup, everything else does
++#ifdef HAVE_STRNDUP
++        tagName = strndup(filterExpression, tagNameLength);
++#else
++        //a few extra bytes copied...
++        tagName = strdup(filterExpression);
++        tagName[tagNameLength] = '\0';
++#endif /*HAVE_STRNDUP*/
++
++        FilterInfo *p_fi = filterinfo_new(tagName, pri);
++        free(tagName);
++
++        p_fi->p_next = p_format->filters;
++        p_format->filters = p_fi;
++    }
++
++    return 0;
++error:
++    return -1;
++}
++
++
++/**
++ * filterString: a comma/whitespace-separated set of filter expressions
++ *
++ * eg "AT:d *:i"
++ *
++ * returns 0 on success and -1 on invalid expression
++ *
++ * Assumes single threaded execution
++ *
++ */
++
++int android_log_addFilterString(AndroidLogFormat *p_format,
++        const char *filterString)
++{
++    char *filterStringCopy = strdup (filterString);
++    char *p_cur = filterStringCopy;
++    char *p_ret;
++    int err;
++
++    // Yes, I'm using strsep
++    while (NULL != (p_ret = strsep(&p_cur, " \t,"))) {
++        // ignore whitespace-only entries
++        if(p_ret[0] != '\0') {
++            err = android_log_addFilterRule(p_format, p_ret);
++
++            if (err < 0) {
++                goto error;
++            }
++        }
++    }
++
++    free (filterStringCopy);
++    return 0;
++error:
++    free (filterStringCopy);
++    return -1;
++}
++
++static inline char * strip_end(char *str)
++{
++    char *end = str + strlen(str) - 1;
++
++    while (end >= str && isspace(*end))
++        *end-- = '\0';
++    return str;
++}
++
++/**
++ * Splits a wire-format buffer into an AndroidLogEntry
++ * entry allocated by caller. Pointers will point directly into buf
++ *
++ * Returns 0 on success and -1 on invalid wire format (entry will be
++ * in unspecified state)
++ */
++int android_log_processLogBuffer(struct logger_entry *buf,
++                                 AndroidLogEntry *entry)
++{
++    entry->tv_sec = buf->sec;
++    entry->tv_nsec = buf->nsec;
++    entry->pid = buf->pid;
++    entry->tid = buf->tid;
++
++    /*
++     * format: <priority:1><tag:N>\0<message:N>\0
++     *
++     * tag str
++     *   starts at buf->msg+1
++     * msg
++     *   starts at buf->msg+1+len(tag)+1
++     *
++     * The message may have been truncated by the kernel log driver.
++     * When that happens, we must null-terminate the message ourselves.
++     */
++    if (buf->len < 3) {
++        // An well-formed entry must consist of at least a priority
++        // and two null characters
++        fprintf(stderr, "+++ LOG: entry too small\n");
++        return -1;
++    }
++
++    int msgStart = -1;
++    int msgEnd = -1;
++
++    int i;
++    for (i = 1; i < buf->len; i++) {
++        if (buf->msg[i] == '\0') {
++            if (msgStart == -1) {
++                msgStart = i + 1;
++            } else {
++                msgEnd = i;
++                break;
++            }
++        }
++    }
++
++    if (msgStart == -1) {
++        fprintf(stderr, "+++ LOG: malformed log message\n");
++        return -1;
++    }
++    if (msgEnd == -1) {
++        // incoming message not null-terminated; force it
++        msgEnd = buf->len - 1;
++        buf->msg[msgEnd] = '\0';
++    }
++
++    entry->priority = buf->msg[0];
++    entry->tag = buf->msg + 1;
++    entry->message = buf->msg + msgStart;
++    entry->messageLen = msgEnd - msgStart;
++
++    return 0;
++}
++
++/*
++ * Extract a 4-byte value from a byte stream.
++ */
++static inline uint32_t get4LE(const uint8_t* src)
++{
++    return src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
++}
++
++/*
++ * Extract an 8-byte value from a byte stream.
++ */
++static inline uint64_t get8LE(const uint8_t* src)
++{
++    uint32_t low, high;
++
++    low = src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
++    high = src[4] | (src[5] << 8) | (src[6] << 16) | (src[7] << 24);
++    return ((long long) high << 32) | (long long) low;
++}
++
++
++/*
++ * Recursively convert binary log data to printable form.
++ *
++ * This needs to be recursive because you can have lists of lists.
++ *
++ * If we run out of room, we stop processing immediately.  It's important
++ * for us to check for space on every output element to avoid producing
++ * garbled output.
++ *
++ * Returns 0 on success, 1 on buffer full, -1 on failure.
++ */
++static int android_log_printBinaryEvent(const unsigned char** pEventData,
++    size_t* pEventDataLen, char** pOutBuf, size_t* pOutBufLen)
++{
++    const unsigned char* eventData = *pEventData;
++    size_t eventDataLen = *pEventDataLen;
++    char* outBuf = *pOutBuf;
++    size_t outBufLen = *pOutBufLen;
++    unsigned char type;
++    size_t outCount;
++    int result = 0;
++
++    if (eventDataLen < 1)
++        return -1;
++    type = *eventData++;
++    eventDataLen--;
++
++    //fprintf(stderr, "--- type=%d (rem len=%d)\n", type, eventDataLen);
++
++    switch (type) {
++    case EVENT_TYPE_INT:
++        /* 32-bit signed int */
++        {
++            int ival;
++
++            if (eventDataLen < 4)
++                return -1;
++            ival = get4LE(eventData);
++            eventData += 4;
++            eventDataLen -= 4;
++
++            outCount = snprintf(outBuf, outBufLen, "%d", ival);
++            if (outCount < outBufLen) {
++                outBuf += outCount;
++                outBufLen -= outCount;
++            } else {
++                /* halt output */
++                goto no_room;
++            }
++        }
++        break;
++    case EVENT_TYPE_LONG:
++        /* 64-bit signed long */
++        {
++            long long lval;
++
++            if (eventDataLen < 8)
++                return -1;
++            lval = get8LE(eventData);
++            eventData += 8;
++            eventDataLen -= 8;
++
++            outCount = snprintf(outBuf, outBufLen, "%lld", lval);
++            if (outCount < outBufLen) {
++                outBuf += outCount;
++                outBufLen -= outCount;
++            } else {
++                /* halt output */
++                goto no_room;
++            }
++        }
++        break;
++    case EVENT_TYPE_STRING:
++        /* UTF-8 chars, not NULL-terminated */
++        {
++            unsigned int strLen;
++
++            if (eventDataLen < 4)
++                return -1;
++            strLen = get4LE(eventData);
++            eventData += 4;
++            eventDataLen -= 4;
++
++            if (eventDataLen < strLen)
++                return -1;
++
++            if (strLen < outBufLen) {
++                memcpy(outBuf, eventData, strLen);
++                outBuf += strLen;
++                outBufLen -= strLen;
++            } else if (outBufLen > 0) {
++                /* copy what we can */
++                memcpy(outBuf, eventData, outBufLen);
++                outBuf += outBufLen;
++                outBufLen -= outBufLen;
++                goto no_room;
++            }
++            eventData += strLen;
++            eventDataLen -= strLen;
++            break;
++        }
++    case EVENT_TYPE_LIST:
++        /* N items, all different types */
++        {
++            unsigned char count;
++            int i;
++
++            if (eventDataLen < 1)
++                return -1;
++
++            count = *eventData++;
++            eventDataLen--;
++
++            if (outBufLen > 0) {
++                *outBuf++ = '[';
++                outBufLen--;
++            } else {
++                goto no_room;
++            }
++
++            for (i = 0; i < count; i++) {
++                result = android_log_printBinaryEvent(&eventData, &eventDataLen,
++                        &outBuf, &outBufLen);
++                if (result != 0)
++                    goto bail;
++
++                if (i < count-1) {
++                    if (outBufLen > 0) {
++                        *outBuf++ = ',';
++                        outBufLen--;
++                    } else {
++                        goto no_room;
++                    }
++                }
++            }
++
++            if (outBufLen > 0) {
++                *outBuf++ = ']';
++                outBufLen--;
++            } else {
++                goto no_room;
++            }
++        }
++        break;
++    default:
++        fprintf(stderr, "Unknown binary event type %d\n", type);
++        return -1;
++    }
++
++bail:
++    *pEventData = eventData;
++    *pEventDataLen = eventDataLen;
++    *pOutBuf = outBuf;
++    *pOutBufLen = outBufLen;
++    return result;
++
++no_room:
++    result = 1;
++    goto bail;
++}
++
++/**
++ * Convert a binary log entry to ASCII form.
++ *
++ * For convenience we mimic the processLogBuffer API.  There is no
++ * pre-defined output length for the binary data, since we're free to format
++ * it however we choose, which means we can't really use a fixed-size buffer
++ * here.
++ */
++int android_log_processBinaryLogBuffer(struct logger_entry *buf,
++    AndroidLogEntry *entry, const EventTagMap* map, char* messageBuf,
++    int messageBufLen)
++{
++    size_t inCount;
++    unsigned int tagIndex;
++    const unsigned char* eventData;
++
++    entry->tv_sec = buf->sec;
++    entry->tv_nsec = buf->nsec;
++    entry->priority = ANDROID_LOG_INFO;
++    entry->pid = buf->pid;
++    entry->tid = buf->tid;
++
++    /*
++     * Pull the tag out.
++     */
++    eventData = (const unsigned char*) buf->msg;
++    inCount = buf->len;
++    if (inCount < 4)
++        return -1;
++    tagIndex = get4LE(eventData);
++    eventData += 4;
++    inCount -= 4;
++
++    if (map != NULL) {
++        entry->tag = android_lookupEventTag(map, tagIndex);
++    } else {
++        entry->tag = NULL;
++    }
++
++    /*
++     * If we don't have a map, or didn't find the tag number in the map,
++     * stuff a generated tag value into the start of the output buffer and
++     * shift the buffer pointers down.
++     */
++    if (entry->tag == NULL) {
++        int tagLen;
++
++        tagLen = snprintf(messageBuf, messageBufLen, "[%d]", tagIndex);
++        entry->tag = messageBuf;
++        messageBuf += tagLen+1;
++        messageBufLen -= tagLen+1;
++    }
++
++    /*
++     * Format the event log data into the buffer.
++     */
++    char* outBuf = messageBuf;
++    size_t outRemaining = messageBufLen-1;      /* leave one for nul byte */
++    int result;
++    result = android_log_printBinaryEvent(&eventData, &inCount, &outBuf,
++                &outRemaining);
++    if (result < 0) {
++        fprintf(stderr, "Binary log entry conversion failed\n");
++        return -1;
++    } else if (result == 1) {
++        if (outBuf > messageBuf) {
++            /* leave an indicator */
++            *(outBuf-1) = '!';
++        } else {
++            /* no room to output anything at all */
++            *outBuf++ = '!';
++            outRemaining--;
++        }
++        /* pretend we ate all the data */
++        inCount = 0;
++    }
++
++    /* eat the silly terminating '\n' */
++    if (inCount == 1 && *eventData == '\n') {
++        eventData++;
++        inCount--;
++    }
++
++    if (inCount != 0) {
++        fprintf(stderr,
++            "Warning: leftover binary log data (%d bytes)\n", inCount);
++    }
++
++    /*
++     * Terminate the buffer.  The NUL byte does not count as part of
++     * entry->messageLen.
++     */
++    *outBuf = '\0';
++    entry->messageLen = outBuf - messageBuf;
++    assert(entry->messageLen == (messageBufLen-1) - outRemaining);
++
++    entry->message = messageBuf;
++
++    return 0;
++}
++
++/**
++ * Formats a log message into a buffer
++ *
++ * Uses defaultBuffer if it can, otherwise malloc()'s a new buffer
++ * If return value != defaultBuffer, caller must call free()
++ * Returns NULL on malloc error
++ */
++
++char *android_log_formatLogLine (
++    AndroidLogFormat *p_format,
++    char *defaultBuffer,
++    size_t defaultBufferSize,
++    const AndroidLogEntry *entry,
++    size_t *p_outLength)
++{
++#if defined(HAVE_LOCALTIME_R)
++    struct tm tmBuf;
++#endif
++    struct tm* ptm;
++    char timeBuf[32];
++    char headerBuf[128];
++    char prefixBuf[128], suffixBuf[128];
++    char priChar;
++    int prefixSuffixIsHeaderFooter = 0;
++    char * ret = NULL;
++
++    priChar = filterPriToChar(entry->priority);
++
++    /*
++     * Get the current date/time in pretty form
++     *
++     * It's often useful when examining a log with "less" to jump to
++     * a specific point in the file by searching for the date/time stamp.
++     * For this reason it's very annoying to have regexp meta characters
++     * in the time stamp.  Don't use forward slashes, parenthesis,
++     * brackets, asterisks, or other special chars here.
++     */
++#if defined(HAVE_LOCALTIME_R)
++    ptm = localtime_r(&(entry->tv_sec), &tmBuf);
++#else
++    ptm = localtime(&(entry->tv_sec));
++#endif
++    //strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", ptm);
++    strftime(timeBuf, sizeof(timeBuf), "%m-%d %H:%M:%S", ptm);
++
++    /*
++     * Construct a buffer containing the log header and log message.
++     */
++    size_t prefixLen, suffixLen;
++
++    switch (p_format->format) {
++        case FORMAT_TAG:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "%c/%-8s: ", priChar, entry->tag);
++            strcpy(suffixBuf, "\n"); suffixLen = 1;
++            break;
++        case FORMAT_PROCESS:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "%c(%5d) ", priChar, entry->pid);
++            suffixLen = snprintf(suffixBuf, sizeof(suffixBuf),
++                "  (%s)\n", entry->tag);
++            break;
++        case FORMAT_THREAD:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "%c(%5d:%p) ", priChar, entry->pid, (void*)entry->tid);
++            strcpy(suffixBuf, "\n");
++            suffixLen = 1;
++            break;
++        case FORMAT_RAW:
++            prefixBuf[0] = 0;
++            prefixLen = 0;
++            strcpy(suffixBuf, "\n");
++            suffixLen = 1;
++            break;
++        case FORMAT_TIME:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "%s.%03ld %c/%-8s(%5d): ", timeBuf, entry->tv_nsec / 1000000,
++                priChar, entry->tag, entry->pid);
++            strcpy(suffixBuf, "\n");
++            suffixLen = 1;
++            break;
++        case FORMAT_THREADTIME:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "%s.%03ld %5d %5d %c %-8s: ", timeBuf, entry->tv_nsec / 1000000,
++                (int)entry->pid, (int)entry->tid, priChar, entry->tag);
++            strcpy(suffixBuf, "\n");
++            suffixLen = 1;
++            break;
++        case FORMAT_LONG:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "[ %s.%03ld %5d:%p %c/%-8s ]\n",
++                timeBuf, entry->tv_nsec / 1000000, entry->pid,
++                (void*)entry->tid, priChar, entry->tag);
++            strcpy(suffixBuf, "\n\n");
++            suffixLen = 2;
++            prefixSuffixIsHeaderFooter = 1;
++            break;
++        case FORMAT_BRIEF:
++        default:
++            prefixLen = snprintf(prefixBuf, sizeof(prefixBuf),
++                "%c/%-8s(%5d): ", priChar, entry->tag, entry->pid);
++            strcpy(suffixBuf, "\n");
++            suffixLen = 1;
++            break;
++    }
++    /* snprintf has a weird return value.   It returns what would have been
++     * written given a large enough buffer.  In the case that the prefix is
++     * longer then our buffer(128), it messes up the calculations below
++     * possibly causing heap corruption.  To avoid this we double check and
++     * set the length at the maximum (size minus null byte)
++     */
++    if(prefixLen >= sizeof(prefixBuf))
++        prefixLen = sizeof(prefixBuf) - 1;
++    if(suffixLen >= sizeof(suffixBuf))
++        suffixLen = sizeof(suffixBuf) - 1;
++
++    /* the following code is tragically unreadable */
++
++    size_t numLines;
++    size_t i;
++    char *p;
++    size_t bufferSize;
++    const char *pm;
++
++    if (prefixSuffixIsHeaderFooter) {
++        // we're just wrapping message with a header/footer
++        numLines = 1;
++    } else {
++        pm = entry->message;
++        numLines = 0;
++
++        // The line-end finding here must match the line-end finding
++        // in for ( ... numLines...) loop below
++        while (pm < (entry->message + entry->messageLen)) {
++            if (*pm++ == '\n') numLines++;
++        }
++        // plus one line for anything not newline-terminated at the end
++        if (pm > entry->message && *(pm-1) != '\n') numLines++;
++    }
++
++    // this is an upper bound--newlines in message may be counted
++    // extraneously
++    bufferSize = (numLines * (prefixLen + suffixLen)) + entry->messageLen + 1;
++
++    if (defaultBufferSize >= bufferSize) {
++        ret = defaultBuffer;
++    } else {
++        ret = (char *)malloc(bufferSize);
++
++        if (ret == NULL) {
++            return ret;
++        }
++    }
++
++    ret[0] = '\0';       /* to start strcat off */
++
++    p = ret;
++    pm = entry->message;
++
++    if (prefixSuffixIsHeaderFooter) {
++        strcat(p, prefixBuf);
++        p += prefixLen;
++        strncat(p, entry->message, entry->messageLen);
++        p += entry->messageLen;
++        strcat(p, suffixBuf);
++        p += suffixLen;
++    } else {
++        while(pm < (entry->message + entry->messageLen)) {
++            const char *lineStart;
++            size_t lineLen;
++            lineStart = pm;
++
++            // Find the next end-of-line in message
++            while (pm < (entry->message + entry->messageLen)
++                    && *pm != '\n') pm++;
++            lineLen = pm - lineStart;
++
++            strcat(p, prefixBuf);
++            p += prefixLen;
++            strncat(p, lineStart, lineLen);
++            p += lineLen;
++            strcat(p, suffixBuf);
++            p += suffixLen;
++
++            if (*pm == '\n') pm++;
++        }
++    }
++
++    if (p_outLength != NULL) {
++        *p_outLength = p - ret;
++    }
++
++    return ret;
++}
++
++/**
++ * Either print or do not print log line, based on filter
++ *
++ * Returns count bytes written
++ */
++
++int android_log_printLogLine(
++    AndroidLogFormat *p_format,
++    int fd,
++    const AndroidLogEntry *entry)
++{
++    int ret;
++    char defaultBuffer[512];
++    char *outBuffer = NULL;
++    size_t totalLen;
++
++    outBuffer = android_log_formatLogLine(p_format, defaultBuffer,
++            sizeof(defaultBuffer), entry, &totalLen);
++
++    if (!outBuffer)
++        return -1;
++
++    do {
++        ret = write(fd, outBuffer, totalLen);
++    } while (ret < 0 && errno == EINTR);
++
++    if (ret < 0) {
++        fprintf(stderr, "+++ LOG: write failed (errno=%d)\n", errno);
++        ret = 0;
++        goto done;
++    }
++
++    if (((size_t)ret) < totalLen) {
++        fprintf(stderr, "+++ LOG: write partial (%d of %d)\n", ret,
++                (int)totalLen);
++        goto done;
++    }
++
++done:
++    if (outBuffer != defaultBuffer) {
++        free(outBuffer);
++    }
++
++    return ret;
++}
++
++
++
++void logprint_run_tests()
++{
++#if 0
++
++    fprintf(stderr, "tests disabled\n");
++
++#else
++
++    int err;
++    const char *tag;
++    AndroidLogFormat *p_format;
++
++    p_format = android_log_format_new();
++
++    fprintf(stderr, "running tests\n");
++
++    tag = "random";
++
++    android_log_addFilterRule(p_format,"*:i");
++
++    assert (ANDROID_LOG_INFO == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) == 0);
++    android_log_addFilterRule(p_format, "*");
++    assert (ANDROID_LOG_DEBUG == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) > 0);
++    android_log_addFilterRule(p_format, "*:v");
++    assert (ANDROID_LOG_VERBOSE == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) > 0);
++    android_log_addFilterRule(p_format, "*:i");
++    assert (ANDROID_LOG_INFO == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) == 0);
++
++    android_log_addFilterRule(p_format, "random");
++    assert (ANDROID_LOG_VERBOSE == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) > 0);
++    android_log_addFilterRule(p_format, "random:v");
++    assert (ANDROID_LOG_VERBOSE == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) > 0);
++    android_log_addFilterRule(p_format, "random:d");
++    assert (ANDROID_LOG_DEBUG == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) > 0);
++    android_log_addFilterRule(p_format, "random:w");
++    assert (ANDROID_LOG_WARN == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) == 0);
++
++    android_log_addFilterRule(p_format, "crap:*");
++    assert (ANDROID_LOG_VERBOSE== filterPriForTag(p_format, "crap"));
++    assert(android_log_shouldPrintLine(p_format, "crap", ANDROID_LOG_VERBOSE) > 0);
++
++    // invalid expression
++    err = android_log_addFilterRule(p_format, "random:z");
++    assert (err < 0);
++    assert (ANDROID_LOG_WARN == filterPriForTag(p_format, "random"));
++    assert(android_log_shouldPrintLine(p_format, tag, ANDROID_LOG_DEBUG) == 0);
++
++    // Issue #550946
++    err = android_log_addFilterString(p_format, " ");
++    assert(err == 0);
++    assert(ANDROID_LOG_WARN == filterPriForTag(p_format, "random"));
++
++    // note trailing space
++    err = android_log_addFilterString(p_format, "*:s random:d ");
++    assert(err == 0);
++    assert(ANDROID_LOG_DEBUG == filterPriForTag(p_format, "random"));
++
++    err = android_log_addFilterString(p_format, "*:s random:z");
++    assert(err < 0);
++
++
++#if 0
++    char *ret;
++    char defaultBuffer[512];
++
++    ret = android_log_formatLogLine(p_format,
++        defaultBuffer, sizeof(defaultBuffer), 0, ANDROID_LOG_ERROR, 123,
++        123, 123, "random", "nofile", strlen("Hello"), "Hello", NULL);
++#endif
++
++
++    fprintf(stderr, "tests complete\n");
++#endif
++}
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/logwrap.c b/core/logcat/logwrap.c
+--- android-tools-4.2.2+git20130218/core/logcat/logwrap.c	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/logwrap.c	2021-12-30 16:02:21.396306000 +0800
+@@ -0,0 +1,569 @@
++/*
++ * Copyright (C) 2008 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <string.h>
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <poll.h>
++#include <sys/wait.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <libgen.h>
++#include <stdbool.h>
++#include <pthread.h>
++
++#include <logwrap/logwrap.h>
++#include "private/android_filesystem_config.h"
++#include "cutils/log.h"
++#include <cutils/klog.h>
++
++#define ARRAY_SIZE(x)   (sizeof(x) / sizeof(*(x)))
++#define MIN(a,b) (((a)<(b))?(a):(b))
++
++static pthread_mutex_t fd_mutex = PTHREAD_MUTEX_INITIALIZER;
++
++#define ERROR(fmt, args...)                                                   \
++do {                                                                          \
++    fprintf(stderr, fmt, ## args);                                            \
++    ALOG(LOG_ERROR, "logwrapper", fmt, ## args);                              \
++} while(0)
++
++#define FATAL_CHILD(fmt, args...)                                             \
++do {                                                                          \
++    ERROR(fmt, ## args);                                                      \
++    _exit(-1);                                                                \
++} while(0)
++
++#define MAX_KLOG_TAG 16
++
++/* This is a simple buffer that holds up to the first beginning_buf->buf_size
++ * bytes of output from a command.
++ */
++#define BEGINNING_BUF_SIZE 0x1000
++struct beginning_buf {
++    char *buf;
++    size_t alloc_len;
++    /* buf_size is the usable space, which is one less than the allocated size */
++    size_t buf_size;
++    size_t used_len;
++};
++
++/* This is a circular buf that holds up to the last ending_buf->buf_size bytes
++ * of output from a command after the first beginning_buf->buf_size bytes
++ * (which are held in beginning_buf above).
++ */
++#define ENDING_BUF_SIZE 0x1000
++struct ending_buf {
++    char *buf;
++    ssize_t alloc_len;
++    /* buf_size is the usable space, which is one less than the allocated size */
++    ssize_t buf_size;
++    ssize_t used_len;
++    /* read and write offsets into the circular buffer */
++    int read;
++    int write;
++};
++
++ /* A structure to hold all the abbreviated buf data */
++struct abbr_buf {
++    struct beginning_buf b_buf;
++    struct ending_buf e_buf;
++    int beginning_buf_full;
++};
++
++/* Collect all the various bits of info needed for logging in one place. */
++struct log_info {
++    int log_target;
++    char klog_fmt[MAX_KLOG_TAG * 2];
++    char *btag;
++    bool abbreviated;
++    FILE *fp;
++    struct abbr_buf a_buf;
++};
++
++/* Forware declaration */
++static void add_line_to_abbr_buf(struct abbr_buf *a_buf, char *linebuf, int linelen);
++
++/* Return 0 on success, and 1 when full */
++static int add_line_to_linear_buf(struct beginning_buf *b_buf,
++                                   char *line, ssize_t line_len)
++{
++    size_t new_len;
++    char *new_buf;
++    int full = 0;
++
++    if ((line_len + b_buf->used_len) > b_buf->buf_size) {
++        full = 1;
++    } else {
++        /* Add to the end of the buf */
++        memcpy(b_buf->buf + b_buf->used_len, line, line_len);
++        b_buf->used_len += line_len;
++    }
++
++    return full;
++}
++
++static void add_line_to_circular_buf(struct ending_buf *e_buf,
++                                     char *line, ssize_t line_len)
++{
++    ssize_t free_len;
++    ssize_t needed_space;
++    char *new_buf;
++    int cnt;
++
++    if (e_buf->buf == NULL) {
++        return;
++    }
++
++   if (line_len > e_buf->buf_size) {
++       return;
++   }
++
++    free_len = e_buf->buf_size - e_buf->used_len;
++
++    if (line_len > free_len) {
++        /* remove oldest entries at read, and move read to make
++         * room for the new string */
++        needed_space = line_len - free_len;
++        e_buf->read = (e_buf->read + needed_space) % e_buf->buf_size;
++        e_buf->used_len -= needed_space;
++    }
++
++    /* Copy the line into the circular buffer, dealing with possible
++     * wraparound.
++     */
++    cnt = MIN(line_len, e_buf->buf_size - e_buf->write);
++    memcpy(e_buf->buf + e_buf->write, line, cnt);
++    if (cnt < line_len) {
++        memcpy(e_buf->buf, line + cnt, line_len - cnt);
++    }
++    e_buf->used_len += line_len;
++    e_buf->write = (e_buf->write + line_len) % e_buf->buf_size;
++}
++
++/* Log directly to the specified log */
++static void do_log_line(struct log_info *log_info, char *line) {
++    if (log_info->log_target & LOG_KLOG) {
++        klog_write(6, log_info->klog_fmt, line);
++    }
++    if (log_info->log_target & LOG_ALOG) {
++        ALOG(LOG_INFO, log_info->btag, "%s", line);
++    }
++    if (log_info->log_target & LOG_FILE) {
++        fprintf(log_info->fp, "%s\n", line);
++    }
++}
++
++/* Log to either the abbreviated buf, or directly to the specified log
++ * via do_log_line() above.
++ */
++static void log_line(struct log_info *log_info, char *line, int len) {
++    if (log_info->abbreviated) {
++        add_line_to_abbr_buf(&log_info->a_buf, line, len);
++    } else {
++        do_log_line(log_info, line);
++    }
++}
++
++/*
++ * The kernel will take a maximum of 1024 bytes in any single write to
++ * the kernel logging device file, so find and print each line one at
++ * a time.  The allocated size for buf should be at least 1 byte larger
++ * than buf_size (the usable size of the buffer) to make sure there is
++ * room to temporarily stuff a null byte to terminate a line for logging.
++ */
++static void print_buf_lines(struct log_info *log_info, char *buf, int buf_size)
++{
++    char *line_start;
++    char c;
++    int line_len;
++    int i;
++
++    line_start = buf;
++    for (i = 0; i < buf_size; i++) {
++        if (*(buf + i) == '\n') {
++            /* Found a line ending, print the line and compute new line_start */
++            /* Save the next char and replace with \0 */
++            c = *(buf + i + 1);
++            *(buf + i + 1) = '\0';
++            do_log_line(log_info, line_start);
++            /* Restore the saved char */
++            *(buf + i + 1) = c;
++            line_start = buf + i + 1;
++        } else if (*(buf + i) == '\0') {
++            /* The end of the buffer, print the last bit */
++            do_log_line(log_info, line_start);
++            break;
++        }
++    }
++    /* If the buffer was completely full, and didn't end with a newline, just
++     * ignore the partial last line.
++     */
++}
++
++static void init_abbr_buf(struct abbr_buf *a_buf) {
++    char *new_buf;
++
++    memset(a_buf, 0, sizeof(struct abbr_buf));
++    new_buf = malloc(BEGINNING_BUF_SIZE);
++    if (new_buf) {
++        a_buf->b_buf.buf = new_buf;
++        a_buf->b_buf.alloc_len = BEGINNING_BUF_SIZE;
++        a_buf->b_buf.buf_size = BEGINNING_BUF_SIZE - 1;
++    }
++    new_buf = malloc(ENDING_BUF_SIZE);
++    if (new_buf) {
++        a_buf->e_buf.buf = new_buf;
++        a_buf->e_buf.alloc_len = ENDING_BUF_SIZE;
++        a_buf->e_buf.buf_size = ENDING_BUF_SIZE - 1;
++    }
++}
++
++static void free_abbr_buf(struct abbr_buf *a_buf) {
++    free(a_buf->b_buf.buf);
++    free(a_buf->e_buf.buf);
++}
++
++static void add_line_to_abbr_buf(struct abbr_buf *a_buf, char *linebuf, int linelen) {
++    if (!a_buf->beginning_buf_full) {
++        a_buf->beginning_buf_full =
++            add_line_to_linear_buf(&a_buf->b_buf, linebuf, linelen);
++    }
++    if (a_buf->beginning_buf_full) {
++        add_line_to_circular_buf(&a_buf->e_buf, linebuf, linelen);
++    }
++}
++
++static void print_abbr_buf(struct log_info *log_info) {
++    struct abbr_buf *a_buf = &log_info->a_buf;
++
++    /* Add the abbreviated output to the kernel log */
++    if (a_buf->b_buf.alloc_len) {
++        print_buf_lines(log_info, a_buf->b_buf.buf, a_buf->b_buf.used_len);
++    }
++
++    /* Print an ellipsis to indicate that the buffer has wrapped or
++     * is full, and some data was not logged.
++     */
++    if (a_buf->e_buf.used_len == a_buf->e_buf.buf_size) {
++        do_log_line(log_info, "...\n");
++    }
++
++    if (a_buf->e_buf.used_len == 0) {
++        return;
++    }
++
++    /* Simplest way to print the circular buffer is allocate a second buf
++     * of the same size, and memcpy it so it's a simple linear buffer,
++     * and then cal print_buf_lines on it */
++    if (a_buf->e_buf.read < a_buf->e_buf.write) {
++        /* no wrap around, just print it */
++        print_buf_lines(log_info, a_buf->e_buf.buf + a_buf->e_buf.read,
++                        a_buf->e_buf.used_len);
++    } else {
++        /* The circular buffer will always have at least 1 byte unused,
++         * so by allocating alloc_len here we will have at least
++         * 1 byte of space available as required by print_buf_lines().
++         */
++        char * nbuf = malloc(a_buf->e_buf.alloc_len);
++        if (!nbuf) {
++            return;
++        }
++        int first_chunk_len = a_buf->e_buf.buf_size - a_buf->e_buf.read;
++        memcpy(nbuf, a_buf->e_buf.buf + a_buf->e_buf.read, first_chunk_len);
++        /* copy second chunk */
++        memcpy(nbuf + first_chunk_len, a_buf->e_buf.buf, a_buf->e_buf.write);
++        print_buf_lines(log_info, nbuf, first_chunk_len + a_buf->e_buf.write);
++        free(nbuf);
++    }
++}
++
++static int parent(const char *tag, int parent_read, pid_t pid,
++        int *chld_sts, int log_target, bool abbreviated, char *file_path) {
++    int status = 0;
++    char buffer[4096];
++    struct pollfd poll_fds[] = {
++        [0] = {
++            .fd = parent_read,
++            .events = POLLIN,
++        },
++    };
++    int rc = 0;
++    int fd;
++
++    struct log_info log_info;
++
++    int a = 0;  // start index of unprocessed data
++    int b = 0;  // end index of unprocessed data
++    int sz;
++    bool found_child = false;
++    char tmpbuf[256];
++
++    log_info.btag = basename(tag);
++    if (!log_info.btag) {
++        log_info.btag = (char*) tag;
++    }
++
++    if (abbreviated && (log_target == LOG_NONE)) {
++        abbreviated = 0;
++    }
++    if (abbreviated) {
++        init_abbr_buf(&log_info.a_buf);
++    }
++
++    if (log_target & LOG_KLOG) {
++        snprintf(log_info.klog_fmt, sizeof(log_info.klog_fmt),
++                 "<6>%.*s: %%s", MAX_KLOG_TAG, log_info.btag);
++    }
++
++    if ((log_target & LOG_FILE) && !file_path) {
++        /* No file_path specified, clear the LOG_FILE bit */
++        log_target &= ~LOG_FILE;
++    }
++
++    if (log_target & LOG_FILE) {
++        fd = open(file_path, O_WRONLY | O_CREAT, 0664);
++        if (fd < 0) {
++            ERROR("Cannot log to file %s\n", file_path);
++            log_target &= ~LOG_FILE;
++        } else {
++            lseek(fd, 0, SEEK_END);
++            log_info.fp = fdopen(fd, "a");
++        }
++    }
++
++    log_info.log_target = log_target;
++    log_info.abbreviated = abbreviated;
++
++    while (!found_child) {
++        if (TEMP_FAILURE_RETRY(poll(poll_fds, ARRAY_SIZE(poll_fds), -1)) < 0) {
++            ERROR("poll failed\n");
++            rc = -1;
++            goto err_poll;
++        }
++
++        if (poll_fds[0].revents & POLLIN) {
++            sz = read(parent_read, &buffer[b], sizeof(buffer) - 1 - b);
++
++            sz += b;
++            // Log one line at a time
++            for (b = 0; b < sz; b++) {
++                if (buffer[b] == '\r') {
++                    if (abbreviated) {
++                        /* The abbreviated logging code uses newline as
++                         * the line separator.  Lucikly, the pty layer
++                         * helpfully cooks the output of the command
++                         * being run and inserts a CR before NL.  So
++                         * I just change it to NL here when doing
++                         * abbreviated logging.
++                         */
++                        buffer[b] = '\n';
++                    } else {
++                        buffer[b] = '\0';
++                    }
++                } else if (buffer[b] == '\n') {
++                    buffer[b] = '\0';
++                    log_line(&log_info, &buffer[a], b - a);
++                    a = b + 1;
++                }
++            }
++
++            if (a == 0 && b == sizeof(buffer) - 1) {
++                // buffer is full, flush
++                buffer[b] = '\0';
++                log_line(&log_info, &buffer[a], b - a);
++                b = 0;
++            } else if (a != b) {
++                // Keep left-overs
++                b -= a;
++                memmove(buffer, &buffer[a], b);
++                a = 0;
++            } else {
++                a = 0;
++                b = 0;
++            }
++        }
++
++        if (poll_fds[0].revents & POLLHUP) {
++            int ret;
++
++            ret = waitpid(pid, &status, WNOHANG);
++            if (ret < 0) {
++                rc = errno;
++                ALOG(LOG_ERROR, "logwrap", "waitpid failed with %s\n", strerror(errno));
++                goto err_waitpid;
++            }
++            if (ret > 0) {
++                found_child = true;
++            }
++        }
++    }
++
++    if (chld_sts != NULL) {
++        *chld_sts = status;
++    } else {
++      if (WIFEXITED(status))
++        rc = WEXITSTATUS(status);
++      else
++        rc = -ECHILD;
++    }
++
++    // Flush remaining data
++    if (a != b) {
++      buffer[b] = '\0';
++      log_line(&log_info, &buffer[a], b - a);
++    }
++
++    /* All the output has been processed, time to dump the abbreviated output */
++    if (abbreviated) {
++        print_abbr_buf(&log_info);
++    }
++
++    if (WIFEXITED(status)) {
++      if (WEXITSTATUS(status)) {
++        snprintf(tmpbuf, sizeof(tmpbuf),
++                 "%s terminated by exit(%d)\n", log_info.btag, WEXITSTATUS(status));
++        do_log_line(&log_info, tmpbuf);
++      }
++    } else {
++      if (WIFSIGNALED(status)) {
++        snprintf(tmpbuf, sizeof(tmpbuf),
++                       "%s terminated by signal %d\n", log_info.btag, WTERMSIG(status));
++        do_log_line(&log_info, tmpbuf);
++      } else if (WIFSTOPPED(status)) {
++        snprintf(tmpbuf, sizeof(tmpbuf),
++                       "%s stopped by signal %d\n", log_info.btag, WSTOPSIG(status));
++        do_log_line(&log_info, tmpbuf);
++      }
++    }
++
++err_waitpid:
++err_poll:
++    if (log_target & LOG_FILE) {
++        fclose(log_info.fp); /* Also closes underlying fd */
++    }
++    if (abbreviated) {
++        free_abbr_buf(&log_info.a_buf);
++    }
++    return rc;
++}
++
++static void child(int argc, char* argv[]) {
++    // create null terminated argv_child array
++    char* argv_child[argc + 1];
++    memcpy(argv_child, argv, argc * sizeof(char *));
++    argv_child[argc] = NULL;
++
++    if (execvp(argv_child[0], argv_child)) {
++        FATAL_CHILD("executing %s failed: %s\n", argv_child[0],
++                strerror(errno));
++    }
++}
++
++int android_fork_execvp_ext(int argc, char* argv[], int *status, bool ignore_int_quit,
++        int log_target, bool abbreviated, char *file_path) {
++    pid_t pid;
++    int parent_ptty;
++    int child_ptty;
++    char *child_devname = NULL;
++    struct sigaction intact;
++    struct sigaction quitact;
++    sigset_t blockset;
++    sigset_t oldset;
++    int rc = 0;
++
++    rc = pthread_mutex_lock(&fd_mutex);
++    if (rc) {
++        ERROR("failed to lock signal_fd mutex\n");
++        goto err_lock;
++    }
++
++    /* Use ptty instead of socketpair so that STDOUT is not buffered */
++    parent_ptty = open("/dev/ptmx", O_RDWR);
++    if (parent_ptty < 0) {
++        ERROR("Cannot create parent ptty\n");
++        rc = -1;
++        goto err_open;
++    }
++
++    if (grantpt(parent_ptty) || unlockpt(parent_ptty) ||
++            ((child_devname = (char*)ptsname(parent_ptty)) == 0)) {
++        ERROR("Problem with /dev/ptmx\n");
++        rc = -1;
++        goto err_ptty;
++    }
++
++    child_ptty = open(child_devname, O_RDWR);
++    if (child_ptty < 0) {
++        ERROR("Cannot open child_ptty\n");
++        rc = -1;
++        goto err_child_ptty;
++    }
++
++    sigemptyset(&blockset);
++    sigaddset(&blockset, SIGINT);
++    sigaddset(&blockset, SIGQUIT);
++    pthread_sigmask(SIG_BLOCK, &blockset, &oldset);
++
++    pid = fork();
++    if (pid < 0) {
++        close(child_ptty);
++        ERROR("Failed to fork\n");
++        rc = -1;
++        goto err_fork;
++    } else if (pid == 0) {
++        pthread_mutex_unlock(&fd_mutex);
++        pthread_sigmask(SIG_SETMASK, &oldset, NULL);
++        close(parent_ptty);
++
++        // redirect stdout and stderr
++        dup2(child_ptty, 1);
++        dup2(child_ptty, 2);
++        close(child_ptty);
++
++        child(argc, argv);
++    } else {
++        close(child_ptty);
++        if (ignore_int_quit) {
++            struct sigaction ignact;
++
++            memset(&ignact, 0, sizeof(ignact));
++            ignact.sa_handler = SIG_IGN;
++            sigaction(SIGINT, &ignact, &intact);
++            sigaction(SIGQUIT, &ignact, &quitact);
++        }
++
++        rc = parent(argv[0], parent_ptty, pid, status, log_target,
++                    abbreviated, file_path);
++    }
++
++    if (ignore_int_quit) {
++        sigaction(SIGINT, &intact, NULL);
++        sigaction(SIGQUIT, &quitact, NULL);
++    }
++err_fork:
++    pthread_sigmask(SIG_SETMASK, &oldset, NULL);
++err_child_ptty:
++err_ptty:
++    close(parent_ptty);
++err_open:
++    pthread_mutex_unlock(&fd_mutex);
++err_lock:
++    return rc;
++}
+diff -urpN android-tools-4.2.2+git20130218/core/logcat/logwrapper.c b/core/logcat/logwrapper.c
+--- android-tools-4.2.2+git20130218/core/logcat/logwrapper.c	1970-01-01 08:00:00.000000000 +0800
++++ b/core/logcat/logwrapper.c	2021-12-30 16:29:40.342794000 +0800
+@@ -0,0 +1,100 @@
++/*
++ * Copyright (C) 2008 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <sys/wait.h>
++#include <unistd.h>
++
++#include <logwrap/logwrap.h>
++#include <cutils/klog.h>
++
++#include "cutils/log.h"
++
++#ifndef ECHILD
++#define	ECHILD		10
++#endif
++
++void fatal(const char *msg) {
++    fprintf(stderr, "%s", msg);
++    ALOG(LOG_ERROR, "logwrapper", "%s", msg);
++    exit(-1);
++}
++
++void usage() {
++    fatal(
++        "Usage: logwrapper [-a] [-d] [-k] BINARY [ARGS ...]\n"
++        "\n"
++        "Forks and executes BINARY ARGS, redirecting stdout and stderr to\n"
++        "the Android logging system. Tag is set to BINARY, priority is\n"
++        "always LOG_INFO.\n"
++        "\n"
++        "-a: Causes logwrapper to do abbreviated logging.\n"
++        "    This logs up to the first 4K and last 4K of the command\n"
++        "    being run, and logs the output when the command exits\n"
++        "-d: Causes logwrapper to SIGSEGV when BINARY terminates\n"
++        "    fault address is set to the status of wait()\n"
++        "-k: Causes logwrapper to log to the kernel log instead of\n"
++        "    the Android system log\n");
++}
++
++int main(int argc, char* argv[]) {
++    int seg_fault_on_exit = 0;
++    int log_target = LOG_ALOG;
++    bool abbreviated = false;
++    int ch;
++    int status = 0xAAAA;
++    int rc;
++
++    while ((ch = getopt(argc, argv, "adk")) != -1) {
++        switch (ch) {
++            case 'a':
++                abbreviated = true;
++                break;
++            case 'd':
++                seg_fault_on_exit = 1;
++                break;
++            case 'k':
++                log_target = LOG_KLOG;
++                klog_set_level(6);
++                break;
++            case '?':
++            default:
++              usage();
++        }
++    }
++    argc -= optind;
++    argv += optind;
++
++    if (argc < 1) {
++        usage();
++    }
++
++    rc = android_fork_execvp_ext(argc, &argv[0], &status, true,
++                                 log_target, abbreviated, NULL);
++    if (!rc) {
++        if (WIFEXITED(status))
++            rc = WEXITSTATUS(status);
++        else
++            rc = -ECHILD;
++    }
++
++    if (seg_fault_on_exit) {
++        *(int *)status = 0;  // causes SIGSEGV with fault_address = status
++    }
++
++    return rc;
++}
+diff -urpN android-tools-4.2.2+git20130218/debian/makefiles/logcat.mk b/debian/makefiles/logcat.mk
+--- android-tools-4.2.2+git20130218/debian/makefiles/logcat.mk	1970-01-01 08:00:00.000000000 +0800
++++ b/debian/makefiles/logcat.mk	2021-12-31 15:26:03.301738249 +0800
+@@ -0,0 +1,48 @@
++# Makefile for logcat
++
++VPATH+= $(SRCDIR)/core/logcat
++LIB_SRCS+=  event_tag_map.c
++LIB_SRCS+=	logd_write.c
++LIB_SRCS+=	logprint.c
++LIB_SRCS+=	klog.c
++LIB_WRAPPER_SRC = logwrap.c
++WRAPPER_SRCS +=	logwrapper.c
++SRCS+=	logcat.cpp
++      
++
++
++CPPFLAGS+= -O2 -g -Wall -Wno-unused-parameter
++CPPFLAGS+= -D_GNU_SOURCE
++CPPFLAGS+= -DHAVE_SYMLINKS -DBOARD_ALWAYS_INSECURE -DHAVE_SYS_UIO_H -DHAVE_IOCTL
++CPPFLAGS+= -DHAVE_TERMIO_H
++CPPFLAGS+= -I$(SRCDIR)/core/include
++
++LIBS+= -lc -lpthread -lz
++
++LIB_OBJS= $(patsubst %, %.o, $(basename $(LIB_SRCS)))
++OBJS= $(patsubst %, %.o, $(basename $(SRCS)))
++WRAPPER_OBJS= $(patsubst %, %.o, $(basename $(WRAPPER_SRCS)))
++LIB_WRAPPER_OBJS= $(patsubst %, %.o, $(basename $(LIB_WRAPPER_SRC)))
++
++all: liblog.so liblogwrap.so logcat logwrapper
++
++liblog.so: $(LIB_OBJS)
++	$(CC) -shared -fPIC -o $@  $(CPPFLAGS) $(LIB_OBJS)
++
++liblogwrap.so: $(LIB_WRAPPER_OBJS)
++	$(CC) -shared -fPIC -o $@  $(CPPFLAGS) $(LIB_WRAPPER_OBJS)
++
++logcat: $(OBJS) liblog.so
++	$(CXX) -o $@ $(CPPFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -L. -llog
++
++logwrapper: $(WRAPPER_OBJS) liblog.so liblogwrap.so
++	$(CC) -o $@ $(CPPFLAGS) $(LDFLAGS) $(WRAPPER_OBJS) $(LIBS) -L. -llog -llogwrap
++
++%.o: %.c
++	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
++
++%.o: %.cpp
++	$(CXX) -c $(CPPFLAGS) -o $@ $<
++
++clean:
++	rm -rf $(OBJS) $(LIB_OBJS) $(WRAPPER_OBJS) liblog.so logcat logwrapper

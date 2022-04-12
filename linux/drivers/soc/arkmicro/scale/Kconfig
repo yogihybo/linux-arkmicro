@@ -1,0 +1,9 @@
+# ArkMicro on-chip n141 scale control driver configuration
+#
+
+config ARK_SCALE
+	tristate "ArkMicro Scale Support"
+	depends on SOC_ARKN141 || SOC_ARK1668E
+	help
+	  Say y here to enable ArkMicro N141 Scale driver.
+

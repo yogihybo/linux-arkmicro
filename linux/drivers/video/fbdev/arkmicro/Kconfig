@@ -1,0 +1,56 @@
+config FB_ARK1668LCD
+	tristate "Ark1668 framebuffer support"
+	depends on SOC_ARK1668
+	depends on FB && HAS_IOMEM
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select FB_MODE_HELPERS if OF
+	select VIDEOMODE_HELPERS if OF
+	select BACKLIGHT_LCD_SUPPORT if OF
+	select BACKLIGHT_CLASS_DEVICE if OF
+	help
+	  This framebuffer device driver is for the ARK1668 LCD controller.
+
+config FB_ARKN141LCD
+	tristate "Arkn141 framebuffer support"
+	depends on SOC_ARKN141
+	depends on FB && HAS_IOMEM
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select FB_MODE_HELPERS if OF
+	select VIDEOMODE_HELPERS if OF
+	select BACKLIGHT_LCD_SUPPORT if OF
+	select BACKLIGHT_CLASS_DEVICE if OF
+	help
+	  This framebuffer device driver is for the ARKN141 LCD controller.
+
+config FB_ARK1668ELCD
+	tristate "Ark1668e framebuffer support"
+	depends on SOC_ARK1668E
+	depends on FB && HAS_IOMEM
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select FB_MODE_HELPERS if OF
+	select VIDEOMODE_HELPERS if OF
+	select BACKLIGHT_LCD_SUPPORT if OF
+	select BACKLIGHT_CLASS_DEVICE if OF
+	help
+	  This framebuffer device driver is for the ARK1668E LCD controller.
+
+config FB_ARKN141SLCD
+	tristate "ARKN141S framebuffer support"
+	depends on SOC_ARKN141S
+	depends on FB && HAS_IOMEM
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select FB_MODE_HELPERS if OF
+	select VIDEOMODE_HELPERS if OF
+	select BACKLIGHT_LCD_SUPPORT if OF
+	select BACKLIGHT_CLASS_DEVICE if OF
+	help
+	  This framebuffer device driver is for the ARK1668E LCD controller.
+

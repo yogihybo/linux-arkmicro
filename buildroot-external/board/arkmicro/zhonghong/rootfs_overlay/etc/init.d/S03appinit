@@ -1,0 +1,62 @@
+#!/bin/sh
+
+mkdir /tmp/dev
+ln -s /dev/memalloc /tmp/dev/memalloc
+insmod  /lib/modules/galcore.ko registerMemBase=0xe0f00000 irqLine=48 contiguousSize=0x1000000 physSize=0x10000000 powerManagement=0
+cd /usr/app
+export LD_LIBRARY_PATH=/usr/app
+./initenv.sh
+
+
+#echo "000000000000000000000000000"
+#if [ ! -d "/UpdataFile" ]; then
+# cd ../../
+# mkdir -p UpdataFile
+# ubidetach /dev/ubi_ctrl -m 8
+# ubiformat /dev/mtd8
+# ubiattach /dev/ubi_ctrl -m 8
+# ubimkvol  /dev/ubi1 -N UpdataImg -s 110MiB
+# sync	
+# mount -o sync -t ubifs ubi1_0 /UpdataFile
+
+#else
+#    ubiattach /dev/ubi_ctrl -m 8
+#    mount -o sync -t ubifs ubi1_0 /UpdataFile
+#fi
+
+./uiEngine&
+
+echo "000000000000000000000000000"
+cd ../../
+if [ ! -d "/UpdataFile" ]; then
+ mkdir -p UpdataFile
+fi
+USERDATAFS=`cat /proc/mounts | grep ubifs`
+if [ "${USERDATAFS}" != "" ]; then
+	mtd_partition=8
+	ubiattach /dev/ubi_ctrl -m $mtd_partition
+	mount -o sync -t ubifs ubi1_0 /UpdataFile
+	if [ $? -eq 0 ]
+	then
+		echo "mount successfully!"
+	else
+		sync
+		sleep 1
+		mount -o sync -t ubifs ubi1_0 /UpdataFile
+		if [ $? -ne 0 ]
+		then
+			echo "mount failed! then reformat the volume!"
+			ubidetach /dev/ubi_ctrl -m $mtd_partition -d 1
+			ubiformat /dev/mtd$mtd_partition
+			ubiattach /dev/ubi_ctrl -m $mtd_partition
+			ubimkvol  /dev/ubi1 -N UpdataImg -s 120MiB
+			mount -o sync -t ubifs ubi1_0 /UpdataFile
+			sync
+		fi
+	fi
+else
+	USERDATAFS=`cat /proc/mounts | grep yaffs2`
+	if [ "${USERDATAFS}" != "" ]; then
+		mount -t yaffs2 /dev/mtdblock6 /data/
+	fi
+fi

@@ -1,0 +1,245 @@
+#
+# Normal rules (sorted alphabetically)
+#
+.*
+!.gitignore
+*.a
+*.bin
+*.cfgtmp
+*.c.[012]*.*
+*.dtb
+*.dtb.S
+*.dwo
+*.elf
+*.exe
+*.gcda
+*.gcno
+*.i
+*.lex.c
+*.ll
+*.lst
+*.lz4
+*.lzma
+*.lzo
+*.mod.c
+*.o
+#*.o.*
+*.order
+#**/*.patch
+*.s
+*.so.dbg
+*.su
+*.swp
+*.symtypes
+*.tab.[ch]
+
+#
+#buildroot
+#
+/buildroot/output
+/buildroot/dl
+/buildroot/.auto.deps
+/buildroot/.config.cmd
+/buildroot/.config.old
+/buildroot/..config.tmp
+/buildroot/.config
+/buildroot/*.depend
+#/buildroot/*.patch
+/buildroot/*.diff
+/buildroot/*.orig
+/buildroot/*.rej
+/buildroot/*~
+/buildroot/*.pyc
+!/buildroot/.gitignore
+/buildroot-2021.02.2/output
+/buildroot-2021.02.2/dl
+/buildroot-2021.02.2/.auto.deps
+/buildroot-2021.02.2/.config.cmd
+/buildroot-2021.02.2/.config.old
+/buildroot-2021.02.2/..config.tmp
+/buildroot-2021.02.2/.config
+/buildroot-2021.02.2/*.depend
+#/buildroot-2021.02.2/*.patch
+/buildroot-2021.02.2/*.diff
+/buildroot-2021.02.2/*.orig
+/buildroot-2021.02.2/*.rej
+/buildroot-2021.02.2/*~
+/buildroot-2021.02.2/*.pyc
+!/buildroot-2021.02.2/.gitignore
+
+# linux
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules (sorted alphabetically)
+#
+/linux/**/*.tar
+/linux/**/*.xz
+/linux/**/Module.symvers
+/linux/**/modules.builtin
+
+#
+# Top-level generic files
+#
+/linux/tags
+/linux/TAGS
+/linux/linux
+/linux/vmlinux
+/linux/vmlinux.32
+/linux/vmlinux-gdb.py
+/linux/vmlinuz
+/linux/System.map
+/linux/Module.markers
+
+#
+# RPM spec file (make rpm-pkg)
+#
+/linux/*.spec
+
+#
+# Debian directory (make deb-pkg)
+#
+/linux/debian/
+
+#
+# tar directory (make tar*-pkg)
+#
+/linux/tar-install/
+
+#
+# git files that we don't want to ignore even if they are dot-files
+#
+!/linux/.gitignore
+!/linux/.mailmap
+!/linux/.cocciconfig
+
+#
+# Generated include files
+#
+/linux/include/config
+/linux/include/generated
+/linux/arch/*/include/generated
+
+# stgit generated dirs
+/linux/patches-*
+
+# quilt's files
+/linux/patches
+/linux/series
+
+# cscope files
+/linux/cscope.*
+/linux/ncscope.*
+
+# gnu global files
+/linux/GPATH
+/linux/GRTAGS
+/linux/GSYMS
+/linux/GTAGS
+
+# id-utils files
+/linux/ID
+
+/linux/*.orig
+/linux/*~
+/linux/\#*#
+
+#
+# Leavings from module signing
+#
+/linux/extra_certificates
+/linux/signing_key.pem
+/linux/signing_key.priv
+/linux/signing_key.x509
+/linux/x509.genkey
+
+# Kconfig presets
+/linux/all.config
+
+# Kdevelop4
+/linux/*.kdev4
+
+
+# u-boot
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# Normal rules (sorted alphabetically)
+#
+
+# Build tree
+/u-boot/build-*
+
+#
+# Top-level generic files
+#
+/u-boot/fit-dtb.blob
+/u-boot/MLO*
+/u-boot/SPL*
+/u-boot/System.map
+/u-boot/u-boot*
+/u-boot/boards.cfg
+
+#
+# git files that we don't want to ignore even it they are dot-files
+#
+!/u-boot/.gitignore
+!/u-boot/.mailmap
+
+#
+# Generated files
+#
+/u-boot/spl/
+/u-boot/tpl/
+/u-boot/defconfig
+
+#
+# Generated include files
+#
+/u-boot/include/config/
+/u-boot/include/generated/
+
+# stgit generated dirs
+/u-boot/patches-*
+/u-boot/.stgit-edit.txt
+
+# quilt's files
+/u-boot/patches
+/u-boot/series
+
+# gdb files
+/u-boot/.gdb_history
+
+# cscope files
+/u-boot/cscope.*
+
+# tags files
+/u-boot/tags
+/u-boot/ctags
+/u-boot/etags
+
+# gnu global files
+/u-boot/GPATH
+/u-boot/GRTAGS
+/u-boot/GSYMS
+/u-boot/GTAGS
+
+/u-boot/*.orig
+/u-boot/*~
+/u-boot/\#*#
+
+#
+#buildroot-external
+#
+/buildroot-external/toolchain/
+
+#
+#output
+#
+/output/

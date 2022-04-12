@@ -1,0 +1,23 @@
+{
+	"attribute" : {
+		"pos" : "0,0,1024,600",
+		"effect" : 0,
+		"hastitle" : 0
+	},	
+
+	"win035-alphaarea" : {
+		"name" : "4alpha",
+		"pos" : "0,327,800,153"
+	},	
+	
+	"win001-backgd" : {
+		"name" : "m01bg",
+		"pos" : "0,0,1024,600",
+	  	"imgall" : "dashboard/yb_bg1.png"
+	},
+	"win001-iconstate" : {
+		"name" : "m02icon1",
+		"pos" : "129,230,44,44",
+	  	"imgall" : "dashboard/icon1.png"
+	}
+}

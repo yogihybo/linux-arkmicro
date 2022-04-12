@@ -1,0 +1,406 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668e.dtsi"
+#include "ark1668e-pinctrl.dtsi"
+
+//#define I2S_USE_EXTERNAL_CODEC
+
+/ {
+	i2c-gpio-0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gportf 25 0		/* SDA */
+			&gportf 24 0		/* SCL */
+		>;
+		i2c-gpio,delay-us = <6>;	/* clk freq = 500/delay KHz */
+		i2c-gpio,scl-output-only;
+
+		amp:drv_bd37033@40{
+				status = "okay";
+				compatible = "arkmicro,drv_bd37033";
+				reg = <0x40>;		/* i2c address(7 bit)*/
+				flout-gain = <65>;	/*min = 0 ;max = 95*/
+				frout-gain = <65>;	/*min = 0 ;max = 95*/
+				rlout-gain = <65>;	/*min = 0 ;max = 95*/
+				rrout-gain = <65>;	/*min = 0 ;max = 95*/
+				#sound-dai-cells = <0>;
+		};
+	};
+
+	i2c-gpio-1 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gportf 29 0		/* SDA */
+			&gportf 28 0		/* SCL */
+		>;
+		i2c-gpio,delay-us = <6>;	/* clk freq = 500/delay KHz */
+		i2c-gpio,scl-output-only;
+
+		ark7116: ark7116@B2 {
+			compatible = "arkmicro,ark7116_1668e_devb";
+			reset-gpio = <&gportf 27 0>;
+			reg = <0x59>; /* i2c address(7 bits) */
+			default-channel = <0>;
+            carback-config = <1>;
+			port {
+				ark7116_0: endpoint@0{
+					remote-endpoint = <&itu_1>;
+				};
+			};
+		};
+
+		rn6752: da380@4e {
+            compatible = "arkmicro,ark1668e_rn6752";
+            //reset-gpio = <&gpio3 11 0>;
+            reg = <0x2c>; /* i2c address(7 bits) */
+            default-channel = <0>;  /* 0:channel A; 1:channel B */
+            camera-format = <3>;    /* 0:unknown; 1:cvbs pal; 2:cvbs ntsc; 3:720p pal; 4:720p ntsc */
+			port {
+                rn6752_0: endpoint@0{
+                    remote-endpoint = <&itu_0>;
+                };
+        	};
+		};
+
+		mclk: mclk@12K {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <12288000>;
+		};
+
+		escodec: es8316@10 {
+			compatible = "arkmicro,es8316";
+			reg = <0x10>;
+			clocks = <&mclk>;
+			clock-names = "mclk";
+			#sound-dai-cells = <0>;
+		};
+	};
+
+	cs4334_codec: ark1668e_cs4334_codec {
+		status = "okay";
+		compatible = "arkmicro,ark1668e_cs4334_codec";
+		clock-names = "cs4334_mclk";
+		clocks = <&mclk>;
+		#sound-dai-cells = <0>;
+	};
+
+	cs5343_codec: ark1668e_cs5343_codec {
+		status = "okay";
+		compatible = "arkmicro,ark1668e_cs5343_codec";
+		clock-names = "cs5343_mclk";
+		clocks = <&mclk>;
+		#sound-dai-cells = <0>;
+	};
+
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "ark1668e devb audio";
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Line", "Line In",
+			"Headphone", "Headphone Jack";
+		simple-audio-card,routing =
+			"Headphone Jack", "HPOL",
+			"Headphone Jack", "HPOR",
+			"MIC1", "Mic Jack",
+			"MIC2", "Mic Jack";
+
+#ifdef I2S_USE_EXTERNAL_CODEC
+		simple-audio-card,aux-devs = <&amp>;
+
+		simple-audio-card,format = "i2s";
+		simple-audio-card,cpu {
+			sound-dai = <&i2s_dac>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&escodec>;//External(DAC):escodec(es8316) ,cs4334_codec ;
+		};
+#else
+		simple-audio-card,dai-link@0 {		/* I2S - adc */
+			format = "i2s";
+			bitclock-master = <&capture_cpu>;
+			frame-master = <&capture_cpu>;
+			capture_cpu: cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			capture_codec: codec {
+				sound-dai = <&sdadc>;//External(ADC):escodec(es8316) , cs5343_codec  ; Internal(ADC):sdadc
+			};
+		};
+
+		simple-audio-card,dai-link@1 {		/* I2S - dac */
+			format = "i2s";
+			bitclock-master = <&playback_cpu>;
+			frame-master = <&playback_cpu>;
+			playback_cpu: cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			playback_codec: codec {
+				sound-dai = <&sddac>;//External(DAC):escodec(es8316) ,cs4334_codec ; Internal(DAC):sddac
+			};
+		};
+#endif
+	};
+
+	carback: carback@0 {
+		compatible = "arkmicro,ark1668e-carback";
+		interrupt-parent = <&gportd>;
+		interrupts = <1 IRQ_TYPE_EDGE_BOTH>;
+		detect-gpios = <&gportd 1 GPIO_ACTIVE_HIGH>;
+		debounce-detect = <0>;
+		reg = <0x5ea00000 0x400000>;
+	};
+
+	adc {
+        compatible = "arkmicro,ark1668e-adc";
+        reg = <0xe4500000 0x1000
+            0xe4900000 0x1000>;
+		interrupts = <GIC_SPI 4 IRQ_TYPE_LEVEL_HIGH>;
+    };
+
+};
+
+&lcdc {
+	display = <&display0>;
+	pinctrl-names = "default";
+	/* set pad only to prevent gpio use */
+	pinctrl-0 = <&pinctrl_lcd_dlvds>;
+
+	display0: display@0 {
+		interface-type = "DLVDS";
+		lvds-con = <0x4545>;
+		lvds-con2 = <0xfa200141>;
+		bits-per-pixel = <32>;
+		power-control-gpio = <&gportd 0 GPIO_ACTIVE_HIGH>;
+		lcd-wiring-mode = "RGB";
+		lcdcon-backlight;
+		pwms = <&pwm0 0 50000>;
+		pwm-names = "backlight";
+		backlight-value = <30>;
+		backlight-delay = <200>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <120000000>;
+				hactive = <1920>;
+				vactive = <720>;
+				hback-porch = <300>;
+				hfront-porch = <240>;
+				vback-porch = <80>;
+				vfront-porch = <80>;
+				hsync-len = <36>;
+				vsync-len = <18>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};
+
+&usb0_phy {
+	compatible = "usb-nop-xceiv";
+	#phy-cells = <0>;
+	status = "okay";
+};
+
+&usb0 {
+	status = "okay";
+};
+
+&usb1_phy {
+	compatible = "usb-nop-xceiv";
+	#phy-cells = <0>;
+	status = "okay";
+};
+
+&usb1 {
+	status = "okay";
+};
+
+&uart3 {
+    use-in-kernel;
+    use-for-mcu;
+};
+
+&ituin {
+	status = "okay";
+	channel = <1>;             //for no pinctr
+	x_pos = <0>;
+	y_pos = <0>;
+	//width = <800>;          //if this line is commented out, it is displayed in full screen
+	height = <720>;
+
+	port {
+		itu_0: endpoint@0 {
+			is-itu601;
+			vsync-active = <1>;
+			hsync-active = <1>;
+			remote-endpoint = <&rn6752_0>;
+            channel = <0>;
+		};
+
+		itu_1: endpoint@1 {
+			remote-endpoint = <&ark7116_0>;
+			channel = <1>;
+		};
+	};
+};
+
+&i2s_adc {
+	pinctrl-0 = <&pinctrl_i2sadc_sync &pinctrl_i2sadc_sadata
+					&pinctrl_i2sadc_mclk &pinctrl_i2sadc_bclk>;
+	pinctrl-names = "default";
+};
+
+#ifndef ARK1668E_I2S_FULL_DUPLEX_MODE
+&i2s_dac {
+	pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata_out
+					&pinctrl_i2sdac_mclk &pinctrl_i2sdac_bclk>;
+	pinctrl-names = "default";
+};
+
+#else
+&i2s_dac {
+	pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata_out
+					&pinctrl_i2sdac_mclk &pinctrl_i2sdac_bclk &pinctrl_i2sdac_sadata>;
+	pinctrl-names = "default";
+};
+#endif
+
+&ethernet {
+	status = "okay";
+	phy-handle = <&eth_phy0>;
+	phy-mode = "rgmii";
+
+	//snps,reset-gpio = <&gportd 15 GPIO_ACTIVE_LOW>;
+	//snps,reset-active-low;
+	//snps,reset-delays-us = <0 10000 1000000>;
+
+	mdio {
+		compatible = "snps,dwmac-mdio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		eth_phy0: ethernet-phy@0 {
+			/* Realtek RTL8211F (0x001cc916) */
+			reg = <1>;
+		};
+	};
+};
+
+
+&i2c0 {
+	gt911: touchscreen@5d {
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		interrupt-parent = <&gportf>;
+		interrupts = <22 IRQ_TYPE_EDGE_FALLING>;
+		irq-gpios = <&gportf 22 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gportf 23 GPIO_ACTIVE_HIGH>;
+		//touchscreen-inverted-x;
+	};
+	cyttsp5: touchscreen@24 {
+		compatible = "cy,cyttsp5_i2c_adapter";
+		reg = <0x24>;
+
+		/* GPIO 38, high-to-low edge triggered */
+		interrupt-parent = <&gportf>;
+		interrupts = <22 IRQ_TYPE_EDGE_FALLING>;
+		cy,adapter_id = "cyttsp5_i2c_adapter";
+
+		cy,core {
+			cy,name = "cyttsp5_core";
+			cy,max_tch = <1>;
+			cy,irq_gpio = <182>;
+			cy,rst_gpio = <183>;
+			cy,hid_desc_register = <1>;
+			/*CY_CORE_FLAG_RESTORE_PARAMETERS */
+			cy,flags = <4>;
+			/* CY_CORE_EWG_NONE */
+			cy,easy_wakeup_gesture = <0>;
+			cy,btn_keys = <172 /* KEY_HOMEPAGE */
+					   /* previously was KEY_HOME, new Android versions use KEY_HOMEPAGE */
+				       139 /* KEY_MENU */
+				       158 /* KEY_BACK */
+				       217 /* KEY_SEARCH */
+				       114 /* KEY_VOLUMEDOWN */
+				       115 /* KEY_VOLUMEUP */
+				       212 /* KEY_CAMERA */
+				       116>; /* KEY_POWER */
+			cy,btn_keys-tag = <0>;
+
+			cy,mt {
+				cy,name = "cyttsp5_mt";
+
+				cy,inp_dev_name = "cyttsp5_mt";
+				/* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
+				cy,flags = <0x0>;//<0x38>;
+				cy,abs =
+					/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
+					<0x35 0 1920 0 0
+					/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
+					0x36 0 720 0 0
+					/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
+					0x3a 0 255 0 0
+					/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
+					0xffff 0 255 0 0
+					/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
+					0x39 0 15 0 0
+					/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
+					0x30 0 255 0 0
+					/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
+					0x31 0 255 0 0
+					/* ABS_MT_ORIENTATION, -127, 127, 0, 0 */
+					0x34 0xffffff81 127 0 0
+					/* ABS_MT_TOOL_TYPE, 0, MT_TOOL_MAX, 0, 0 */
+					0x37 0 1 0 0
+					/* ABS_MT_DISTANCE, 0, 255, 0, 0 */
+					0x3b 0 255 0 0>;
+
+				cy,vkeys_x = <1920>;
+				cy,vkeys_y = <720>;
+
+				cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
+					/* KEY_BACK */
+					<158 1360 90 160 180
+					/* KEY_MENU */
+					139 1360 270 160 180
+					/* KEY_HOMEPAGE */
+					172 1360 450 160 180
+					/* KEY SEARCH */
+					217 1360 630 160 180>;
+			};
+
+			cy,btn {
+				cy,name = "cyttsp5_btn";
+
+				cy,inp_dev_name = "cyttsp5_btn";
+			};
+
+			cy,proximity {
+				cy,name = "cyttsp5_proximity";
+
+				cy,inp_dev_name = "cyttsp5_proximity";
+				cy,abs =
+					/* ABS_DISTANCE, CY_PROXIMITY_MIN_VAL, CY_PROXIMITY_MAX_VAL, 0, 0 */
+					<0x19 0 1 0 0>;
+			};
+		};
+	};
+};
+
+&can0{
+	status = "disabled";
+};
+
+&can1{
+	status = "disabled";
+};
+
+

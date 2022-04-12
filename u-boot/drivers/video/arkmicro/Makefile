@@ -1,0 +1,1 @@
+obj-${CONFIG_VIDEO_ARKMICRO_ARK1668E} = ark1668e_lcd.o

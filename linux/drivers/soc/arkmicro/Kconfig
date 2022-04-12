@@ -1,0 +1,26 @@
+menu "Arkmicro SoC drivers"
+
+config ARK_CARBACK
+	bool "carback driver"
+	default y if SOC_ARK1668
+
+config ARK_MEMALLOC
+	bool "app memalloc driver"
+	default y if ARCH_ARKMICRO
+
+config ARK_PWMTEST
+	bool "pwm test driver"
+
+source "drivers/soc/arkmicro/carback/Kconfig"
+source "drivers/soc/arkmicro/power/Kconfig"
+source "drivers/soc/arkmicro/camera/Kconfig"
+source "drivers/soc/arkmicro/hx170dec/Kconfig"
+source "drivers/soc/arkmicro/hx280enc/Kconfig"
+source "drivers/soc/arkmicro/isp_scale/Kconfig"
+source "drivers/soc/arkmicro/scale/Kconfig"
+source "drivers/soc/arkmicro/gsensor/Kconfig"
+source "drivers/soc/arkmicro/jpeg/Kconfig"
+source "drivers/soc/arkmicro/itu656/Kconfig"
+source "drivers/soc/arkmicro/encrypt/Kconfig"
+
+endmenu

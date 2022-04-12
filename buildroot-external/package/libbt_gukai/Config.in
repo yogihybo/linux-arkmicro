@@ -1,0 +1,4 @@
+config BR2_PACKAGE_LIBBT_GUKAI
+	bool "libbt_gukai"
+	help
+		gukai bluetooth library

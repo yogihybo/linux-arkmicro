@@ -1,0 +1,12 @@
+if TARGET_TYW_DASHBOARD
+
+config SYS_BOARD
+	default "tyw-dashboard"
+
+config SYS_VENDOR
+	default "arkmicro"
+
+config SYS_CONFIG_NAME
+	default "tyw-dashboard"
+
+endif

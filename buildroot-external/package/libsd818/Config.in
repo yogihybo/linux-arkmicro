@@ -1,0 +1,4 @@
+config BR2_PACKAGE_LIBSD818
+	bool "libsd818"
+	help
+		suding bluetooth library

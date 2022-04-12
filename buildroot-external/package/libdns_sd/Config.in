@@ -1,0 +1,4 @@
+config BR2_PACKAGE_LIBDNS_SD
+	bool "libdns_sd"
+	help
+		bonjour library

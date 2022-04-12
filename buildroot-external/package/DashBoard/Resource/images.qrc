@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/CornerLampBg.png</file>
+        <file>images/HomeBackground.png</file>
+        <file>images/LeftCornerActivited.png</file>
+        <file>images/LinkBackground.png</file>
+        <file>images/LinkBackground2.png</file>
+        <file>images/needle.png</file>
+        <file>images/RightCornerAcitivated.png</file>
+        <file>images/SpeedBackground.png</file>
+        <file>images/SpeedRateBackGround.png</file>
+    </qresource>
+</RCC>

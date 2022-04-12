@@ -1,0 +1,14 @@
+include $(BR2_EXTERNAL_ARK_PATH)/package/hx280enc/h264enc.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/hx170dec/hx170dec.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libgal/libgal.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libarkapi/libarkapi.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/ark1668ft/ark1668ft.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libsd818/libsd818.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libdns_sd/libdns_sd.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libbt_gukai/libbt_gukai.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libbt_feasycom/libbt_feasycom.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libmali/libmali.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/carlink/carlink.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/DashBoard/DashBoard.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/ark-mplayer/ark-mplayer.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/ark1668eft/ark1668eft.mk

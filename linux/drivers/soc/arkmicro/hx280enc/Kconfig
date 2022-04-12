@@ -1,0 +1,10 @@
+#
+# Hx280enc controller Kconfig
+#
+
+config ARK_HX280ENC
+	tristate "ARK hx280enc controller"
+	help
+		Say Y here if you want to use the hx280enc controller on the Arkmicro
+		platform.
+

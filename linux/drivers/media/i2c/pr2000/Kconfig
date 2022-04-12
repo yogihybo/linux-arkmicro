@@ -1,0 +1,5 @@
+config VIDEO_PR2000
+	tristate "Arkmicro PR2000X video decoder"
+	depends on VIDEO_V4L2 && I2C
+	---help---
+	  Support for the Arkmicro PR2000X video decoders.

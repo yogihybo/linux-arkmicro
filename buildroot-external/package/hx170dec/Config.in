@@ -1,0 +1,4 @@
+config BR2_PACKAGE_HX170DEC
+	bool "hx170dec"
+	help
+		hx280enc library

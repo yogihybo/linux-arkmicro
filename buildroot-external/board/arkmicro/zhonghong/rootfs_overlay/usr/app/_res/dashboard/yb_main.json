@@ -1,0 +1,1024 @@
+{
+	"win100-alphaarea" : {
+		"name" : "4alpha",
+		"pos" : "0,327,800,153"
+	},	
+	"win001-iconstate" : {
+		"name" : "m02icon1",
+		"pos" : "129,230,44,44",
+	  	"imgall" : "dashboard/null.png"
+	},
+	"win002-button" : {
+		"name" : "u02left",
+		"pos" : "70,18,50,50",
+		"imgnor" : "dashboard/light_n.png",
+		"imgpush" : "dashboard/left_p.png"
+	},
+	"win031-button" : {
+		"name" : "031btshowtitle",
+		"pos" : "0,0,1024,600",
+		"nofresh" : 1 
+	},
+	"win003-button" : {
+		"name" : "u03right",
+		"pos" : "908,16,50,50",
+		"imgnor" : "dashboard/light_n.png",
+		"imgpush" : "dashboard/right_p.png"
+	},
+	"win004-iconstate" : {
+		"name" : "u04eps",
+		"pos" : "78,69,44,44",
+		"imgall" : "dashboard/EPS.png"
+	},
+	"win005-button" : {
+		"name" : "u05feed",
+		"pos" : "25,159,44,44",
+		"imgnor" : "dashboard/feed.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win006-button" : {
+		"name" : "u06parking",
+		"pos" : "72,124,44,44",
+		"imgnor" : "dashboard/parking.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win007-button" : {
+		"name" : "u07airbag",
+		"pos" : "128,109,44,44",
+		"imgnor" : "dashboard/airbag.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win008-button" : {
+		"name" : "u08abs",
+		"pos" : "189,106,44,44",
+		"imgnor" : "dashboard/ABS.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win009-button" : {
+		"name" : "u09ebd",
+		"pos" : "253,106,44,44",
+		"imgnor" : "dashboard/EBD.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win010-button" : {
+		"name" : "u010frontlight",
+		"pos" : "359,87,44,44",
+		"imgnor" : "dashboard/frontlight.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win011-button" : {
+		"name" : "u011nearlight",
+		"pos" : "447,87,44,44",
+		"imgnor" : "dashboard/nearlight.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win012-button" : {
+		"name" : "u012highbeam",
+		"pos" : "534,87,44,44",
+		"imgnor" : "dashboard/highbeam.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win013-button" : {
+		"name" : "u013rearfog",
+		"pos" : "623,87,44,44",
+		"imgnor" : "dashboard/rearfog.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win014-button" : {
+		"name" : "u014prmode",
+		"pos" : "732,105,44,44",
+		"imgnor" : "dashboard/PRmode.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win015-button" : {
+		"name" : "u015safety",
+		"pos" : "788,105,44,44",
+		"imgnor" : "dashboard/safety.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win016-button" : {
+		"name" : "u016handbrake",
+		"pos" : "852,111,44,44",
+		"imgnor" : "dashboard/handbrake.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win017-button" : {
+		"name" : "u017charge",
+		"pos" : "913,131,44,44",
+		"imgnor" : "dashboard/charge.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win018-button" : {
+		"name" : "u018link",
+		"pos" : "957,166,44,44",
+		"imgnor" : "dashboard/link.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win019-button" : {
+		"name" : "u019systemfail",
+		"pos" : "963,464,44,44",
+		"imgnor" : "dashboard/systemfail.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win020-button" : {
+		"name" : "u020battlow",
+		"pos" : "941,508,44,44",
+		"imgnor" : "dashboard/battlow.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win021-button" : {
+		"name" : "u021low",
+		"pos" : "896,522,44,44",
+		"imgnor" : "dashboard/low.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win022-button" : {
+		"name" : "u022motorot",
+		"pos" : "844,539,44,44",
+		"imgnor" : "dashboard/motorot.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win023-button" : {
+		"name" : "u023door",
+		"pos" : "7,457,44,44",
+		"imgnor" : "dashboard/door.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win024-button" : {
+		"name" : "u024keylow",
+		"pos" : "36,495,44,44",
+		"imgnor" : "dashboard/keylow.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win025-button" : {
+		"name" : "u025nokey",
+		"pos" : "71,525,44,44",
+		"imgnor" : "dashboard/nokey.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win026-button" : {
+		"name" : "u026unidentified",
+		"pos" : "115,538,44,44",
+		"imgnor" : "dashboard/unidentified.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win027-iconstate" : {
+		"name" : "u027ready",
+		"pos" : "625,29,84,17",
+		"imgnor" : "dashboard/ready.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win028-iconstate" : {
+		"name" : "u028gear",
+		"pos" : "394,0,230,71",
+		"imgall" : "dashboard/null.png"
+	},
+	"win029-label" : {
+		"name" : "u09lbtime",
+		"pos" : "294,25,100,27",
+		"text" : "00:00",
+		"textheight" : 28,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hright|vcenter"
+	},
+	"win030-button" : {
+		"priority" : 2,
+		"name" : "u030ECU",
+		"pos" : "460,217,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 1,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win032-button" : {
+		"priority" : 2,
+		"name" : "u032Fault",
+		"pos" : "460,254,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 2,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win033-button" : {
+		"priority" : 2,
+		"name" : "u033Light",
+		"pos" : "460,291,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 3,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win034-button" : {
+		"priority" : 2,
+		"name" : "u034Theme",
+		"pos" : "460,328,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 4,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win035-button" : {
+		"priority" : 2,
+		"name" : "u035Default",
+		"pos" : "460,365,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 5,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win036-button" : {
+		"priority" : 3,
+		"name" : "u036lightbg",
+		"pos" : "390,217,250,180",
+		"imgnor" : "dashboard/light_bg.png",
+		"imgpush" : "dashboard/light_bg.png",
+		"textid" : 6,
+		"txtpad" : "65,10,65,125",
+		"textheight" : 30,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win037-slider" : {
+		"priority" : 3,
+		"name" : "u037sliderbright",
+		"pos" : "426,308,176,8",
+		"imgnor" : "dashboard/pro.png",
+		"imgpush" : "dashboard/pro_p.png",
+		"thumbsize" : "0,0",
+		"min" : 0,
+		"max" : 6,
+		"hor" : 0,
+		"value" : 6
+	},
+	"win038-button" : {
+		"priority" : 4,
+		"name" : "u038tripbg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/trip_bg.png",
+		"imgpush" : "dashboard/trip_bg.png",
+		"textid" : 7,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win039-label" : {
+		"priority" : 4,
+		"name" : "u039tripnum",
+		"pos" : "400,290,210,40",
+		"text" : "0",
+		"textheight" : 35,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win040-button" : {
+		"priority" : 4,
+		"name" : "u040tripclear",
+		"pos" : "430,350,150,37",
+		"textid" : 12,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win041-button" : {
+		"priority" : 5,
+		"name" : "u041AVSbg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/trip_bg.png",
+		"imgpush" : "dashboard/trip_bg.png",
+		"textid" : 8,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win042-label" : {
+		"priority" : 5,
+		"name" : "u042AVSnum",
+		"pos" : "400,290,210,40",
+		"text" : "0",
+		"textheight" : 35,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win043-button" : {
+		"priority" : 5,
+		"name" : "u043AVSclear",
+		"pos" : "430,350,150,37",
+		"textid" : 12,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win044-button" : {
+		"priority" : 6,
+		"name" : "u044AECbg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/trip_bg.png",
+		"imgpush" : "dashboard/trip_bg.png",
+		"textid" : 9,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win045-label" : {
+		"priority" : 6,
+		"name" : "u045AECnum",
+		"pos" : "390,290,230,40",
+		"text" : "0",
+		"textheight" : 30,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win046-button" : {
+		"priority" : 6,
+		"name" : "u046AECclear",
+		"pos" : "430,350,150,37",
+		"textid" : 12,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win047-button" : {
+		"priority" : 7,
+		"name" : "u047DTimebg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/trip_bg.png",
+		"imgpush" : "dashboard/trip_bg.png",
+		"textid" : 10,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win048-label" : {
+		"priority" : 7,
+		"name" : "u048DTimenum",
+		"pos" : "390,290,230,50",
+		"text" : "0",
+		"textheight" : 50,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win049-button" : {
+		"priority" : 8,
+		"name" : "u049tpmsbg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/tpms_bg.png",
+		"imgpush" : "dashboard/tpms_bg.png",
+		"textid" : 11,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win050-button" : {
+		"priority" : 8,
+		"name" : "u050FrontLeftTpmssec",
+		"pos" : "400,305,60,15",
+		"imgnor" : "dashboard/tpmsnormal.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win051-button" : {
+		"priority" : 8,
+		"name" : "u051FrontLeftTpmsfirst",
+		"pos" : "460,279,9,13",
+		"imgnor" : "dashboard/null.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win052-label" : {
+		"name" : "u052rpm",
+		"pos" : "100,230,140,30",
+		"text" : "0",
+		"textheight" : 24,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win053-label" : {
+	  	"name" : "u053curspeed",
+	  	"pos" : "80,285,250,56",
+	  	"text" : "0",
+	  	"useimg" : 1,
+	  	"charset0" : "0|dashboard/speed0.png|0,0,64,56",
+	  	"charset1" : "1|dashboard/speed1.png|0,0,64,56",
+	  	"charset2" : "2|dashboard/speed2.png|0,0,64,56",
+	  	"charset3" : "3|dashboard/speed3.png|0,0,64,56",
+	  	"charset4" : "4|dashboard/speed4.png|0,0,64,56",
+	  	"charset5" : "5|dashboard/speed5.png|0,0,64,56",
+	  	"charset6" : "6|dashboard/speed6.png|0,0,64,56",
+	  	"charset7" : "7|dashboard/speed7.png|0,0,64,56",
+		"charset8" : "8|dashboard/speed8.png|0,0,64,56",
+	  	"charset9" : "9|dashboard/speed9.png|0,0,64,56",
+	  	"textheight" : 56,
+	  	"textclrnor" : "#ffffff",
+	  	"textalign" : "hcenter|vcenter"
+	},
+	"win054-button" : {
+		"name" : "u054speedunit",
+		"pos" : "177,360,60,21",
+		"imgnor" : "dashboard/speedunit.png",
+		"imgpush" : "dashboard/speedunit.png"
+	},
+	"win055-label" : {
+		"name" : "u055ecutemp",
+		"pos" : "159,560,170,30",
+		"text" : "0",
+		"textheight" : 20,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win056-label" : {
+		"name" : "u056motortemp",
+		"pos" : "688,560,170,30",
+		"text" : "0",
+		"textheight" : 20,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win057-button" : {
+		"name" : "u057ecuicon1",
+		"pos" : "10,330,27,12",
+		"imgnor" : "dashboard/ecuicon1.png",
+		"imgpush" : "dashboard/ecuicon1.png"
+	},
+	"win058-button" : {
+		"name" : "u058ecuicon2",
+		"pos" : "218,530,12,12",
+		"imgnor" : "dashboard/ecuicon2.png",
+		"imgpush" : "dashboard/ecuicon2.png"
+	},
+	"win059-button" : {
+		"name" : "u059ecuicon3",
+		"pos" : "287,529,31,12",
+		"imgnor" : "dashboard/ecuicon3.png",
+		"imgpush" : "dashboard/ecuicon3.png"
+	},
+	"win060-button" : {
+		"name" : "u060motoricon1",
+		"pos" : "983,330,27,12",
+		"imgnor" : "dashboard/ecuicon1.png",
+		"imgpush" : "dashboard/ecuicon1.png"
+	},
+	"win061-button" : {
+		"name" : "u061motoricon2",
+		"pos" : "789,530,12,12",
+		"imgnor" : "dashboard/ecuicon2.png",
+		"imgpush" : "dashboard/ecuicon2.png"
+	},
+	"win062-button" : {
+		"name" : "u062motoricon3",
+		"pos" : "703,529,31,12",
+		"imgnor" : "dashboard/ecuicon3.png",
+		"imgpush" : "dashboard/ecuicon3.png"
+	},
+	"win063-label" : {
+		"priority" : 8,
+	  	"name" : "u063frontlefttpmsnum",
+	  	"pos" : "390,275,76,20",
+	  	"text" : "0",
+		"textheight" : 15,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win064-button" : {
+		"priority" : 8,
+		"name" : "u064FrontRightTpmssec",
+		"pos" : "545,305,60,15",
+		"imgnor" : "dashboard/tpmsnormal.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win065-button" : {
+		"priority" : 8,
+		"name" : "u065FrontRightTpmsfirst",
+		"pos" : "600,279,9,13",
+		"imgnor" : "dashboard/null.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win066-label" : {
+		"priority" : 8,
+	  	"name" : "u066frontRighttpmsnum",
+	  	"pos" : "530,275,76,20",
+	  	"text" : "0",
+		"textheight" : 15,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win067-button" : {
+		"priority" : 8,
+		"name" : "u067BackLeftTpmssec",
+		"pos" : "400,360,60,15",
+		"imgnor" : "dashboard/tpmsnormal.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win068-button" : {
+		"priority" : 8,
+		"name" : "u068BackLeftTpmsfirst",
+		"pos" : "460,335,9,13",
+		"imgnor" : "dashboard/null.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win069-label" : {
+		"priority" : 8,
+	  	"name" : "u069BackLefttpmsnum",
+	  	"pos" : "390,331,76,20",
+	  	"text" : "0",
+		"textheight" : 15,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win070-button" : {
+		"priority" : 8,
+		"name" : "u070BackRightTpmssec",
+		"pos" : "545,360,60,15",
+		"imgnor" : "dashboard/tpmsnormal.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win071-button" : {
+		"priority" : 8,
+		"name" : "u071BackRightTpmsfirst",
+		"pos" : "600,335,9,13",
+		"imgnor" : "dashboard/null.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win072-label" : {
+		"priority" : 8,
+	  	"name" : "u072BackRighttpmsnum",
+	  	"pos" : "530,331,76,20",
+	  	"text" : "0",
+		"textheight" : 15,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win073-label" : {
+	  	"name" : "u073curcharge",
+	  	"pos" : "690,285,250,56",
+	  	"text" : "0",
+	  	"useimg" : 1,
+	  	"charset0" : "0|dashboard/speed0.png|0,0,64,56",
+	  	"charset1" : "1|dashboard/speed1.png|0,0,64,56",
+	  	"charset2" : "2|dashboard/speed2.png|0,0,64,56",
+	  	"charset3" : "3|dashboard/speed3.png|0,0,64,56",
+	  	"charset4" : "4|dashboard/speed4.png|0,0,64,56",
+	  	"charset5" : "5|dashboard/speed5.png|0,0,64,56",
+	  	"charset6" : "6|dashboard/speed6.png|0,0,64,56",
+	  	"charset7" : "7|dashboard/speed7.png|0,0,64,56",
+		"charset8" : "8|dashboard/speed8.png|0,0,64,56",
+	  	"charset9" : "9|dashboard/speed9.png|0,0,64,56",
+	  	"textheight" : 56,
+	  	"textclrnor" : "#ffffff",
+	  	"textalign" : "hcenter|vcenter"
+	},
+	"win074-button" : {
+		"name" : "u074chargeunit",
+		"pos" : "775,360,88,21",
+		"imgnor" : "dashboard/soc.png",
+		"imgpush" : "dashboard/soc.png"
+	},
+	"win075-button" : {
+		"name" : "u075DefaultTip",
+		"pos" : "355,460,326,40",
+		"imgnor" : "dashboard/tipnull.png",
+		"imgpush" : "dashboard/tipnull.png",
+		"textid" : 0,
+		"txtpad" : "5,4,5,6",
+		"textheight" : 26,
+		"textclrnor" : "#FF0000",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win076-label" : {
+		"name" : "u076ODO",
+		"pos" : "360,520,300,30",
+		"text" : "0",
+		"textheight" : 22,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win077-label" : {
+		"name" : "u077tripmeter",
+		"pos" : "360,555,300,30",
+		"text" : "0",
+		"textheight" : 22,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win078-button" : {
+		"priority" : 9,
+		"name" : "u078resetbg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/reset_bg.png",
+		"imgpush" : "dashboard/reset_bg.png",
+		"textid" : 37,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win079-button" : {
+		"priority" : 9,
+		"name" : "u079resettext",
+		"pos" : "405,285,200,30",
+		"textid" : 38,
+		"textheight" : 30,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win080-button" : {
+		"priority" : 9,
+		"name" : "u080resetok",
+		"pos" : "410,355,80,30",
+		"textid" : 39,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win081-button" : {
+		"priority" : 9,
+		"name" : "u081resetcancel",
+		"pos" : "520,355,80,30",
+		"textid" : 40,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win082-button" : {
+		"priority" : 10,
+		"name" : "u082stylebg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/style_bg.png",
+		"imgpush" : "dashboard/style_bg.png",
+		"textid" : 4,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win083-iconstate" : {
+		"priority" : 10,
+		"name" : "u083nummode",
+		"pos" : "438,355,20,20",
+		"imgnor" : "dashboard/check.png",
+		"imgpush" : "dashboard/check_p.png"
+	},
+	"win084-iconstate" : {
+		"priority" : 10,
+		"name" : "u084pointermode",
+		"pos" : "548,355,20,20",
+		"imgnor" : "dashboard/check.png",
+		"imgpush" : "dashboard/check_p.png"
+	},
+	"win085-button" : {
+		"name" : "u085motersystemfault",
+		"pos" : "380,140,44,44",
+		"imgnor" : "dashboard/motersystemfault.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win086-button" : {
+		"name" : "u086vcucharge",
+		"pos" : "440,140,44,44",
+		"imgnor" : "dashboard/vcucharge.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win087-button" : {
+		"name" : "u087authresult",
+		"pos" : "500,140,44,44",
+		"imgnor" : "dashboard/authresult.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win088-button" : {
+		"name" : "u088bcmstate",
+		"pos" : "560,140,44,44",
+		"imgnor" : "dashboard/bcmstate.png",
+		"imgpush" : "dashboard/null.png"
+	},
+	"win089-label" : {
+		"name" : "u089voltage",
+		"pos" : "780,28,80,30",
+		"text" : "0",
+		"textheight" : 22,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win090-label" : {
+		"name" : "u090current",
+		"pos" : "170,28,80,30",
+		"text" : "0",
+		"textheight" : 22,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win103-button" : {
+		"priority" : 11,
+		"name" : "u103radiobg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/trip_bg.png",
+		"imgpush" : "dashboard/trip_bg.png"
+	},
+	"win104-button" : {
+		"priority" : 11,
+		"name" : "u104fmam",
+		"pos" : "490,232,40,22",
+		"imgnor" : "dashboard/fm.png",
+		"imgpush" : "dashboard/fm.png"
+	},
+	"win105-label" : {
+		"priority" : 11,
+	  	"name" : "u105curfreq",
+	  	"pos" : "410,300,160,42",
+	  	"text" : "0",
+	  	"useimg" : 1,
+	  	"charset0" : "0|dashboard/radio0.png|0,0,30,42",
+	  	"charset1" : "1|dashboard/radio1.png|0,0,30,42",
+	  	"charset2" : "2|dashboard/radio2.png|0,0,30,42",
+	  	"charset3" : "3|dashboard/radio3.png|0,0,30,42",
+	  	"charset4" : "4|dashboard/radio4.png|0,0,30,42",
+	  	"charset5" : "5|dashboard/radio5.png|0,0,30,42",
+	  	"charset6" : "6|dashboard/radio6.png|0,0,30,42",
+	  	"charset7" : "7|dashboard/radio7.png|0,0,30,42",
+		"charset8" : "8|dashboard/radio8.png|0,0,30,42",
+	  	"charset9" : "9|dashboard/radio9.png|0,0,30,42",
+		"charset10" : ".|dashboard/radiopoint.png|0,0,9,42",
+	  	"textheight" : 42,
+	  	"textclrnor" : "#ffffff",
+	  	"textalign" : "hcenter|vcenter"
+	},
+	"win106-button" : {
+		"priority" : 11,
+		"name" : "u106frequnit",
+		"pos" : "560,320,44,19",
+		"imgnor" : "dashboard/fm.png",
+		"imgpush" : "dashboard/fm.png"
+	},
+	"win107-button" : {
+		"priority" : 12,
+		"name" : "u107audiobg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/audio_bg.png",
+		"imgpush" : "dashboard/audio_bg.png"
+	},
+	"win108-label" : {
+		"priority" : 12,
+		"name" : "u108audiotext",
+		"pos" : "385,330,240,35",
+		"text" : "0",
+		"textheight" : 30,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win109-button" : {
+		"priority" : 13,
+		"name" : "u109btbg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/bt_bg.png",
+		"imgpush" : "dashboard/bt_bg.png"
+	},
+	"win110-label" : {
+		"priority" : 13,
+		"name" : "u110btnum",
+		"pos" : "385,310,240,35",
+		"text" : "0",
+		"textheight" : 35,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win111-button" : {
+		"priority" : 13,
+		"name" : "u111bticon",
+		"pos" : "425,255,23,34",
+		"imgnor" : "dashboard/bticon.png",
+		"imgpush" : "dashboard/bticon.png"
+	},
+	"win112-label" : {
+		"priority" : 13,
+		"name" : "u112btstatus",
+		"pos" : "455,258,120,35",
+		"text" : "0",
+		"textheight" : 30,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win125-button" : {
+		"priority" : 14,
+		"name" : "u125rangebg",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/trip_bg.png",
+		"imgpush" : "dashboard/trip_bg.png",
+		"textid" : 54,
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win126-label" : {
+		"priority" : 14,
+		"name" : "u126rangenum",
+		"pos" : "400,290,210,40",
+		"text" : "0",
+		"textheight" : 35,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win127-button" : {
+		"priority" : 14,
+		"name" : "u127rangeclear",
+		"pos" : "430,350,150,37",
+		"textid" : 12,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win128-button" : {
+		"priority" : 15,
+		"name" : "u128clearset",
+		"pos" : "460,254,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 55,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win129-button" : {
+		"priority" : 15,
+		"name" : "u129restore",
+		"pos" : "460,291,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 56,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win130-button" : {
+		"priority" : 15,
+		"name" : "u130version",
+		"pos" : "460,328,110,37",
+		"imgnor" : "dashboard/mid_btn.png",
+		"imgpush" : "dashboard/mid_btn.png",
+		"textid" : 57,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win131-button" : {
+		"priority" : 16,
+		"name" : "u131tripmeter",
+		"pos" : "430,254,160,37",
+		"imgnor" : "dashboard/clear_btn.png",
+		"imgpush" : "dashboard/clear_btn.png",
+		"textid" : 58,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win132-button" : {
+		"priority" : 16,
+		"name" : "u132aec",
+		"pos" : "430,291,160,37",
+		"imgnor" : "dashboard/clear_btn.png",
+		"imgpush" : "dashboard/clear_btn.png",
+		"textid" : 59,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win133-button" : {
+		"priority" : 16,
+		"name" : "u133avs",
+		"pos" : "430,328,160,37",
+		"imgnor" : "dashboard/clear_btn.png",
+		"imgpush" : "dashboard/clear_btn.png",
+		"textid" : 60,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win134-button" : {
+		"priority" : 18,
+		"name" : "u134clearwnd",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/clear_bg.png",
+		"imgpush" : "dashboard/clear_bg.png",
+		"txtpad" : "40,5,50,125",
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win135-button" : {
+		"priority" : 18,
+		"name" : "u135cleartext",
+		"pos" : "420,280,170,38",
+		"textid" : 61,
+		"textheight" : 38,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win136-button" : {
+		"priority" : 18,
+		"name" : "u136clearok",
+		"pos" : "410,355,80,30",
+		"textid" : 39,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win137-button" : {
+		"priority" : 18,
+		"name" : "u137clearcancel",
+		"pos" : "520,355,80,30",
+		"textid" : 40,
+		"textheight" : 25,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FF0000",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win138-button" : {
+		"priority" : 17,
+		"name" : "u138versionwnd",
+		"pos" : "380,217,250,180",
+		"imgnor" : "dashboard/bt_bg.png",
+		"imgpush" : "dashboard/bt_bg.png",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win139-label" : {
+		"priority" : 17,
+		"name" : "u139mcuversion",
+		"pos" : "382,230,140,30",
+		"text" : "0",
+		"textheight" : 26,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win140-label" : {
+		"priority" : 17,
+		"name" : "u140appversion",
+		"pos" : "382,270,250,30",
+		"text" : "0",
+		"textheight" : 26,
+		"textclrnor" : "#919191",
+		"textclrpush" : "#919191",
+		"textalign" : "hcenter|vcenter"
+	}
+}

@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668.dtsi"
+#include "ark1668-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	memory {
+		reg = <0x0 0x8000000>;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		key0 {
+			label = "PB_SW1";
+			gpios = <&gpio0 0 GPIO_ACTIVE_LOW>;
+			linux,code = <0x100>;
+			debounce-interval = <20>;
+		};
+
+		key1 {
+			label = "PB_POWER";
+			gpios = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+			linux,code = <0x101>;
+			debounce-interval = <20>;
+		};
+
+		key2 {
+			label = "PB_KEY1";
+			gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+			linux,code = <0x102>;
+			//debounce-interval = <20>;
+		};
+
+		key3 {
+			label = "PB_KEY2";
+			gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+			linux,code = <0x103>;
+			debounce-interval = <20>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led1 {
+			label = "led1";
+			gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+
+		led2 {
+			label = "led2";
+			gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+
+		led3 {
+			label = "led3";
+			gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+
+		led4 {
+			label = "led4";
+			gpios = <&gpio1 25 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+
+		led5 {
+			label = "led5";
+			gpios = <&gpio1 26 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+
+		led6 {
+			label = "led6";
+			gpios = <&gpio1 27 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+	};
+};
+
+&usb0_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb1_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb0 {
+     status = "okay";
+     gpio-id = <0xFFFFFFFF>;
+};
+
+&usb1 {
+     status = "okay";
+     gpio-id = <0xFFFFFFFF>;
+};
+
+

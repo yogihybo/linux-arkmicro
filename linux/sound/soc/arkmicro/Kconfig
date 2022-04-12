@@ -1,0 +1,90 @@
+config SND_SOC_ARK
+	tristate "ASoC support for Arkmicro"
+	depends on ARCH_ARKMICRO || COMPILE_TEST
+	help
+	  Say Y or M if you want to add support for codecs attached to
+	  the Arkmicro SoCs' Audio interfaces. You will also need to
+	  select the audio interfaces to support below.
+
+config SND_SOC_ARK1668_I2S
+	tristate "ARK1668 I2S Device Driver"
+	depends on SND_SOC_ARK && SOC_ARK1668
+	select SND_DMAENGINE_PCM
+	select SND_SOC_GENERIC_DMAENGINE_PCM
+	help
+	  Say Y or M if you want to add support for I2S driver for
+	  Arkmciro I2S device.
+
+config SND_SOC_ARK1668_ADC
+	tristate "ARK1668 ADC for Audio in"
+	depends on SND_SOC_ARK && SND_SOC_ARK1668_I2S
+
+config SND_SOC_ARK1668_DAC
+	tristate "ARK1668 DAC for Audio out"
+	depends on SND_SOC_ARK && SND_SOC_ARK1668_I2S
+
+config SND_SOC_ARK_I2S
+	tristate "ARKN141 I2S Device Driver"
+	depends on SND_SOC_ARK && SOC_ARKN141
+	select SND_DW_DMAENGINE_PCM
+	select SND_SOC_GENERIC_DMAENGINE_PCM
+	help
+	  Say Y or M if you want to add support for I2S driver for
+	  Arkmciro I2S device.
+
+config SND_SOC_ARK_INTERNAL_DAC
+	tristate "Soc Internal DAC for Audio out"
+	depends on SND_SOC_ARK && SND_SOC_ARK_I2S
+
+config SND_SOC_ARK_INTERNAL_ADC
+	tristate "Soc Internal ADC for Audio In"
+	depends on SND_SOC_ARK && SND_SOC_ARK_I2S
+
+config SND_SOC_ARK_ARKN141
+	tristate "SoC Audio support for ARKN141 SoC"
+	depends on SND_SOC_ARK && DW_DMAC && SND_SOC_ARK_I2S
+	select SND_ARK_SOC_I2S
+	select SND_SOC_ARK_INTERNAL_DAC
+	select SND_SOC_ARK_INTERNAL_ADC
+	help
+		Say Y if you want to add ALSA aound driver for 
+		ARKN141 SoC
+
+config SND_SOC_ARK1668E_I2S
+	tristate "ARK1668E I2S Device Driver"
+	depends on SND_SOC_ARK && SOC_ARK1668E
+	select SND_DMAENGINE_PCM
+	select SND_SOC_GENERIC_DMAENGINE_PCM
+	help
+	  Say Y or M if you want to add support for I2S driver for
+	  Arkmciro I2S device.
+
+config SND_SOC_ARK1668E_INTERNAL_DAC
+	tristate "ARK1668E Internal DAC for Audio out"
+	depends on SND_SOC_ARK && SND_SOC_ARK1668E_I2S
+
+config SND_SOC_ARK1668E_INTERNAL_ADC
+	tristate "ARK1668E Internal ADC for Audio In"
+	depends on SND_SOC_ARK && SND_SOC_ARK1668E_I2S
+
+config ARK1668E_I2S_FULL_DUPLEX_MODE
+	tristate "ARK1668E i2s full-duplex mode support"
+	depends on SND_SOC_ARK1668E_I2S
+	help
+		Say Y here if you want to use ark1668e internal i2s full-duplex mode on the Arkmicro platform.
+
+config SND_SOC_BD37033
+        tristate "Support Audio BD37033 IC Driver"
+        depends on SND_SOC_ARK1668E_I2S || SND_SOC_ARK1668_I2S
+        help
+                Say Y if you want to add ALSA BD37033_Driver
+
+config SND_SOC_BD37033_NOP
+        bool "Enable BD37033 NOP mode"
+        depends on SND_SOC_BD37033
+        help
+                Say Y if you don`t want to use audio ic, but you want to use interfaces
+                of the BD37033 IC.
+                All registers of the bd37033 are not access to read or write.
+
+                Say N if you are not sure.

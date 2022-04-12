@@ -1,0 +1,20 @@
+#
+# arkn141 power off driver Kconfig
+#
+menuconfig POWER_OFF_RESET
+	bool "Arkn141 board level reset or power off"
+	help
+	  Provides a number of drivers which either reset a complete board
+	  or shut it down, by manipulating the main power supply on the board.
+
+	  Say Y here to enable board reset and power off
+
+if POWER_OFF_RESET
+
+config ARKN141_DONGLE_POWEROFF
+	tristate "arkn141 dongle power off driver"
+	depends on SOC_ARKN141
+	help
+	  This driver supports turning off board via a arkn141 dongle 5g wifi power-off driver power off.
+
+endif

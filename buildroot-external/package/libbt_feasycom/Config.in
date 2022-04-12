@@ -1,0 +1,4 @@
+config BR2_PACKAGE_LIBBT_FEASYCOM
+	bool "libbt_feaycom"
+	help
+		Feasycom bluetooth library

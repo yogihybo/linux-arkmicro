@@ -1,0 +1,24 @@
+SRCDIR=./src
+PROJECT=libarkapi.so
+CFLAG=-o2 -fPIC -I./include -I$(STAGING_DIR)/usr/include
+LDFLAG=-L$(STAGING_DIR)/usr/lib -lmfc -lpthread
+CC=$(CROSS_COMPILE)gcc
+SRCS=$(wildcard $(SRCDIR)/*.c)
+OBJS=$(patsubst %.c, %.o, $(SRCS))
+
+ifeq ($(LIBARKAPI_PLATFORM), LIBARKAPI_ARK1668)
+CFLAG += -DLIBARKAPI_PLATFORM=LIBARKAPI_ARK1668 -I$(STAGING_DIR)/usr/include/HAL
+LDFLAG += -lGAL
+else ifeq ($(LIBARKAPI_PLATFORM), LIBARKAPI_ARKN141)
+CFLAG += -DLIBARKAPI_PLATFORM=LIBARKAPI_ARKN141
+else ifeq ($(LIBARKAPI_PLATFORM), LIBARKAPI_ARK1668E)
+CFLAG += -DLIBARKAPI_PLATFORM=LIBARKAPI_ARK1668E
+endif
+
+$(PROJECT):$(OBJS)
+	$(CC) $^ -shared  -o  $@ $(LDFLAG)
+$(SRCDIR)/%.o:$(SRCDIR)/%.c
+	$(CC) $(CFLAG) -c $< -o $@  
+
+clean:
+	rm -f $(SRCDIR)/*.o $(PROJECT)

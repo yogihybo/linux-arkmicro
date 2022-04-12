@@ -1,0 +1,40 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+#--                                                                           --
+#--          This confidential and proprietary software may be used           --
+#--             only as authorized by a licensing agreement from              --
+#--                                                                           --
+#--                           Hantro Products Oy.                             --
+#--                                                                           --
+#--     In the event of publication, the following notice is applicable:      --
+#--                                                                           --
+#--                  (C) COPYRIGHT 2005 HANTRO PRODUCTS OY                    --
+#--                           ALL RIGHTS RESERVED                             --
+#--                                                                           --
+#--   The entire notice above must be reproduced on all authorized copies.    --
+#--                                                                           --
+#-------------------------------------------------------------------------------
+#--                                                                           --
+#--   Abstract     : Version information                                      --
+#--                                                                           --
+#-------------------------------------------------------------------------------
+
+#=====--------------------------------------------------------------------=====#
+
+export language=vhdl # vhdl or verilog
+export hwtag=cfg_hw6280_4_38_hmjs_e1280_axiahb
+export bus=AXIAHB
+export swtag=sw6280_4_30_0
+export systag=enc6280v_3_52
+export jpegsystag=enc6280_4_9r
+
+export kernelversion=2.6.24-arm2/v_0_1
+export rootfsversion=v2_3_0_2
+export compilerversion=arm-2007q1-21-arm-none-linux-gnueabi-i686-pc-linux-gnu
+
+export testdeviceip=81
+export testdeviceversion=v0_1
+
+export comment="Multi-instance"
+
+export csv_path=/export/work/jarsa/6280/6280_encoder/testdir

@@ -1,0 +1,10 @@
+#ArkMicro on-chip jpeg decoder driver configuration
+#
+
+config ARK_JPEG_DEC
+    tristate "ArkMicro 1668 Jpeg Decoder Support"
+    depends on SOC_ARK1668
+    help
+    Say y here to enable ArkMicro 1668 jpeg decoder driver.config
+    ARK_JPEG_BOOT_ANIMATION tristate "ArkMicro 1668 jpeg boot animation" depends
+    on ARK_JPEG_DEC help Say y here to enable ArkMicro 1668 jpeg boot animation.

@@ -1,0 +1,1 @@
+obj-$(CONFIG_G_SENSOR_DA380) += da380.o

@@ -1,0 +1,6 @@
+config BR2_PACKAGE_ARK1668FT
+	bool "ark1668ft"
+	select BR2_PACKAGE_HX170DEC
+	select BR2_PACKAGE_LIBGAL
+	help
+		ark1668 final test app

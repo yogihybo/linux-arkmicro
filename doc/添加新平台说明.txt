@@ -1,0 +1,2 @@
+1. 在build目录下运行 ./add-board.sh $SRC_BOARD_TYPE $DST_BOARD_TYPE添加一个新的平台。
+	例如./add-board.sh ark169 ark169-mirror

@@ -1,0 +1,43 @@
+{
+	"attribute" : {
+		"pos" : "0,0,1024,600",
+		"effect" : 0,
+		"hastitle" : 0
+	},
+	"win100-alphaarea" : {
+		"name" : "4alpha",
+		"pos" : "0,327,800,153"
+	},	
+	"win001-backgd" : {
+		"name" : "m01bg",
+		"pos" : "0,0,1024,600",
+	  	"imgall" : "dashboard/igoff_bg.png"
+	},
+	"win099-button" : {
+		"name" : "u099updatebg",
+		"pos" : "184,270,656,60",
+		"imgnor" : "dashboard/update_bg.png",
+		"imgpush" : "dashboard/update_bg.png",
+		"textalign" : "hcenter|vcenter"
+	},
+	"win123-slider" : {
+		"name" : "u123appupdate",
+		"pos" : "212,296,600,8",
+		"imgnor" : "dashboard/update_null.png",
+		"imgpush" : "dashboard/update_full.png",
+		"thumbsize" : "0,0",
+		"min" : 0,
+		"max" : 100,
+		"hor" : 0,
+		"value" : 100
+	},
+	"win124-label" : {
+		"name" : "u124appupdateper",
+		"pos" : "360,213,310,40",
+		"text" : "0",
+		"textheight" : 40,
+		"textclrnor" : "#FFFFFF",
+		"textclrpush" : "#FFFFFF",
+		"textalign" : "hcenter|vcenter"
+	}
+}

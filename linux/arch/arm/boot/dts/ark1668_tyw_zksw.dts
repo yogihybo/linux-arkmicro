@@ -1,0 +1,191 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668.dtsi"
+#include "ark1668-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+//#define I2S_CODEC
+
+/ {
+    carback: carback@0 {
+        compatible = "arkmicro,ark-carback";
+        interrupt-parent = <&gpio0>;
+        interrupts = <5 IRQ_TYPE_EDGE_BOTH>;
+        detect-gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+        debounce-detect = <20>;
+		//status = "disabled";
+    };
+
+	mcu_serial: mcu-serial@0 {
+		compatible = "arkmicro,ark-mcu-serial";
+	};
+	
+	tool_serial: tool-serial@0 {
+		compatible = "arkmicro,ark-tool-serial";
+	};
+	
+	i2c-gpio-0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gpio0 3 0		/* SDA */
+			&gpio0 2 0		/* SCL */
+		>;
+		i2c-gpio,delay-us = <6>;	/* clk freq = 500/delay KHz */
+		i2c-gpio,scl-output-only;
+		//i2c-gpio,sda-open-drain;
+		//i2c-gpio,scl-open-drain;
+
+		dvr_ark7116: dvr_ark7116@B2 {
+			compatible = "arkmicro,ark1668_ark7116";
+			reset-gpio = <&gpio0 0 0>;
+			reg = <0x59>; /* i2c address(7 bits) */
+			//default-channel = <0>;
+			carback-config = <1>;
+			/*port{
+                        ark7116: endpoint@0{
+                                remote-endpoint = <&ark656>;
+                                };
+                        };*/
+
+		};
+	};
+
+	i2c-gpio-1 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gpio0 9 0		/* SDA */
+			&gpio3 25 0		/* SCL */
+		>;
+		i2c-gpio,delay-us = <6>;	/* clk freq = 500/delay KHz */
+		i2c-gpio,scl-output-only;
+		//i2c-gpio,sda-open-drain;
+		//i2c-gpio,scl-open-drain;
+
+		amp:drv_bd37033@40{
+				status = "okay";
+				compatible = "arkmicro,drv_bd37033";
+				reg = <0x40>;		/* i2c address(7 bit)*/
+				flout-gain = <65>;	/*min = 0 ;max = 95*/
+				frout-gain = <65>;	/*min = 0 ;max = 95*/
+				rlout-gain = <65>;	/*min = 0 ;max = 95*/
+				rrout-gain = <65>;	/*min = 0 ;max = 95*/
+				#sound-dai-cells = <0>;
+		};
+
+	};
+
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "ark1668-audio";
+
+		simple-audio-card,dai-link@0 {		/* I2S - dac */
+			cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			codec {
+				sound-dai = <&sdadc>;
+			};
+		};
+		simple-audio-card,dai-link@1 {		/* I2S - adc */
+			bitclock-master = <&playback_cpu>;
+			frame-master = <&playback_cpu>;
+			playback_cpu: cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			playback_codec: codec {
+				sound-dai = <&sddac>;
+			};
+		};
+	};
+};
+
+&usb0_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb1_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb0 {
+     status = "okay";
+};
+
+&usb1 {
+     status = "okay";
+};
+
+&uart0 {
+	use-in-kernel;
+	use-for-tool;
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&uart3 {
+	use-in-kernel;
+	use-for-mcu;
+};
+
+&lcdc {
+	display = <&display0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
+
+	display0: display@0 {
+		interface-type = "TTL";
+		lvds-con = <0x160fd>;
+		bits-per-pixel = <32>;
+		power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+		lcd-wiring-mode = "BGR";
+		lcdcon-backlight;
+		pwms = <&pwm0 1 50000>;
+		pwm-names = "backlight";
+		backlight-value = <20>;
+		backlight-delay = <200>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <33000000>;
+				hactive = <800>;
+				vactive = <480>;
+				hback-porch = <16>;
+				hfront-porch = <210>;
+				vback-porch = <12>;
+				vfront-porch = <22>;
+				hsync-len = <30>;
+				vsync-len = <13>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};
+
+&vdec0 {
+     status = "okay";
+};
+
+&i2c0 {
+	gt911: touchscreen@5d {
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
+		irq-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio2 16 GPIO_ACTIVE_HIGH>;
+		touchscreen-inverted-x;
+	};
+};

@@ -1,0 +1,4 @@
+config BR2_PACKAGE_ARK_MPLAYER
+	bool "ark-mplayer"
+	help
+		mplayer

@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668.dtsi"
+#include "ark1668-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	ecspi: ecspi@e4100000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "arkmicro,ark-ecspi";
+		reg = <0xe4100000 0x1000>;
+		num-chipselect = <1>;
+		chipselects = <100>;
+		interrupt-parent = <&vicl>;
+		interrupts = <18>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ecspi0>;
+		clocks = <&spi_clk>, <&spi_clk>;
+		clock-names = "ipg", "per";
+
+		m25p80@0 {
+            #address-cells = <1>;
+            #size-cells = <1>;
+            compatible = "w25q128";
+            reg = <0>; /* Chip select 0 */
+            spi-max-frequency = <30000000>;
+		};
+	};
+
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "ark1668ft-audio";
+
+		simple-audio-card,dai-link@0 {		/* I2S - dac */
+			cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			codec {
+				sound-dai = <&sddac>;
+			};
+		};
+		simple-audio-card,dai-link@1 {		/* I2S - adc */
+			bitclock-master = <&capture_codec>;
+			frame-master = <&capture_codec>;
+			cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			capture_codec: codec {
+				sound-dai = <&sdadc>;
+			};
+		};
+	};
+
+    pwmtest: pwmtest@0 {
+        compatible = "arkmicro,ark-pwmtest";
+        interrupt-parent = <&gpio2>;
+        interrupts = <30 IRQ_TYPE_EDGE_BOTH 
+						29 IRQ_TYPE_EDGE_BOTH
+						31 IRQ_TYPE_EDGE_BOTH>;
+        pwm-gpios = <&gpio2 30 GPIO_ACTIVE_HIGH
+						&gpio2 29 GPIO_ACTIVE_HIGH
+						&gpio2 31 GPIO_ACTIVE_HIGH>;
+        debounce-detect = <5>;
+    };
+};
+
+&lcdc {
+
+};
+
+&usb0_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb1_phy {
+    compatible = "usb-nop-xceiv";
+    #phy-cells = <0>;
+    status = "okay";
+};
+
+&usb0 {
+	gpio-id = <0xffffffff>;
+	gpio-pwr = <0xffffffff>;
+	status = "okay";
+};
+
+&usb1 {
+	gpio-id = <0xffffffff>;
+	gpio-pwr = <0xffffffff>;
+	status = "okay";
+};
+
+&vdec0 {
+	status = "okay";
+};

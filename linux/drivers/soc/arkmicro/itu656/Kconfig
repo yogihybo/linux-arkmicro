@@ -1,0 +1,43 @@
+#
+# ArkMicro on-chip ITU656 input control driver configuration
+#
+  
+menu "ArmMicro Itu656 Input Controller"
+
+config ARKN141_ITU656
+	tristate "ArkMicro Arkn141 itu656 input Control Support"
+	depends on SOC_ARKN141
+
+	help
+	  Say y here to enable ArkMicro Arkn141 itu656 input control driver.
+
+config ARK1668_ITU656
+	tristate "ArkMicro Ark1668 itu656 input Control Support"
+	depends on SOC_ARK1668
+	
+	help
+	  Say y here to enable ArkMicro Ark1668 itu656 input control driver.
+
+config VIDEO_ARK1668_VIN
+	tristate "ArkMicro ark1668 videoin driversupport"
+	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	select VIDEOBUF2_DMA_CONTIG
+	select REGMAP_MMIO
+	select V4L2_FWNODE
+	help
+	   This is the camera driver for arkmicro
+
+config ARK7116
+	tristate "Support Ark7116 Driver"
+	depends on ARKN141_ITU656 || ARK1668_ITU656
+
+	help
+	  Say y here to enable ark7116 driver.
+
+config RN6752
+	tristate "Support AHD RN6752 Driver"
+	depends on ARKN141_ITU656 || ARK1668_ITU656
+
+	help
+	  Say y here to enable rn6752 driver.
+endmenu

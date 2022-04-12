@@ -1,0 +1,11 @@
+#include <dt-bindings/pinctrl/ark-pinfunc.h>
+
+&pinctrl0 {
+    uart0 {
+        pinctrl_uart0: uart0-0 {
+            ark,pins =
+            <ARK_PBANK_1 6 ARK_PVAL_1      /* uart0 rx */
+            ARK_PBANK_1 7 ARK_PVAL_1>;     /* uart0 tx */
+        };
+    };
+};
