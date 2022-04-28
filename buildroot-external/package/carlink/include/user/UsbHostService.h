@@ -16,8 +16,7 @@ public:
 
     bool start();
     void stop();
-    bool Read(uint8_t* buf, int sizein);
-    bool Write(const uint8_t* buf, int sizein);
+
 private:
     bool mStart;
     UsbHostServicePrivate *mHandle;

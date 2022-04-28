@@ -28,7 +28,7 @@ uint64_t getTickCount()
 }
 
 IUserLinkPlayer::IUserLinkPlayer():mpIULPlayer(this),mpMusicDecoder(new AudioDecoder()),
-mpTTSDecoder(new AudioDecoder()),mpVRDecoder(new AudioDecoder()),mpCallDecoder(new AudioDecoder()),mFuncAppStatusCallback(nullptr),mFuncConnectCallback(nullptr),mConnected(false)
+mpTTSDecoder(new AudioDecoder()),mpVRDecoder(new AudioDecoder()),mpCallDecoder(new AudioDecoder()),mFuncAppStatusCallback(nullptr),mFuncConnectCallback(nullptr),mConnected(false),mVideoStart(false)
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
@@ -55,6 +55,7 @@ void IUserLinkPlayer::RegisterAppStatusCallback(FUNCAPPSTATUSCALLBACK funcAppSta
 void IUserLinkPlayer::GetIniConfig(LinkAssist *pLinkAssist)
 {
     mLinkConfig = pLinkAssist->GetConfigInfo();
+    mCarplayConfig = pLinkAssist->GetCarplayInfo();
 }
 
 bool IUserLinkPlayer::Initialize(LinkMode linkMode, PhoneType phoneType)
@@ -108,7 +109,7 @@ bool IUserLinkPlayer::StopMirror()
 
 bool IUserLinkPlayer::SetBackground()
 {
-    VideoDecoder::instance()->Show(false);
+    //VideoDecoder::instance()->Show(false);
     if(mpIULPlayer)
         mpIULPlayer->set_background();
     return true;
@@ -116,7 +117,7 @@ bool IUserLinkPlayer::SetBackground()
 
 bool IUserLinkPlayer::SetForeground()
 {
-    VideoDecoder::instance()->Show(true);
+    //VideoDecoder::instance()->Show(true);
     if(mpIULPlayer)
         mpIULPlayer->set_foreground();
     return true;
@@ -252,6 +253,19 @@ bool IUserLinkPlayer::OpenPage(AppPage appPage)
     return true;
 }
 
+bool IUserLinkPlayer::SendNightMode(bool night){
+
+    if(mpIULPlayer)
+       mpIULPlayer->send_night_mode(night);
+    return true;
+}
+
+bool IUserLinkPlayer::SendRightHandDriver(bool right){
+    if(mpIULPlayer)
+        mpIULPlayer->send_right_hand_driver(right);
+    return true;
+}
+
 bool IUserLinkPlayer::SendIphoneMacAddress(string address)
 {
     if(mpIULPlayer){
@@ -267,6 +281,25 @@ void IUserLinkPlayer::SendLisenceCode(const string& license)
     }
 }
 
+void IUserLinkPlayer::SendInputText(const string &text)
+{
+    if(mpIULPlayer){
+        mpIULPlayer->send_input_text(text);
+    }
+}
+
+void IUserLinkPlayer::SendInputSelection(int start, int stop){
+    if(mpIULPlayer){
+        mpIULPlayer->send_input_selection(start,stop);
+    }
+}
+
+void IUserLinkPlayer::SendInputAction(int action, int keyCode)
+{
+    if(mpIULPlayer){
+        mpIULPlayer->send_input_action(action, keyCode);
+    }
+}
 
 void IUserLinkPlayer::video_start(int offset_x, int offset_y, int width, int height)
 {
@@ -287,19 +320,21 @@ void IUserLinkPlayer::video_start(int offset_x, int offset_y, int width, int hei
        // Util::getFrameBufferFixedSize(screen_width, screen_height, "/dev/fb0");
         mVideoFrame = {offset_x, offset_y ,width, height, 0, 0, screen_width, screen_height, VERTICAL};
     }
-
+    mVideoStart = true;
     VideoDecoder::instance()->Init(&mVideoFrame);
 }
 
 void IUserLinkPlayer::video_stop()
 {
     printf("video_stop\r\n");
+    Autolock l(&mMutexVideo);
+    mVideoStart = false;
     VideoDecoder::instance()->Uninit();
 }
 
 void IUserLinkPlayer::video_play(const void *data, int32_t len)
 {
-   // printf("video len = %d\r\n", len);
+    //printf("video len = %d\r\n", len);
 
     static int frameCounter = 0;
     static int64_t beginTime = 0;
@@ -320,8 +355,11 @@ void IUserLinkPlayer::video_play(const void *data, int32_t len)
         frameCounter = 0;
     }
 
-    VideoDecoder::instance()->InputDecoder(data, len);
-
+    //printf("++ video len = %d ++\n", len);
+    Autolock l(&mMutexVideo);
+    if(mVideoStart)
+        VideoDecoder::instance()->InputDecoder(data, len);
+    //printf("-- video len = %d --\n", len);
 }
 
 void IUserLinkPlayer::record_start(AudioInfo &audioInfo)
@@ -388,7 +426,7 @@ bool IUserLinkPlayer::audio_start(AudioType audioType, int rate, int bit, int ch
     }    
     else if(audioType == AUDIO_TYPE_CALL){
         mpCallDecoder->setMediaParam(rate,bit, channel);
-        app_status(APP_PHONE_STARTED, nullptr);
+        //app_status(APP_PHONE_STARTED, nullptr);
     }
 
     return true;

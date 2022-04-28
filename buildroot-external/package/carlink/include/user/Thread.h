@@ -54,6 +54,8 @@ public:
     ~Semaphore();
     bool down();
     bool up();
+    bool arktry();
+    bool down(int sec);
 private:
     sem_t mSem;
 };

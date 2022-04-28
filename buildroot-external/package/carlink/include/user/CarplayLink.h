@@ -7,7 +7,10 @@
 #include "carplayAudioWrapper.h"
 #include <list>
 #include <mutex>
+
+
 #ifdef USE_CARPLAY
+class BufferQueue;
 class CarplayWrapper;
 class CarplayAudioCtx;
 class ICarplayVideoCallbacksImpl : public ICarplayVideoCallbacks
@@ -31,22 +34,12 @@ public:
     void carplayAudioStopCB(int handle, AudioStreamType type);
 private:
     CarplayLink*        mHandle;
-  //  CarplayAudioCtx*    mAudioHandle;
     Mutex               mLock;
     std::list<CarplayAudioCtx*> mAudioHandlList;
+
 };
 
 #endif
-
-typedef enum
-{
-    MEDIA_NONE = 0,
-    MEDIA_PLAY,
-    MEDIA_PAUSE,
-    MEDIA_PLAY_PAUSE,
-    MEDIA_NEXT,
-    MEDIA_PREVIOUS
-}MEDIA;
 
 class CarplayLink : public IUserLinkPlayer
 {
@@ -73,12 +66,16 @@ protected:
     virtual void send_car_wifi(WifiInfo& info);
     virtual void send_touch(int x, int y, TouchCode touchCode);
     virtual void send_multi_touch(int x1, int y1, TouchCode touchCode1, int x2, int y2, TouchCode touchCode2){}
-    virtual bool send_key(KeyCode keyCode);
+    virtual bool send_key(KeyCode keyCode);    
     virtual bool send_wheel(WheelCode wheel, bool foucs);
+    virtual bool send_night_mode(bool night);
+    virtual bool send_right_hand_driver(bool right);
     virtual bool open_page(AppPage appPage);
     virtual void request_status(RequestAppStatus requestAppStatus, void *reserved = nullptr);
     virtual void send_license(const string& license){}
-
+    virtual void send_input_text(const string& text) {}
+    virtual void send_input_selection(const int start, const int stop){}
+    virtual void send_input_action(const int acionId, const int keyCode){}
 protected:
     LinkConfig getLinkConfig() const {return mLinkConfig;}
     PhoneType getPhoneType() const {return mPhoneType;}
@@ -88,6 +85,7 @@ protected:
 
     void setLocalTime(long long local);
 
+
 friend class CarplayAudioPlayCtx;
 friend class CarplayAudioRecordCtx;
 friend class ICarplayVideoCallbacksImpl;
@@ -95,7 +93,6 @@ friend class ICarplayAudioCallbacksImpl;
 friend class CarplayLinkCbsImpl;
 
     std::mutex                              mMutex;
-    string                                  mRecData;
     CarplayWrapper*                         mHandle;
     ICarplayCallbacks*                      mCbs;
     ICarplayVideoCallbacks*                 mVideoCbs;
@@ -105,6 +102,11 @@ friend class CarplayLinkCbsImpl;
     LinkMode                                mLinkMode;
     bool                                    mDefaultWifi;
     bool                                    mDdefaultPhonebtMac;
+    void*                                   mAecHandle;
+    BufferQueue*                            mAecQueue;
+    AudioStreamType                         mAudioStreamType;
+    Semaphore                               mSemaphore;
+    int                                     mHandle1;
 #endif
 };
 

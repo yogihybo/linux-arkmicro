@@ -36,6 +36,7 @@ $(INSTALL) -D -m 0755 $(@D)/lib/carplay/libmyutils.so $(TARGET_DIR)/usr/lib/libm
 $(INSTALL) -D -m 0755 $(@D)/lib/carplay/libScreenStream.so $(TARGET_DIR)/usr/lib/libScreenStream.so
 
 $(INSTALL) -D -m 0755 $(@D)/carlink $(TARGET_DIR)/usr/bin
+$(INSTALL) -D -m 0755 $(@D)/demo_dbus $(TARGET_DIR)/usr/bin
 $(INSTALL) -D -m 0755 $(@D)/demo/demo $(TARGET_DIR)/usr/bin
 $(INSTALL) -D -m 0755 $(@D)/PhoneLink.ini $(TARGET_DIR)/etc
 

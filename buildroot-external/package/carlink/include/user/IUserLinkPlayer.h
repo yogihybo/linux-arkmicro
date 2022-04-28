@@ -30,55 +30,41 @@ public:
 public:
     //init link player
     bool Initialize(LinkMode linkMode, PhoneType phoneType);
+    void Release(); //release link player
 
-    bool Start();
-    //release link player
-    //stop link
-    bool Stop();
-
-    void Release();
+    bool Start();   
+    bool Stop();    //stop link
 
     bool StartMirror();
-
     bool StopMirror();
 
-    //set link background run
-    bool SetBackground();
-    //set link foreground run
-    bool SetForeground();
+    bool SetBackground();                                                                           //set link background run
+    bool SetForeground();                                                                           //set link foreground run
 
     void SendScreenSize(int width, int height);
-
     void SendTouch(int x, int y, TouchCode touchCode);
-
     void SendMultiTouch(int x1, int y1, TouchCode touchCode1,int x2, int y2, TouchCode touchCode2);
-
     void SendKey(KeyCode keyCode);
-
     void SendWheel(WheelCode wheelCode, bool bFoucs);
-
-    bool RequestStatus(RequestAppStatus requestAppStatus, void *reserved = nullptr);
-
-    void onSdkConnectStatus(ConnectedStatus status, PhoneType type);
-
-    bool OpenPage(AppPage appPage);
+    bool SendNightMode(bool night);
+    bool SendRightHandDriver(bool right);
 
     void GetIniConfig(LinkAssist *pLinkAssist);
-
     void RegisterConnectCallback(FUNCCONNECTCALLBACK funcConnectCallback);
-
     void RegisterAppStatusCallback(FUNCAPPSTATUSCALLBACK funcAppStatusCallback);
+    bool RequestStatus(RequestAppStatus requestAppStatus, void *reserved = nullptr);
+    void onSdkConnectStatus(ConnectedStatus status, PhoneType type);
 
+    bool OpenPage(AppPage appPage);   
     void SendCarBluetooth(const string& name, const string& address, const string& pin);
-
     void SendPhoneBluetooth(const string& address);
-
     bool SendIphoneMacAddress(string address);
-
     void SendCarWifi(WifiInfo& info);
 
     void SendLisenceCode(const string& license);
-
+    void SendInputText(const string& text);
+    void SendInputSelection(int start, int stop);
+    void SendInputAction(int action, int keyCode);
 
 protected:
 
@@ -117,9 +103,10 @@ protected:
 
    VideoFrame       mVideoFrame;
    LinkConfig       mLinkConfig;
-   Semaphore        mSemaphore;
+   CarplayConfig    mCarplayConfig;
+   Mutex            mMutexVideo;
    bool             mConnected;
-
+   bool             mVideoStart;
 private:
     IUserLinkPlayer *mpIULPlayer;
     AudioDecoder    *mpMusicDecoder;

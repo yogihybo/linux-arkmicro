@@ -30,10 +30,14 @@ protected:
     virtual void send_multi_touch(int x1, int y1, TouchCode touchCode1, int x2, int y2, TouchCode touchCode2){}
     virtual bool send_key(KeyCode keyCode);
     virtual bool send_wheel(WheelCode wheel, bool foucs);
+    virtual bool send_night_mode(bool night){}
+    virtual bool send_right_hand_driver(bool right){}
     virtual bool open_page(AppPage appPage);
     virtual void request_status(RequestAppStatus requestAppStatus, void *reserved = nullptr);
     virtual void send_license(const string& license){}
-
+    virtual void send_input_text(const string& text) {}
+    virtual void send_input_selection(const int start, const int stop){}
+    virtual void send_input_action(const int acionId, const int keyCode){}
 private:
     static void linkstatus_callback_func(int status, void* parameter);
     void onVideoStartCallback(bool start, int width, int height);

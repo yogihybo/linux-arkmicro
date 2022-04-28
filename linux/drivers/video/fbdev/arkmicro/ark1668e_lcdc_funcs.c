@@ -1259,12 +1259,24 @@ int ark_vin_display_addr(unsigned int addr)
     if(lcdc_base == NULL || addr == 0){
             return -1;
     }
-	ark1668e_lcdc_set_video_addr(ARK1668E_LCDC_LAYER_VIDEO2, addr, 0, 0);
+	//ark1668e_lcdc_set_video_addr(ARK1668E_LCDC_LAYER_VIDEO2, addr, 0, 0);
+	lcdfb_info->render_addr[ARK1668E_LCDC_LAYER_VIDEO2].yaddr = addr;
 	return 0;
 }
 EXPORT_SYMBOL(ark_vin_display_addr);
 
 
+int ark_vin_get_display_addr(void)
+{
+	int yaddr,uaddr,vaddr;
+    if(lcdc_base == NULL){
+            return -1;
+    }
+	ark1668e_lcdc_get_video_addr(ARK1668E_LCDC_LAYER_VIDEO2, &yaddr,&uaddr,&vaddr);
+	
+	return yaddr;
+}
+EXPORT_SYMBOL(ark_vin_get_display_addr);
 
 
 int ark_bootanimation_display_init(int width, int height, unsigned int Yaddr,unsigned int Uaddr,unsigned int Vaddr,unsigned int format)

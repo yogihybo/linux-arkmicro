@@ -20,6 +20,7 @@
 #define SYS_IO_DRIVER01			0x1f4
 #define SYS_IO_DRIVER02			0x1f8
 #define SYS_CPU_CFG2			0x208
+#define SYS_DEVICE_CLK_CFG6		0x22c
 #define SYS_CPUPLL_CFG_0		0x280
 #define SYS_CPUPLL_CFG_1		0x284
 #define SYS_CPUPLL_CFG_2		0x288

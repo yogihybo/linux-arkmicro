@@ -26,6 +26,8 @@ public:
 
     LinkConfig GetConfigInfo() {return mLinkConfig;}
 
+    CarplayConfig GetCarplayInfo() {return mCarplayConfig;}
+
     void onSdkConnectStatus(ConnectedStatus status, PhoneType type);
 
     IUserLinkPlayer* Initialize(LinkType linkType);
@@ -41,6 +43,7 @@ private:
     FUNCUSBCALLBACK  mFuncUSBCallback;
     LinkConfig       mLinkConfig;
     CarlifeConfig    mCarlifeConfig = {1, 0, 0};
+    CarplayConfig    mCarplayConfig = {154, 87, 50, 30};
 
 };
 

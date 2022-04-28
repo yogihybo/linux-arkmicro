@@ -27,26 +27,26 @@ typedef enum
 //dbus mode carlink send
 typedef enum
 {
-    DBUS_DEVICE_ATTACHED,
-    DBUS_DEVICE_DEATTACHED,
-    DBUS_CONNECTTING,
-    DBUS_CONNECTED,
-    DBUS_FOREGROUND,
-    DBUS_BACKGROUND,
-    DBUS_FAILED,
-    DBUS_DISCONNECTED,
-    DBUS_APP_EXIT,
-    DBUS_INTERRUPTED_BY_APP,
-    DBUS_MUSIC_STARTED,
-    DBUS_MUSIC_STOPPED,
-    DBUS_NAVI_STARTED,
-    DBUS_NAVI_STOPPED,
-    DBUS_VR_STARTED,                     //语音提示开始
-    DBUS_VR_STOPPED,                     //语音提示结束
-    DBUS_RECOGNITION_STARTED,            //语音识别开始(录制开始)
-    DBUS_RECOGNITION_STOPPED,            //语音识别结束(录制结束)
-    DBUS_PHONE_STARTED,
-    DBUS_PHONE_STOPPED,
+    DBUS_DEVICE_ATTACHED,                //usb insert
+    DBUS_DEVICE_DEATTACHED,              //usb removed
+    DBUS_CONNECTTING,                    //carlink connectting
+    DBUS_CONNECTED,                      //carlink connected
+    DBUS_FOREGROUND,                     //carlink foreground
+    DBUS_BACKGROUND,                     //carlink background
+    DBUS_FAILED,                         //carlink failed
+    DBUS_DISCONNECTED,                   //carlink disconnected
+    DBUS_APP_EXIT,                       //phone's app exited
+    DBUS_INTERRUPTED_BY_APP,             //start connecting by interrupted (kill phone's app or connecting removed)
+    DBUS_MUSIC_STARTED,                  //music start
+    DBUS_MUSIC_STOPPED,                  //music stop
+    DBUS_NAVI_STARTED,                   //navigation start
+    DBUS_NAVI_STOPPED,                   //navigation stop
+    DBUS_VR_STARTED,                     //voices start
+    DBUS_VR_STOPPED,                     //voices stop
+    DBUS_RECOGNITION_STARTED,            //voices recognition start(record start)
+    DBUS_RECOGNITION_STOPPED,            //voices recognition stop(record stop)
+    DBUS_PHONE_STARTED,                  //phone call start
+    DBUS_PHONE_STOPPED,                  //phone call stop
 }DbusSend;
 
 //carlink receive or user's request
@@ -67,29 +67,30 @@ typedef enum
 
 typedef enum
 {
-    APP_NOT_RUNNING,
-    APP_FOREGROUND,
-    APP_BACKGROUND,
-    APP_SCREENLOCKED,
-    APP_UNSCREENLOCKED,
-    APP_MUSIC_STARTED,
-    APP_MUSIC_STOPPED,
-    APP_NAVI_STARTED,
-    APP_NAVI_STOPPED,
-    APP_VR_STARTED,                     //语音提示开始
-    APP_VR_STOPPED,                     //语音提示结束
-    APP_RECOGNITION_STARTED,            //语音识别开始(录制开始)
-    APP_RECOGNITION_STOPPED,            //语音识别结束(录制结束)
-    APP_PHONE_STARTED,
-    APP_PHONE_STOPPED,
-    LAUNCH_PHONE_APP,                   //请求打开手机APP
-    APP_QRCODE,
-    APP_LICENSE,
-    APP_INPUTINFO,
-    APP_INPUTPOS,
-    APP_VRTEXT,
-    APP_VOICE_CMD,
-    APP_RESERVED,
+    APP_NOT_RUNNING,                    //phone app not open
+    APP_FOREGROUND,                     //carlink foreground
+    APP_BACKGROUND,                     //carlink background
+    APP_SCREENLOCKED,                   //phone screen locked
+    APP_UNSCREENLOCKED,                 //phone screen unlocked
+    APP_MUSIC_STARTED,                  //music start
+    APP_MUSIC_STOPPED,                  //music stop
+    APP_NAVI_STARTED,                   //navigation start
+    APP_NAVI_STOPPED,                   //navigation stop
+    APP_VR_STARTED,                     //voices start
+    APP_VR_STOPPED,                     //voices stop
+    APP_RECOGNITION_STARTED,            //voices recognition start(record start)
+    APP_RECOGNITION_STOPPED,            //voices recognition stop(record stop)
+    APP_PHONE_STARTED,                  //phone call start
+    APP_PHONE_STOPPED,                  //phone call stop
+    LAUNCH_PHONE_APP,                   //notify open phone's app
+    APP_QRCODE,                         //qr code 's information
+    APP_LICENSE,                        //license information
+    APP_INPUTINFO,                      //keyboard input information
+    APP_INPUTPOS,                       //keyboard input pos information
+    APP_VRTEXT,                         //voices information
+    APP_VOICE_CMD,                      //voices controls information
+    APP_VERSION,                        //version
+    APP_RESERVED,                       //reserved
 }AppStatusMessage;
 
 //亿连id
@@ -97,12 +98,39 @@ struct License{
     bool activate;
     int code;
     string msg;
+    string ver;
+};
+
+struct InputInfo
+{
+    int32_t  inputType;
+    int32_t  imeOptions;
+    string   rawText;
+    uint32_t minLines;
+    uint32_t maxLines;
+    uint32_t maxLength;
 };
 
 struct InputPos{
     int start;
     int stop;
 };
+
+enum VRTextType
+{
+    VR_TEXT_FROM_UNKNOWN = 0,
+    VR_TEXT_FROM_VR,
+    VR_TEXT_FROM_SPEAK
+};
+
+struct VRTextInfo
+{
+    VRTextType   type;
+    int32_t      sequence;
+    string       plainText;
+    string       htmlText;
+};
+
 
 typedef enum
 {
@@ -225,6 +253,9 @@ enum  KeyCode
 
     KEY_SYSTEM_HOME = 27,                         ///< The Android phone's HOME key
     KEY_SYSTEM_BACK = 28,                             ///< The Android phone's BACK key
+    KEY_PICKUP_PHONE = 29,                          /// pick up phone
+    KEY_HANGUP_PHONE = 30,                          ///hang up phone
+
     KEY_MAX,                                     ///< reserve
 };
 
@@ -234,11 +265,10 @@ struct LinkConfig
    int offset_y;
    int screen_width;
    int screen_height;
-   int screen_physical_width;
-   int screen_physical_height;
    bool diy_screen;
    bool autostart;
    bool encryption;
+   bool usb_index;
    LinkType linkType;
    string version;
    string manufacturer;
@@ -257,6 +287,13 @@ struct CarlifeConfig
    bool mic_record;
 };
 
+struct CarplayConfig
+{
+    int screen_physical_width;
+    int screen_physical_height;
+    int aec_delay;
+    int fps;
+};
 
 class LinkBase
 {
@@ -285,8 +322,14 @@ protected:
     virtual void send_multi_touch(int x1, int y1, TouchCode touchCode1, int x2, int y2, TouchCode touchCode2) = 0;
     virtual bool send_key(KeyCode keyCode) = 0;
     virtual bool send_wheel(WheelCode wheel, bool foucs) = 0;
+    virtual bool send_night_mode(bool night) = 0;
+    virtual bool send_right_hand_driver(bool right) = 0;
     virtual bool open_page(AppPage appPage) = 0;
     virtual void request_status(RequestAppStatus requestAppStatus, void *reserved = nullptr) = 0;
     virtual void send_license(const string& license) = 0;
+    virtual void send_input_text(const string& text) = 0;
+    virtual void send_input_selection(const int start, const int stop) = 0;
+    virtual void send_input_action(const int acionId, const int keyCode) = 0;
+
 };
 

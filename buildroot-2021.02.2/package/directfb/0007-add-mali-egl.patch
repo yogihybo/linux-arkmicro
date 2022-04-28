@@ -1,0 +1,304 @@
+diff --git a/gfxdrivers/gles2/gles2_shaders.c b/gfxdrivers/gles2/gles2_shaders.c
+index 7596004..34f51c1 100644
+--- a/gfxdrivers/gles2/gles2_shaders.c
++++ b/gfxdrivers/gles2/gles2_shaders.c
+@@ -120,6 +120,8 @@ init_program(GLuint prog_obj,
+           glDetachShader(prog_obj, shaders[0]);
+           glDetachShader(prog_obj, shaders[1]);
+ 
++          glUseProgram( prog_obj );
++
+           return DFB_TRUE;
+      }
+      else {
+@@ -134,7 +136,6 @@ init_program(GLuint prog_obj,
+           return DFB_FALSE;
+      }
+ 
+-     glUseProgram( prog_obj );
+ }
+ 
+ #define GET_UNIFORM_LOCATION(dev, index, name)				\
+diff --git a/gfxdrivers/gles2/gles2_shaders.h b/gfxdrivers/gles2/gles2_shaders.h
+index 41c21c9..45b4981 100644
+--- a/gfxdrivers/gles2/gles2_shaders.h
++++ b/gfxdrivers/gles2/gles2_shaders.h
+@@ -85,6 +85,7 @@ void main (void) \
+  * Draw fragment in a constant color.
+  */
+ static const char *draw_frag_src = " \
++precision mediump float; \
+ uniform "LOWP" vec4 dfbColor; \
+ void main (void) \
+ { \
+@@ -139,6 +140,7 @@ void main (void) \
+  * Sample texture and modulate by static color.
+  */
+ static const char *blit_frag_src = " \
++precision mediump float; \
+ uniform sampler2D    dfbSampler; \
+ varying "LOWP" vec2  varTexCoord; \
+ void main (void) \
+@@ -151,6 +153,7 @@ void main (void) \
+  * Sample texture and modulate by static color.
+  */
+ static const char *blit_color_frag_src = " \
++precision mediump float; \
+ uniform sampler2D    dfbSampler; \
+ uniform "LOWP" vec4  dfbColor; \
+ varying "LOWP" vec2  varTexCoord; \
+@@ -164,6 +167,7 @@ void main (void) \
+  * Source Color Keying.
+  */
+ static const char *blit_colorkey_frag_src = " \
++precision mediump float; \
+ uniform sampler2D dfbSampler; \
+ uniform "LOWP" vec4   dfbColor; \
+ uniform        ivec3  dfbColorkey; \
+@@ -187,6 +191,7 @@ void main (void) \
+  * sampling and modulation.
+  */
+ static const char *blit_premultiply_frag_src = " \
++precision mediump float; \
+ uniform sampler2D    dfbSampler; \
+ uniform "LOWP" vec4  dfbColor; \
+ varying "LOWP" vec2  varTexCoord; \
+diff --git a/systems/egl/egl_surface_pool.c b/systems/egl/egl_surface_pool.c
+index 422d838..3c4ff85 100644
+--- a/systems/egl/egl_surface_pool.c
++++ b/systems/egl/egl_surface_pool.c
+@@ -384,7 +384,12 @@ eglAllocateBuffer( CoreSurfacePool       *pool,
+          return DFB_FAILURE;
+      }
+ 
+-     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, surface->config.size.w, surface->config.size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
++     if (allocation->config.format == DSPF_ABGR) {
++          glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, surface->config.size.w, surface->config.size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
++     }
++     else {
++          glTexImage2D( GL_TEXTURE_2D, 0, GL_BGRA_EXT, surface->config.size.w, surface->config.size.h, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL );
++     }
+ 
+ //     glEGLImageTargetTexture2DOES( GL_TEXTURE_2D, alloc->eglImage );
+      if ((err = eglGetError()) != EGL_SUCCESS) {
+@@ -563,83 +568,6 @@ eglUnlock( CoreSurfacePool       *pool,
+ }
+ 
+ static DFBResult
+-eglWrite( CoreSurfacePool       *pool,
+-            void                  *pool_data,
+-            void                  *pool_local,
+-            CoreSurfaceAllocation *allocation,
+-            void                  *alloc_data,
+-            const void            *source,
+-            int                    pitch,
+-            const DFBRectangle    *rect )
+-{
+-     EGLAllocationData *alloc = alloc_data;
+-     GLuint            *buff, *sline, *dline, *s, *d;
+-     GLuint             pixel, w, h, pixels_per_line;
+-
+-     D_MAGIC_ASSERT( pool, CoreSurfacePool );
+-     D_MAGIC_ASSERT( allocation, CoreSurfaceAllocation );
+-     D_MAGIC_ASSERT( alloc, EGLAllocationData );
+-
+-     D_DEBUG_AT( EGL_SurfLock, "%s( %p )\n", __FUNCTION__, allocation->buffer );
+-
+-     EGLint err;
+-     int    tex;
+-
+-     switch (allocation->config.format) {
+-          case DSPF_RGB32:
+-          case DSPF_ARGB:
+-               glGetIntegerv( GL_TEXTURE_BINDING_2D, &tex );
+-
+-               glBindTexture( GL_TEXTURE_2D, alloc->texture );
+-
+-               buff = (GLuint *)D_MALLOC(rect->w * rect->h * 4);
+-               if (!buff) {
+-                    D_ERROR("EGL: failed to allocate %d bytes for texture upload!\n",
+-                            rect->w * rect->h * 4);
+-                    return D_OOM();
+-               }
+-
+-               pixels_per_line = pitch/4;
+-
+-               sline = (GLuint *)source + rect->x + (rect->y * pixels_per_line);
+-               dline = buff;
+-
+-               h = rect->h;
+-               while (h--) {
+-                    s = sline;
+-                    d = dline;
+-                    w = rect->w;
+-                    while (w--) {
+-                         pixel = *s++;
+-                         *d++ = (pixel & 0xff00ff00) |
+-                                ((pixel >> 16) & 0x000000ff) |
+-                                ((pixel << 16) & 0x00ff0000);
+-                    }
+-                    sline += pixels_per_line;
+-                    dline += rect->w;
+-               }
+-
+-               //if (rect->w == allocation->config.size.w && rect->h == allocation->config.size.h)
+-               //     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, allocation->config.size.w, allocation->config.size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, source );
+-               //else
+-                    glTexSubImage2D( GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_RGBA, GL_UNSIGNED_BYTE, buff );
+-                    D_FREE(buff);
+-               if ((err = glGetError()) != 0) {
+-                    D_ERROR( "DirectFB/EGL: glTexSubImage2D() failed! (error = %x)\n", err );
+-                    //return DFB_FAILURE;
+-               }
+-
+-               glBindTexture( GL_TEXTURE_2D, tex );
+-               break;
+-          default:
+-               break;
+-     }
+-
+-     return DFB_OK;
+-}
+-
+-
+-static DFBResult
+ fboRead( CoreSurfacePool       *pool,
+            void                  *pool_data,
+            void                  *pool_local,
+@@ -679,8 +607,12 @@ fboRead( CoreSurfacePool       *pool,
+ 
+      glBindFramebuffer( GL_FRAMEBUFFER, alloc->fbo );
+ 
+-     glReadPixels(rect->x, rect->y,
+-                  rect->w, rect->h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
++     if (allocation->config.format == DSPF_ABGR) {
++          glReadPixels(rect->x, rect->y, rect->w, rect->h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
++     }
++     else {
++          glReadPixels(rect->x, rect->y, rect->w, rect->h, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buff);
++     }
+ 
+      glBindFramebuffer( GL_FRAMEBUFFER, fbo );
+ 
+@@ -710,6 +642,7 @@ fboRead( CoreSurfacePool       *pool,
+      return DFB_OK;
+ }
+ 
++#define ALIGN(x, align) ((x) & ~((align) - 1))
+ static DFBResult
+ fboWrite( CoreSurfacePool       *pool,
+             void                  *pool_data,
+@@ -740,6 +673,31 @@ fboWrite( CoreSurfacePool       *pool,
+      D_DEBUG_AT( EGL_SurfLock, "%s( %p )\n", __FUNCTION__, allocation->buffer );
+      D_DEBUG_AT( EGL_SurfLock, "  -> " DFB_RECT_FORMAT "\n", DFB_RECTANGLE_VALS(rect) );
+ 
++     if (rect->w == allocation->config.size.w && rect->h == allocation->config.size.h) {
++          buff = source;
++     } else {
++          buff = (GLuint *)D_MALLOC(rect->w * rect->h * 4);
++          if (!buff) {
++               D_ERROR("EGL: failed to allocate %d bytes for texture upload!\n",
++                       rect->w * rect->h * 4);
++               return D_OOM();
++          }
++
++          pixels_per_line = pitch/4;
++
++          sline = (GLuint *)source;// + rect->x + (rect->y * pixels_per_line);
++          dline = buff;
++
++          h = rect->h;
++          while (h--) {
++               s = sline;
++               d = dline;
++               w = ALIGN(rect->w, 2);
++               while (w--) *d++ = *s++;
++               sline += pixels_per_line;
++               dline += ALIGN(rect->w, 2);
++          }
++     }
+ 
+      EGLint err;
+ 
+@@ -753,12 +711,15 @@ fboWrite( CoreSurfacePool       *pool,
+      glPixelStorei( GL_UNPACK_ALIGNMENT, 8 );
+ 
+      if (allocation->config.format == DSPF_ABGR) {
+-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_RGBA, GL_UNSIGNED_BYTE, source);
++          glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, ALIGN(rect->w, 2), rect->h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
+      }
+      else {
+-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, rect->w, rect->h, GL_BGRA_EXT, GL_UNSIGNED_BYTE, source);
++          glTexSubImage2D(GL_TEXTURE_2D, 0, rect->x, rect->y, ALIGN(rect->w, 2), rect->h, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buff);
+      }
+ 
++     if (buff != source)
++          D_FREE(buff);
++
+      if ((err = glGetError()) != 0) {
+           D_ERROR( "DirectFB/PVR2D: glTexSubImage2D() failed! (error = %x)\n", err );
+           //return DFB_FAILURE;
+diff --git a/systems/egl/egl_system.c b/systems/egl/egl_system.c
+index dfaa305..1b496d9 100644
+--- a/systems/egl/egl_system.c
++++ b/systems/egl/egl_system.c
+@@ -53,7 +53,16 @@
+ 
+ #include <core/core_system.h>
+ 
+-#define RASPBERRY_PI
++//#define RASPBERRY_PI
++#define MALI
++
++#ifdef MALI
++#include <linux/fb.h>
++struct shadow_fbdev_window {
++    unsigned short width;
++    unsigned short height;
++};
++#endif
+ 
+ DFB_CORE_SYSTEM( egl )
+ 
+@@ -81,7 +90,26 @@ InitEGL( EGLData *egl )
+ 
+      bcm_host_init();
+ 
+-#endif     
++#endif
++
++#ifdef MALI
++     static struct shadow_fbdev_window nativewindow;
++     int fd = open("/dev/fb0", O_RDWR, 0);
++     if (fd == -1) {
++          D_ERROR("Failed to open fb to detect screen resolution!");
++          return DFB_UNSUPPORTED;
++     }
++
++     struct fb_var_screeninfo vinfo;
++     memset(&vinfo, 0, sizeof(vinfo));
++     if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
++          D_ERROR("Could not get variable screen info");
++          close(fd);
++          return DFB_UNSUPPORTED;
++     }
++	close(fd);
++#endif
++
+      egl->eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+ 
+      if (!eglInitialize(egl->eglDisplay, &iMajorVersion, &iMinorVersion))
+@@ -148,6 +176,13 @@ InitEGL( EGLData *egl )
+ 
+ #endif
+ 
++#ifdef MALI
++     egl->DisplayWidth = vinfo.xres;
++     egl->DisplayHeight = vinfo.yres;
++     nativewindow.width   = egl->DisplayWidth;
++     nativewindow.height  = egl->DisplayHeight;
++#endif
++
+      egl->eglSurface = eglCreateWindowSurface( egl->eglDisplay, egl->eglConfig, &nativewindow, NULL );
+      if (!TestEGLError("eglCreateWindowSurface"))
+           return DFB_INIT;

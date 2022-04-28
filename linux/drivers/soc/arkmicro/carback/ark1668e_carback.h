@@ -14,6 +14,8 @@
 #define SCREEN_WIDTH	800
 #define SCREEN_HEIGHT	480
 
+#define TRACK_FRAME_NUM		2
+
 struct carback_context {
 		int gpio_id;
         struct device *dev;
@@ -47,6 +49,8 @@ struct carback_context {
 		unsigned int track_data_virtaddr;
 		unsigned int track_display_phyaddr;
 		unsigned int track_display_virtaddr;
+		unsigned int tdisplay_virtaddr[TRACK_FRAME_NUM];
+		unsigned int tdisplay_phyaddr[TRACK_FRAME_NUM];
 		unsigned int track_display_size;
 		void (*parse_mcu_data)(unsigned char *buf,unsigned char size);
 		void (*get_wheel_angle)(unsigned char ch);
@@ -57,6 +61,9 @@ struct carback_context {
 		int track_disp_height;
 		int track_disp_xpos;
 		int track_disp_ypos;
+		int layer_status;
+		int buffer_num;
+		int buffer_index;
 		void *ptrack_param;
 	    unsigned int file_type;
 		void *pmradar_param;

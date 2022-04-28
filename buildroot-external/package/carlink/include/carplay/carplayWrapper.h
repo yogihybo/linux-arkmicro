@@ -144,7 +144,7 @@ public:
 	void CarplayForceKeyFrame();
 	void CarplayRequestUI(const std::string& url);
 	void CarplayChangeModes(const int32_t& ScreenType, const int32_t& ScreenPriority, const int32_t& ScreenTake, const int32_t& ScreenBorrow, const int32_t& AudioType, const int32_t& AudioPriority, const int32_t& AudioTake, const int32_t& AudioBorrow, const int32_t& Phone, const int32_t& Speech, const int32_t& TurnByTurn);
-	
+	void CarplaySendNightMode(bool inNightMode);
 	
 	/* *
      * @brief 获取carplay送过来的音频数据,然后送到声卡播放

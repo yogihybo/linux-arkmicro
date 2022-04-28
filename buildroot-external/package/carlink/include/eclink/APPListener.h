@@ -18,6 +18,14 @@ using namespace ECSDKFrameWork;
 #define APP_INPUTSTOP  101
 
 typedef std::function<void (ECStatusMessage)> FUNCAPPSTATUS;
+typedef std::function<void (ECCallType ,const string& , const string&)> FUNCPHONECALL;
+typedef std::function<void (int,int, string, int,int, int)> FUNCINPUTSTART;
+typedef std::function<void (int, int)> FUNCINPUTSELECTION;
+typedef std::function<void (const string& )> FUNCPHONEINFO;
+typedef std::function<void (ECVRTextType, int,string,string)> FUNCVRTEXTINFO;
+typedef std::function<void (int )> FUNCCARCMD;
+
+
 
 class APPListener : public IECAPPManagerListener
 {
@@ -62,21 +70,23 @@ public:
 	virtual void onVRTipsReceived(const string& data) override;
 public:
     void registerAppStatusCallback(FUNCAPPSTATUS func);
+    void registerPhoneCallCallback(FUNCPHONECALL func);
+    void registerInputStartCallback(FUNCINPUTSTART func);
+    void registerInputSelectionCallback(FUNCINPUTSELECTION func);
+    void registerPhoneInfoCallback(FUNCPHONEINFO func);
+    void registerVRTextInfoCallback(FUNCVRTEXTINFO func);
+    void registerCarCmdCallback(FUNCCARCMD func);
 
-    void SetPhoneCallCallback(void (*callback)(int ,string ,string ,void*), void *parameter);
-    void SetStatusCallback(void (*callback)(int,void*), void *parameter);
-    void SetInputStartCallback(void (*callback)(int,int, string, int,int, int,void*), void *parameter);
-    void SetInputSelectionCallback(void (*callback)(int,int,void*), void *parameter);
-    void SetPhoneInfoCallCallback(void (*callback)(string,void*), void *parameter);
 private:
-    void      (*m_phonenumber_callback)(int, string ,string ,void*);
-    void      (*m_status_callback)(int,void*);
-    void      (*m_input_start_callback)(int, int,string,int,int,int,void*);
-    void      (*m_input_selection_callback)(int,int,void*);
-    void      (*m_phoneinfo_callback)(string,void*);
 
-   FUNCAPPSTATUS  mFuncAppStatus;
-    void*         m_parameter;
+   FUNCAPPSTATUS        mFuncAppStatus = NULL;
+   FUNCPHONECALL        mFuncPhoneCall = NULL;
+   FUNCINPUTSTART       mFuncInputStart = NULL;
+   FUNCINPUTSELECTION   mFuncInputSelection = NULL;
+   FUNCVRTEXTINFO       mFuncVRTextInfo = NULL;
+   FUNCPHONEINFO        mFuncPhoneInfo = NULL;
+   FUNCCARCMD           mFuncCarCmd = NULL;
+
 };
 
 

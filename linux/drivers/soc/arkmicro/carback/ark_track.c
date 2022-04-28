@@ -1537,28 +1537,32 @@ unsigned int track_paint_fill(void *dest, unsigned int width, unsigned int heigh
 		if(ph->signal_total)    
 		subjoin_signal_pic(dest);
 	}else{
-		if(ph->track_total )
-			subjoin_track_pic(dest);
-	 
-		if(ph->car_total)
-			subjoin_car_pic(dest);
+		if(g_carback_context->layer_status){
+			if(ph->track_total )
+				subjoin_track_pic(dest);
+		 
+			if(ph->car_total)
+				subjoin_car_pic(dest);
 
-		if(ph->radar_total)  
-			subjoin_radar_pic(dest);
-	 
-		if(ph->track2_total) 
-			subjoin_track2_pic(dest);
-		
-		if(g_ptrack_context2 && vbox_track_paint) {
-			subjoin_mradar_pic(dest);
+			if(ph->radar_total)  
+				subjoin_radar_pic(dest);
+		 
+			if(ph->track2_total) 
+				subjoin_track2_pic(dest);
+			
+			if(g_ptrack_context2 && vbox_track_paint) {
+				subjoin_mradar_pic(dest);
+			}
 		}
 	}
-
-	last_track_id = p->disp_track_id;
-	last_car_id   = p->disp_car_id;
-	last_radar_id = p->disp_radar_id;
+	if(g_carback_context->layer_status){
+		last_track_id = p->disp_track_id;
+		last_car_id   = p->disp_car_id;
+		last_radar_id = p->disp_radar_id;
+		last_track2_id= p->disp_track2_id; 
+	}
+	
 	last_signal_id = p->disp_signal_id;
-	last_track2_id= p->disp_track2_id; 
  
 	return fill_size; 
 }

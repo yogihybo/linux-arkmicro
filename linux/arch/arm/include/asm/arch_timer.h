@@ -79,12 +79,18 @@ static inline u32 arch_timer_get_cntfrq(void)
 	return val;
 }
 
+extern u64 arch_counter_last_cntpct;
 static inline u64 arch_counter_get_cntpct(void)
 {
 	u64 cval;
+	int timeout = 3;
 
 	isb();
 	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+	while (cval < arch_counter_last_cntpct && timeout--)
+		asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+	if (cval < arch_counter_last_cntpct) cval = arch_counter_last_cntpct;
+	arch_counter_last_cntpct = cval;
 	return cval;
 }
 

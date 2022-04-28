@@ -25,6 +25,7 @@ using namespace ECSDKFrameWork;
  *
  * */
 
+
 class AudioRecoder : public IECAudioRecorder
 {
 public:
@@ -48,7 +49,8 @@ private:
 
     FUNCRECORDSTART mFuncRecordStart;
     FUNCRECORDDATA mFuncRecordData;
-    string  mRecData;
+    string  mstrRecorder;
+
 };
 
 

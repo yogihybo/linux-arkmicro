@@ -73,9 +73,9 @@
 			compatible = "shared-dma-pool";
 			reusable;
 #ifdef DDR512
-			size = <0x4000000>;
+			size = <0x8000000>;
 #else
-			size = <0x2000000>;
+			size = <0x4000000>;
 #endif
 			linux,cma-default;
 		};
@@ -225,10 +225,22 @@
 				div-mode = <ARK_CLK_DIVMODE_PLUSONE>;	
 			};
 
+			apbclk1: apbclk1 {
+				#clock-cells = <0>;
+				compatible = "arkmiro,ark-clk-sys";
+				clocks = <&ahbpll>, <&axipll>, <&apbpll>, <&xtal24mhz>;
+				reg = <0x22c>;
+				index-offset = <4>;
+				index-mask = <0x7>;
+				div-offset = <0>;
+				div-mask = <0x7>;
+				div-mode = <ARK_CLK_DIVMODE_PLUSONE>;
+			};
+
 			hsuart0clk: hsuart0clk {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
-				clocks = <&xtal24mhz>, <&apbpll>;
+				clocks = <&xtal24mhz>, <&apbclk1>;
 				reg = <0x6c>;
 				index-offset = <12>;
 				index-mask = <0x1>;
@@ -244,7 +256,7 @@
 			hsuart1clk: hsuart1clk {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
-				clocks = <&xtal24mhz>, <&apbpll>;
+				clocks = <&xtal24mhz>, <&apbclk1>;
 				reg = <0x6c>;
 				index-offset = <17>;
 				index-mask = <0x1>;
@@ -356,9 +368,9 @@
 				clocks = <&ahbpll>, <&axipll>, <&apbpll>, <&xtal24mhz>;
 				reg = <0x64>;
 				index-offset = <16>;
-				index-mask = <0xf>;
-				div-offset = <20>;
-				div-mask = <0x7>;
+				index-mask = <0x7>;
+				div-offset = <19>;
+				div-mask = <0xf>;
 			};
 
 			gpuclk: gpuclk {
@@ -646,13 +658,21 @@
 			status = "disabled";
 		};
 
-        timer: timer@e8600000 {
-            compatible = "snps,dw-apb-timer-osc";
-            reg = <0xe8600000 0x1000>;
-            interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-            clocks = <&xtal24mhz>, <&apbclk>;
-            clock-names = "timer", "pclk";
-        };
+		timer0: timer@e8600000 {
+			compatible = "snps,dw-apb-timer-osc";
+			reg = <0xe8600000 0x14>;
+			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&xtal24mhz>, <&apbclk>;
+			clock-names = "timer", "pclk";
+		};
+
+		timer1: timer@e8600014 {
+			compatible = "snps,dw-apb-timer-osc";
+			reg = <0xe8600014 0x14>;
+			interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&xtal24mhz>, <&apbclk>;
+			clock-names = "timer", "pclk";
+		};
 
 		watchdog: watchdog@e4b00000 {
 			compatible = "arkmicro,ark-wdt";

@@ -71,7 +71,8 @@ DIRECTFB_GFX = \
 	$(if $(BR2_PACKAGE_DIRECTFB_MATROX),matrox) \
 	$(if $(BR2_PACKAGE_DIRECTFB_PXA3XX),pxa3xx) \
 	$(if $(BR2_PACKAGE_DIRECTFB_I830),i830) \
-	$(if $(BR2_PACKAGE_DIRECTFB_EP9X),ep9x)
+	$(if $(BR2_PACKAGE_DIRECTFB_EP9X),ep9x) \
+	$(if $(BR2_PACKAGE_DIRECTFB_GLESV2),gles2)
 
 ifeq ($(strip $(DIRECTFB_GFX)),)
 DIRECTFB_CONF_OPTS += --with-gfxdrivers=none
@@ -151,6 +152,13 @@ endif
 
 ifeq ($(BR2_PACKAGE_DIRECTFB_TESTS),y)
 DIRECTFB_CONF_OPTS += --with-tests
+endif
+
+ifeq ($(BR2_PACKAGE_DIRECTFB_GLESV2),y)
+DIRECTFB_CONF_OPTS += --enable-egl
+DIRECTFB_CONF_OPTS += EGL_CFLAGS="-I$(STAGING_DIR)/usr/include" CFLGAS="-I$(STAGING_DIR)/usr/include"
+DIRECTFB_CONF_OPTS += EGL_LIBS="-L$(STAGING_DIR)/usr/lib -lEGL -lGLESv2" LIBS="-L$(STAGING_DIR)/usr/lib -larkapi -lm"
+DIRECTFB_DEPENDENCIES += libmali libarkapi
 endif
 
 HOST_DIRECTFB_DEPENDENCIES = host-pkgconf host-libpng

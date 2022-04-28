@@ -372,7 +372,7 @@ static int ark_lcdc_enable(struct udevice *dev, int panel_bpp,
 	
 	if (priv->bl_power) {
 		mdelay(priv->bl_delay);
-		dm_gpio_set_value(&priv->bl_power_gpio, priv->bl_power_gpio.flags & GPIOD_ACTIVE_LOW ? 0 : 1);
+		dm_gpio_set_value(&priv->bl_power_gpio, 1);
 	}
 
 	return 0;
@@ -383,7 +383,7 @@ static int ark_lcdc_disable(struct udevice *dev)
 	struct ark_lcdc_priv *priv = dev_get_priv(dev);
 	
 	if (priv->bl_power)
-		dm_gpio_set_value(&priv->bl_power_gpio, priv->bl_power_gpio.flags & GPIOD_ACTIVE_LOW ? 1 : 0);
+		dm_gpio_set_value(&priv->bl_power_gpio, 0);
 
 	if (priv->bl_val)
 		pwm_disable(priv->bl_pwm);

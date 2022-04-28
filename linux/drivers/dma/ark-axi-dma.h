@@ -117,7 +117,6 @@ struct __packed axi_dma_lli {
 
 struct axi_dma_desc {
 	struct axi_dma_lli		lli;
-	struct axi_dma_lli		lli_back;
 	struct virt_dma_desc		vd;
 	struct axi_dma_chan		*chan;
 	struct list_head		xfer_list;

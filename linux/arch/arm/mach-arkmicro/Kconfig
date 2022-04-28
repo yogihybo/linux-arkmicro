@@ -33,6 +33,7 @@ menuconfig SOC_ARK1668E
 	select HAVE_ARM_ARCH_TIMER
 	select DW_APB_TIMER_OF
 	select ARM_AMBA
+	select CLOCKSOURCE_VALIDATE_LAST_CYCLE
 	help
 	  Select this if you are using Arkmicro ark1668e SoC.
 

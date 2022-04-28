@@ -207,7 +207,7 @@
 		"emmc erase.part bootloader_bak; " \
 		"emmc write ${loadaddr} bootloader_bak ${filesize}; fi\0" \
 	"emmcargs=setenv bootargs console=ttyS0,115200 " \
-		"earlyprintk  loglevel=3 clk_ignore_unused lpj=2285568 " \
+		"earlyprintk  loglevel=8 clk_ignore_unused lpj=2285568 " \
 		"${emmcparts} " \
 		"root=${emmcroot} " \
 		"rootfstype=${emmcrootfstype}\0" \

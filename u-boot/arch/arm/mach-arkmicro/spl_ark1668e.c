@@ -132,7 +132,7 @@ static void set_pll_clk(int clk_id, unsigned int freq_mhz)
 	volatile unsigned int cfg0;
 	unsigned int regval;
 
-	ms = 3;
+	ms = 2;
 	fin = 24 / ms;
 	freq_mhz = freq_mhz / fin * fin;
 	for (ps = 0; ps < 32; ps++) {
@@ -215,50 +215,47 @@ static void switch_to_main_crystal_osc(void)
 	write_sys_reg(regval, SYS_CPU_CFG2);
 
 	/* switch to sys pll clk */
-	/* ahb and apb clk must have the same clk source */
+	/* ahb and pclk and pclk1 must have the same clk source */
 	/* change the config will cause mfc working fail */
-	/*regval = 0x04040404;
+	/* ahb clk */
+	regval = 0x04040404;
 	regval |= (2 << 12) | (1 << 8);
 	write_sys_reg(regval, SYS_CLK_SEL);
 	udelay(50);
+	/* pclk */
 	regval |= (5 << 4) | 1;
-	write_sys_reg(regval, SYS_CLK_SEL);*/
-	/* clock adjusting for dma */
-#if 0
-	__asm__(
-		"ldr r0, =0x04142504\n\t"
-		"ldr r1, =0xe4900040\n\t"
-		"str r0, [r1]\n\t"
-		"nop\n\t"
-		"ldr r0, =0x04142555\n\t"
-		"str r0, [r1]\n\t"
-	);
-	udelay(10);
-	regval = 0x04042555;
 	write_sys_reg(regval, SYS_CLK_SEL);
 	udelay(50);
+	/* pclk1 */
+	regval = 0x40;
+	regval |= (1 << 4) | 5;
+	write_sys_reg(regval, SYS_DEVICE_CLK_CFG6);
+	udelay(50);
+
 	/* switch from 24MHz to pll */
+	regval = read_sys_reg(SYS_CLK_SEL);
 	regval &= ~((1 << 26) | (1 << 18) | (1 << 10) | (1 << 2));
-#else
-     regval = (2 << 12) | (1 << 8) | (5 << 4) | 1;
-#endif
 	write_sys_reg(regval, SYS_CLK_SEL);
+	udelay(50);
+	regval = read_sys_reg(SYS_DEVICE_CLK_CFG6);
+	regval &= ~(1 << 6);
+	write_sys_reg(regval, SYS_DEVICE_CLK_CFG6);
 	udelay(50);
 
 	/* mfc clk adjusting */
 	/* the mfc clk can't reconfig at other place */
 	regval = read_sys_reg(SYS_DEVICE_CLK_CFG1);
-	regval &= ~(0xf << 16);
+	regval &= ~(0x7 << 16);
 	regval |= (1 << 16);
 	write_sys_reg(regval, SYS_DEVICE_CLK_CFG1);
 	udelay(50);
 	regval = read_sys_reg(SYS_DEVICE_CLK_CFG1);
-	regval &= ~(0x7 << 20);
-	regval |= (1 << 20);
+	regval &= ~(0xf << 19);
+	regval |= (1 << 19);
 	write_sys_reg(regval, SYS_DEVICE_CLK_CFG1);
 	udelay(50);
-	regval &= ~(0x7 << 20);
-	regval |= (3 << 20);
+	regval &= ~(0xf << 19);
+	regval |= (3 << 19);
 	write_sys_reg(regval, SYS_DEVICE_CLK_CFG1);
 	udelay(50);
 

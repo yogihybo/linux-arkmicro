@@ -12,6 +12,7 @@
 
 #define ITU656_FRAME_NUM			4
 #define ITU656_BUFFER_NUM			3
+#define ITU656_SCALE_FRAME_NUM		3
 
 #define ARK_VIN_NAME				"ark1668e_vin"
 #define PAL							0
@@ -136,7 +137,6 @@ struct dvr_dev{
 	int cur_buffer;
 	int show_video;
 	int deinter_status;
-	int track_status;
 	int src_width;
 	int src_height;
 	int screen_width;
@@ -147,6 +147,7 @@ struct dvr_dev{
 	u8 *buffer_virtaddr;
 	unsigned int buffer_size;
 	unsigned int buffer_phyaddr;
+	unsigned int scale_buffer_size;
 	int scale_alloc_width;
 	int scale_alloc_height;
 	int *scale_out_yaddr;
@@ -154,19 +155,28 @@ struct dvr_dev{
 	int scale_in_yphyaddr;
 	
 	int carback_signal;
+	int layer_status;
+	int signal_flag;
+	int first_show_flag;
 	int dev_major, dev_minor;
     spinlock_t spin_lock;
 	struct work_struct scale_work;
 	struct workqueue_struct *scale_queue;
+	struct work_struct detect_work;
+	struct workqueue_struct *detect_queue;
 	struct cdev cdev;
 	struct i2c_client *client;
 	struct vin_para itu656in;
 	struct vin_para itu656in_back;
 	struct timer_list timer;
+	struct timer_list signal_timer;
 	
 	unsigned int framebuf_phyaddr[ITU656_FRAME_NUM];
 	unsigned int framebuf_status[ITU656_FRAME_NUM];
+	unsigned int scalebuf_phyaddr[ITU656_SCALE_FRAME_NUM];
 	unsigned int framebuf_num;
+	unsigned int scale_framebuf_num;
+	unsigned int scale_framebuf_index;
 	unsigned int cur_frame;
 	unsigned int frame_finish[ITU656_FRAME_NUM];//store frame id
 	int frame_finish_count;

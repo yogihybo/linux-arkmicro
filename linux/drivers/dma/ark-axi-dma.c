@@ -874,9 +874,6 @@ static struct dma_async_tx_descriptor *dma_chan_prep_dma_cyclic(
 
 	/* Let's make a cyclic list */
 	write_desc_llp(prev, first->vd.tx.phys | lms);
-	memcpy(&first->lli_back, &first->lli, sizeof(struct axi_dma_lli));
-	list_for_each_entry(desc, &first->xfer_list, xfer_list)
-		memcpy(&desc->lli_back, &desc->lli, sizeof(struct axi_dma_lli));
 
 	dev_dbg(chan2dev(chan),
 			"cyclic prepared buf %pad len %zu period %zu periods %d\n",
@@ -979,13 +976,13 @@ static void axi_chan_block_xfer_complete(struct axi_dma_chan *chan)
 		//printk("llp=0x%llx, first->lli.llp=0x%llx.\n", llp, first->lli.llp);
 		if (llp == DWC_LLP_LOC(first->lli.llp)) {
 			cur_desc = list_prev_entry(first, xfer_list);
-			memcpy(&cur_desc->lli, &cur_desc->lli_back, sizeof(struct axi_dma_lli));
+			cur_desc->lli.ctl_hi |= CH_CTL_H_LLI_VALID;
 		} else {
 			list_for_each_entry(desc, &first->xfer_list, xfer_list) {
 				//printk("llp=0x%llx, desc->lli.llp=0x%llx.\n", llp, desc->lli.llp);
 				if (llp == DWC_LLP_LOC(desc->lli.llp)) {
 					cur_desc = list_prev_entry(desc, xfer_list);
-					memcpy(&cur_desc->lli, &cur_desc->lli_back, sizeof(struct axi_dma_lli));
+					cur_desc->lli.ctl_hi |= CH_CTL_H_LLI_VALID;
 					break;
 				}
 			}

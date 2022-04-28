@@ -60,19 +60,32 @@ void CarplayLinkCbsImpl::carplayExitCB()
 void CarplayLinkCbsImpl::returnNativeUICB()
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    mEntityScreen = 2;
     if(mHandle)
         mHandle->app_status(APP_BACKGROUND, nullptr);
 }
 
 void CarplayLinkCbsImpl::modesChangeCB(CarPlayModeState *modes)
-{
-    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
-    printf("screen mode = %d\r\n",modes->screen);
+{    
     if(mHandle){
-        if(modes->screen == 1)
-            mHandle->app_status(APP_FOREGROUND, nullptr);
-        else if(modes->screen == 2)
-            mHandle->app_status(APP_BACKGROUND, nullptr);
+        if(mEntityScreen != modes->screen){
+            printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+            printf("screen mode = %d\r\n",modes->screen);
+            if(modes->screen == 1)
+                mHandle->app_status(APP_FOREGROUND, nullptr);
+            else if(modes->screen == 2)
+                mHandle->app_status(APP_BACKGROUND, nullptr);
+            mEntityScreen = modes->screen;
+        }
+        if(mEntityPhoneCall != modes->phoneCall){
+            printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+            printf("phone call mode = %d\r\n",modes->phoneCall);
+                if(modes->phoneCall == 1)
+                    mHandle->app_status(APP_PHONE_STARTED, nullptr);
+                else
+                    mHandle->app_status(APP_PHONE_STOPPED, nullptr);
+            mEntityPhoneCall = modes->phoneCall;
+        }
     }
 }
 

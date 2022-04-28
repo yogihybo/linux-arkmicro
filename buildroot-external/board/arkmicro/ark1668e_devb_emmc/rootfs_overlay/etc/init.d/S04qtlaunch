@@ -1,5 +1,3 @@
-insmod /lib/modules/mali.ko
-
 export QTDIR=/usr
 export QT_QPA_FONTDIR=$QTDIR/lib/qt/fonts
 #export QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0
@@ -13,5 +11,28 @@ export QT_QPA_GENERIC_PLUGINS=evdevtouch:/dev/input/event0
 export LD_LIBRARY_PATH=$QTDIR/lib:$LD_LIBRARY_PATH
 export MALI_NOCLEAR=1
 
-eval `dbus-launch --auto-syntax`
-DashBoard &
+start() {
+	eval `dbus-launch --auto-syntax`
+	DashBoard &
+}
+
+stop() {
+	echo "stop"
+}
+
+restart() {
+	stop
+	sleep 1
+	start
+}
+
+case "$1" in
+	start|stop|restart)
+		"$1";;
+	reload)
+		# Restart, since there is no true "reload" feature.
+		restart;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload}"
+		exit 1
+esac

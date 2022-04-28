@@ -2,6 +2,7 @@
 #include <alsa/asoundlib.h>
 
 #include "CarplayAudioCtx.h"
+#include "WebrtcWrapper.h"
 
 #ifdef USE_CARPLAY
 int set_alsa_paramters(void *audio_handle, int rate, int channels, int bits_per_sample)
@@ -117,6 +118,7 @@ private:
     snd_pcm_t *mAlsaHandle;
     int mBufSize, mAlsaBufSize;
     CarplayLink*    mCarplayCtx;
+    //Semaphore       mSemaphore;
 };
 
 
@@ -193,7 +195,7 @@ void CarplayAudioPlayCtx::run()
     const int bytesPerCh= (mBits * mChannels / 8);
     char buf[mBufSize * bytesPerCh] = {0};
     int len = mBufSize * bytesPerCh;
-    printf("CarplayAudioPlayCtx::%s:%d\r\n", __func__, __LINE__, bytesPerCh);
+    printf("CarplayAudioPlayCtx::%s:%d bytesPerCh = %d\r\n", __func__, __LINE__, bytesPerCh);
     mStart = true;
     printf("CarplayAudioPlayCtx::%s:%d mBufSize:%d\r\n", __func__, __LINE__, mBufSize);
     while(mStart) {
@@ -207,7 +209,8 @@ void CarplayAudioPlayCtx::run()
 CarplayAudioRecordCtx::CarplayAudioRecordCtx(CarplayLink *carplayLink, int handle, AudioStreamType type, int rate, int bits, int channels) :
     mHandle(handle), mType(type), mRate(rate), mBits(bits), mChannels(channels), mAlsaHandle(NULL), mCarplayCtx(carplayLink)
 {
-    printf("CarplayAudioRecordCtx::%s:%d start", __func__, __LINE__);
+
+    printf("CarplayAudioRecordCtx::%s:%d type:%d rate:%d bits:%d channels:%d start\n", __func__, __LINE__, type, rate, bits, channels);
 }
 CarplayAudioRecordCtx::~CarplayAudioRecordCtx()
 {
@@ -216,6 +219,7 @@ CarplayAudioRecordCtx::~CarplayAudioRecordCtx()
     join();
     if (mAlsaHandle)
         snd_pcm_close(mAlsaHandle);
+
     printf("CarplayAudioRecordCtx::%s:%d end", __func__, __LINE__);
 }
 
@@ -227,6 +231,7 @@ void CarplayAudioRecordCtx::run()
     frames = mBits / 8 * mChannels;
     printf("CarplayAudioRecordCtx::%s:%d", __func__, __LINE__);
     while(mStart) {
+
         mCarplayCtx->receiveRecordData(mHandle, frames);
     }
 }
@@ -236,7 +241,7 @@ CarplayAudioCtx::CarplayAudioCtx(CarplayLink *carplayLink, int handle, AudioStre
 {
     printf("CarplayAudioCtx::%s:%d start", __func__, __LINE__);
     if (type == AudioStreamRECOGNITION || type == AudioStreamCall) {
-        printf("CarplayAudioCtx::%s:%d start", __func__, __LINE__);
+        printf("CarplayAudioCtx::%s:%d type:%d rate:%d bits:%d channels:%d start\n", __func__, __LINE__, type, rate, bits, channels);
         mRecordHandle = new CarplayAudioRecordCtx(carplayLink, handle, type, rate, bits, channels);
         mRecordHandle->start();
     }

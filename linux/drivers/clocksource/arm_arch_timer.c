@@ -161,6 +161,9 @@ u32 arch_timer_reg_read(int access, enum arch_timer_reg reg,
 u64 (*arch_timer_read_counter)(void) = arch_counter_get_cntvct;
 EXPORT_SYMBOL_GPL(arch_timer_read_counter);
 
+u64 arch_counter_last_cntpct = 0;
+EXPORT_SYMBOL_GPL(arch_counter_last_cntpct);
+
 static u64 arch_counter_read(struct clocksource *cs)
 {
 	return arch_timer_read_counter();

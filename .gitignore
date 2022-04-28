@@ -3,6 +3,7 @@
 #
 .*
 !.gitignore
+!.lock
 *.a
 *.bin
 *.cfgtmp
@@ -37,7 +38,7 @@
 #buildroot
 #
 /buildroot/output
-/buildroot/dl
+#/buildroot/dl
 /buildroot/.auto.deps
 /buildroot/.config.cmd
 /buildroot/.config.old
@@ -52,7 +53,7 @@
 /buildroot/*.pyc
 !/buildroot/.gitignore
 /buildroot-2021.02.2/output
-/buildroot-2021.02.2/dl
+#/buildroot-2021.02.2/dl
 /buildroot-2021.02.2/.auto.deps
 /buildroot-2021.02.2/.config.cmd
 /buildroot-2021.02.2/.config.old
@@ -66,6 +67,11 @@
 /buildroot-2021.02.2/*~
 /buildroot-2021.02.2/*.pyc
 !/buildroot-2021.02.2/.gitignore
+
+#
+#buildroot-external
+#
+!/buildroot-external/package/carlink/**/*.a
 
 # linux
 # NOTE! Don't add files that are generated in specific

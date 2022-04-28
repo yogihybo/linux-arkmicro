@@ -248,11 +248,11 @@ static int ark1668e_i2s_trigger(
 		writel(readl(i2s->base + I2S_SACR0) | SACR0_ENB, i2s->base + I2S_SACR0);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		/* if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 			writel(readl(i2s->base + I2S_SACR1) | SACR1_DRPL, i2s->base + I2S_SACR1);
 		else
 			writel(readl(i2s->base + I2S_SACR1) | SACR1_DREC, i2s->base + I2S_SACR1);
-		writel(readl(i2s->base + I2S_SACR0) & ~SACR0_ENB, i2s->base + I2S_SACR0);
+		writel(readl(i2s->base + I2S_SACR0) & ~SACR0_ENB, i2s->base + I2S_SACR0); */
 		break;
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:

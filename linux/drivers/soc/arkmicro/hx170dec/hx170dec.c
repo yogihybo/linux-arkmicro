@@ -209,10 +209,15 @@ static void animation_dec_work(struct work_struct *work)
 	struct vdec_device *p = vdec6731_global;
 
 	if (timeout_count > 50) {
+		printk(KERN_ALERT "%s Error! Dec timeout.\n", __FUNCTION__);
+		context->animation_end = true;
+	} else if (context->animation_file_phyaddr + size >= context->animation_data_phyaddr + context->animation_data_size) {
+		printk(KERN_ALERT "%s Error! Animation data is beyond the mark.\n", __FUNCTION__);
 		context->animation_end = true;
 	}
-	del_timer(&context->animation_timer);
+
 	if (context->animation_end) {
+		ark_bootanimation_display_uninit();
 		if (context->animation_display_phyaddr){
 			dma_free_coherent(context->dev, context->animation_display_size,
 					  (void *)context->animation_display_virtaddr,
@@ -220,7 +225,6 @@ static void animation_dec_work(struct work_struct *work)
 		}
 		iounmap((void*)context->animation_data_virtaddr);
 		p->context.anmation_stats = 1;
-		ark_bootanimation_display_uninit();
 		destroy_workqueue(context->animation_queue);
 		return;
 	}
@@ -624,6 +628,7 @@ static int vdec_probe(struct platform_device *pdev)
 	p->context.dev = p->dev;
 	p->context.anmation_stats = 0;
 	p->context.animation_data_phyaddr = animres->start;
+	p->context.animation_data_size = resource_size(animres);
 	p->context.animation_data_virtaddr =
 	    (unsigned int)ioremap(p->context.animation_data_phyaddr, resource_size(animres));
 	if (p->context.animation_data_virtaddr) {

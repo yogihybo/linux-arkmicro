@@ -492,12 +492,12 @@ static int do_update_from_media(void)
 
 	printf("\r\n **** set the env to partition .....\r\n");
 	//mmc update set part A	
-	if(!strcmp(update_dev, "mmc "))
+	if(!strcmp(update_dev, "mmc"))
 	{
 		env_set("updata_from_part", "A");
 		env_set("kernel_part", "kernel");
 		env_set("fdt_part", "fdt");
-		env_set("emmcroot", "/dev/mmcblk1p10 rw");
+		env_set("emmcroot", "/dev/mmcblk0p10 rw");
 
 	}
 	else if(!strcmp(update_dev, "usb"))
@@ -508,14 +508,14 @@ static int do_update_from_media(void)
 			env_set("updata_from_part", "B");
 			env_set("kernel_part", "kernel_b");
 			env_set("fdt_part", "fdt_b");
-			env_set("emmcroot", "/dev/mmcblk1p14 rw");
+			env_set("emmcroot", "/dev/mmcblk0p14 rw");
 		}		
 		else if(!strcmp(curr_partition, "B"))
 		{
 			env_set("updata_from_part", "A");
 			env_set("kernel_part", "kernel");
 			env_set("fdt_part", "fdt");
-			env_set("emmcroot", "/dev/mmcblk1p10 rw");
+			env_set("emmcroot", "/dev/mmcblk0p10 rw");
 		}
 
 	}

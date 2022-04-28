@@ -16,7 +16,7 @@ using namespace ECSDKFrameWork;
  * */
 #include <functional>
 
-typedef std::function<void (int)> FUNCSTATUS;
+typedef std::function<void (int, int)> FUNCSTATUS;
 
 class SDKListener : public IECSDKListener
 {
@@ -36,8 +36,6 @@ public:
     void SetLicenseAuthSuccessCallback(void(*callback)(int, string, void*), void* parameter);
     void SetLicenseAuthFailCallback(void(*callback)(int, string, void*), void* parameter);
 
-    void    (*m_link_phonetype_callback)(int, void *) = nullptr;
-    void    (*m_link_status_callback)(int, void *) = nullptr;
     void    (*m_license_auth_success_callback)(int, string,void *) = nullptr;
     void    (*m_license_auth_fail_callback)(int, string,void *) = nullptr;
     void*     m_parameter;

@@ -98,6 +98,7 @@ struct mfc_jpeg_context {
 	unsigned int repeat_src_image_addr;
 	unsigned int animation_data_phyaddr;
 	unsigned int animation_data_virtaddr;
+	unsigned int animation_data_size;
 	unsigned int animation_display_phyaddr;
 	unsigned int animation_display_virtaddr;
 	unsigned int animation_display_size;

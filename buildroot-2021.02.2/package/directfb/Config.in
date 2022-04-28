@@ -97,6 +97,10 @@ config BR2_PACKAGE_DIRECTFB_I830
 	bool "compile i830 graphics driver"
 	depends on BR2_i386 || BR2_x86_64
 
+config BR2_PACKAGE_DIRECTFB_GLESV2
+	bool "compile glesv2 graphics driver"
+	depends on BR2_PACKAGE_LIBMALI && BR2_PACKAGE_LIBARKAPI
+
 config BR2_PACKAGE_DIRECTFB_LINUXINPUT
 	bool "compile /dev/input/eventX input driver"
 	default y

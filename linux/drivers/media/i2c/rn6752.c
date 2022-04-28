@@ -24,7 +24,7 @@
 
 extern int dvr_get_pragressive(void);
 extern void dvr_restart(void);
-#define RN6752_USE_TIMER
+//#define RN6752_USE_TIMER
 //#define RN6752_CVBS_PAL_CHECK_ERR	//rn6752 signal check error
 #define RN6752V1_CVBS_PAL_PROGRESSIVE	
 
@@ -40,11 +40,13 @@ struct rn6752 {
 	volatile bool timer_start;
 	volatile int timer_timeout;
 #endif
+	struct timer_list work_timer;
 	int mode;
 	int itu601in;
 	int camera_mode;
 	int progressive;
 	int curr_channel;
+	int signal;
 	int id;
 	volatile int enter_eq_work;
 	int enter_auxin;
@@ -1668,56 +1670,23 @@ static int rn6752v1_detect_signal(struct rn6752 *decoder)
 	int count_bit4 = 0, check_sig = 0, check_bit4 = 0;
 	int rn6752v1_signal_format, i;
 	int signal_detect = 0;
-
 	rn6752_write_byte(decoder,0x49,0x81);
 	rn6752_write_byte(decoder,0x19,0x0a);
-	check_bit4 = rn6752_read_byte(decoder,0x00)>>4;
-	//printk("check_bit4 = 0x%02x\n",check_bit4);
-	if (( check_bit4 & 0x1 ) == 0x0)
+
+	for (i=0; i <= 1; i++ )
 	{
-		if(count_bit4++ >= 4)
+		check_bit4 = rn6752_read_byte(decoder,0x00)>>4;
+		if (( check_bit4 & 0x1 ) == 0x0)
 		{
-			check_sig = 1;
+				signal_detect = 0;
 		}
-	}
-	else
-	{
-		count_bit4 = 0;
+		else
+		{
+			signal_detect = 1;
+		}
 	}
 
-	if(check_sig)
-	{
-		rn6752v1_signal_format = rn6752_read_byte(decoder,0x00) & 0xf1;
-		switch (rn6752v1_signal_format)
-		{
-			case 0x00:
-			case 0x80:
-				signal_detect = RN6752_MODE_CVBS_PAL;
-				break;
-			case 0x01:
-			case 0x81:
-				signal_detect = RN6752_MODE_CVBS_NTSC;
-				break;
-			case 0x20:
-			case 0xA0:
-				signal_detect = RN6752_MODE_720P_25FPS;
-				break;
-			case 0x21:
-			case 0xA1:
-				signal_detect = RN6752_MODE_720P_30FPS;
-				break;
-			case 0x40:
-			case 0xC0:
-				signal_detect = RN6752_MODE_1080P_25FPS;
-				break;
-			case 0x41:
-			case 0xC1:
-				signal_detect = RN6752_MODE_1080P_30FPS;
-				break;
-			default:
-				break;
-		}
-    }
+	//printk(KERN_ALERT "signal_detect = %d\n",signal_detect);
 	return signal_detect;
 }
 
@@ -2094,7 +2063,6 @@ static void rn6752_eq_work(struct work_struct *work)
 	static int check_count = 0;
 	if(!decoder)
 		goto end;
-
 	decoder->enter_eq_work = 1;
 	
 	if(mode_cfg == RN6752_MODE_NONE)
@@ -2115,7 +2083,7 @@ static void rn6752_eq_work(struct work_struct *work)
 		if(rn6752_check_id(dvr_rn6752))
 			goto end;
 #endif
-		printk("----------------->rn6752 Dynamic detect mode<-----------------\n");
+		//printk("----------------->rn6752 Dynamic detect mode<-----------------\n");
 		//720p cfg: before auto match, we must config 720p mode, because the default clk config is based on 720P
 		if(decoder->id == RN675X_ID_RN6752)
 		{
@@ -2256,6 +2224,43 @@ static void rn6752_reset(struct rn6752 *decoder)
 	rn6752_write_byte(decoder,0x1A, 0x83);	//disable blue screen       
 }
 
+static void rn6752_work_timer(struct timer_list *t)
+{
+	struct rn6752 *decoder = from_timer(decoder, t, work_timer);
+	static int flag_signal = 0;
+	static int count_signal = 0;
+	static int flag_no_signal = 0;
+	static int count_no_signal = 0;
+	if(!decoder->signal){
+		if(!flag_signal){
+			if(!decoder->enter_eq_work){
+				queue_work(decoder->eq_queue, &decoder->eq_work);
+			}
+			count_signal ++;
+			if(count_signal == 20){
+				flag_signal = 1;
+			}
+		}
+		flag_no_signal = 0;
+		count_no_signal = 0;
+	}
+	if(decoder->signal == V4L2_IN_ST_NO_SIGNAL){
+		if(!flag_no_signal){
+			if(!decoder->enter_eq_work){
+				queue_work(decoder->eq_queue, &decoder->eq_work);
+			}
+			count_no_signal ++;
+			if(count_no_signal == 20){
+				flag_no_signal = 1;
+			}
+		}
+		flag_signal = 0;
+		count_signal  = 0;
+	}
+	
+	mod_timer(&decoder->work_timer, jiffies +  msecs_to_jiffies(100));
+}
+
 #ifdef RN6752_USE_TIMER
 static void rn6752_timeout_timer(struct timer_list *t)
 {
@@ -2340,6 +2345,7 @@ static int rn6752_g_input_status(struct v4l2_subdev *sd, u32 *status)
 	int ret;
 	if(rn6752_dbg)
 		printk(KERN_ALERT "### rn6752_detect_signal\n");
+
 	if(decoder)
 	{
 #ifdef RN6752_USE_TIMER
@@ -2359,7 +2365,7 @@ static int rn6752_g_input_status(struct v4l2_subdev *sd, u32 *status)
 			if(rn6752_read_byte(decoder,0x80) & 0x04)
 				rn6752_power_on();
 #endif
-			queue_work(decoder->eq_queue, &decoder->eq_work);
+			//queue_work(decoder->eq_queue, &decoder->eq_work);
 		}
 #else
 		if(decoder->enter_carback)	//for carback
@@ -2370,38 +2376,39 @@ static int rn6752_g_input_status(struct v4l2_subdev *sd, u32 *status)
 			decoder->enter_auxin = 1;
 			decoder->dvr_start = 1;
 		}
-		queue_work(decoder->eq_queue, &decoder->eq_work);
+		//queue_work(decoder->eq_queue, &decoder->eq_work);
 #endif
-		if(decoder->id == RN675X_ID_RN6752)
-		{
-			//return ((g_dvr_rn6752->mode != RN6752_MODE_NONE) ? 1 : 0);
-			if(decoder->mode != RN6752_MODE_NONE)
+		if (status) {
+			*status = 0;
+
+			if(decoder->id == RN675X_ID_RN6752)
 			{
-				ret = rn6752_read_byte(decoder,0x00);
-				if(ret >= 0)
+				//return ((g_dvr_rn6752->mode != RN6752_MODE_NONE) ? 1 : 0);
+				if(decoder->mode != RN6752_MODE_NONE)
 				{
-					if((ret & 0x10) == 0)
+					ret = rn6752_read_byte(decoder,0x00);
+					if(ret >= 0)
 					{
-						return 1;
+						if((ret & 0x10) == 0)
+						{
+							*status |= V4L2_IN_ST_NO_SIGNAL;
+						}
 					}
 				}
 			}
-		}
-		else if(decoder->id == RN675X_ID_RN6752M)
-		{
-			return ((decoder->mode != RN6752_MODE_NONE) ? 1 : 0);
-		}
-		else if(decoder->id == RN675X_ID_RN6752V1)
-		{
-			if(decoder->camera_mode>0){
-				curr_cfg = rn6752v1_detect_signal(decoder);
-				if(curr_cfg)
-					return 1;
+			else if(decoder->id == RN675X_ID_RN6752M)
+			{
+				return ((decoder->mode != RN6752_MODE_NONE) ? 1 : 0);
 			}
-			return ((decoder->mode != RN6752_MODE_NONE) ? 1 : 0);
+			else if(decoder->id == RN675X_ID_RN6752V1)
+			{
+				if (rn6752v1_detect_signal(decoder))
+				*status |= V4L2_IN_ST_NO_SIGNAL;
+			}
 		}
 	}
 
+	decoder->signal = *status;
 	return 0;
 }
 
@@ -2493,7 +2500,8 @@ static long rn6752_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		}
 #endif
 		decoder->enter_carback = 1;
-		queue_work(decoder->eq_queue, &decoder->eq_work);
+		if(!decoder->enter_eq_work)
+ 			queue_work(decoder->eq_queue, &decoder->eq_work);
 		break;
 	}
 	case VIDIOC_EXIT_CARBACK:
@@ -2593,6 +2601,7 @@ static int rn6752_probe(struct i2c_client *client,
 	decoder->default_addr = client->addr;
 	decoder->mode = RN6752_MODE_NONE;
 	decoder->camera_mode = 0;
+	decoder->signal = V4L2_IN_ST_NO_SIGNAL;
 	decoder->curr_channel = 0;
 	sd = &decoder->sd;
 	//decoder->reset_gpio = devm_gpiod_get_optional(&client->dev, "reset",
@@ -2616,7 +2625,9 @@ static int rn6752_probe(struct i2c_client *client,
 		dev_err(sd->dev, "DT parsing error: %d\n", res);
 		return res;
 	}
+	
 
+#if 0
 	decoder->eq_queue = create_singlethread_workqueue("rn6752_eq_queue");
 	if(decoder->eq_queue)
 	{
@@ -2624,11 +2635,13 @@ static int rn6752_probe(struct i2c_client *client,
 	}
 
 	queue_work(decoder->eq_queue, &decoder->eq_work);
+#endif
 
 #ifdef RN6752_USE_TIMER
 	decoder->timer_start = false;
 	timer_setup(&decoder->timer, rn6752_timeout_timer,0);
 #endif
+	timer_setup(&decoder->work_timer, rn6752_work_timer,0);
 	
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
@@ -2650,6 +2663,8 @@ static int rn6752_probe(struct i2c_client *client,
 	res = v4l2_async_register_subdev(sd);
 	if (res < 0)
 		goto err;
+
+	mod_timer(&decoder->work_timer, jiffies +  msecs_to_jiffies(1));
 	
 	return 0;
 err:
@@ -2670,6 +2685,7 @@ static int rn6752_remove(struct i2c_client *client)
 #ifdef RN6752_USE_TIMER
 	del_timer(&decoder->timer);
 #endif
+	del_timer(&decoder->work_timer);
 	if(decoder->eq_queue)
 		destroy_workqueue(decoder->eq_queue);
 	v4l2_async_unregister_subdev(sd);

@@ -185,9 +185,15 @@ bool CarlifeLink::send_wheel(WheelCode wheel, bool foucs)//foucs配置的时候�
     return true;
 }
 
+bool CarlifeLink::send_night_mode(bool night)
+{
+
+}
+
 bool CarlifeLink::set_background()
 {
     m_pCarlifePlayer->SetPlayForeground(true);
+    //VideoDecoder::instance()->Show(false);
     return true;
 }
 

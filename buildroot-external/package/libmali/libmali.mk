@@ -22,7 +22,6 @@ endef
 define LIBMALI_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/usr/lib
 	cp -rf $(@D)/lib/*.so* $(TARGET_DIR)/usr/lib/
-	$(INSTALL) -D -m 0755 $(@D)/lib/mali.ko $(TARGET_DIR)/lib/modules/mali.ko
 endef
 
 

@@ -45,10 +45,14 @@ protected:
     virtual void send_multi_touch(int x1, int y1, TouchCode touchCode1, int x2, int y2, TouchCode touchCode2){}
     virtual bool send_key(KeyCode keyCode);
     virtual bool send_wheel(WheelCode wheel, bool foucs);
+    virtual bool send_night_mode(bool night);
+    virtual bool send_right_hand_driver(bool right){}
     virtual bool open_page(AppPage appPage);
     virtual void request_status(RequestAppStatus requestAppStatus, void *reserved = nullptr);
     virtual void send_license(const string& license);
-
+    virtual void send_input_text(const string& text);
+    virtual void send_input_selection(const int start, const int stop);
+    virtual void send_input_action(const int actionId, const int keyCode);
 private:
     //EClinkPlayer *m_pEClinkPlayer;
     static void mirror_direction_callback(int direction, void* parameter);
@@ -63,7 +67,7 @@ private:
     void audio_data_callback_func(int type, unsigned char* data, int length);
     void start_rec_callback_func(bool start, int rate, int bit, int channel);
     void rec_data_callback_func(string& recData);
-    void status_callback_func(int status);
+    void status_callback_func(int status, int type);
 
     void appstatus_callback_func(ECStatusMessage status);
     void phonecall_callback_func(ECCallType type, const string name, const string number);

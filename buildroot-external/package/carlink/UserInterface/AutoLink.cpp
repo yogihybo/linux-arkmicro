@@ -1,9 +1,10 @@
 #include "AutoLink.h"
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #ifdef USE_AUTO
 IUserAutoImpl::IUserAutoImpl(AutoLink* handle) : mHandle(handle)/*, mRecBuf(NULL)*/, mRecStart(false),
-             mUsedPos(0)
+             mUsedPos(0),mConnectStatus(CONNECT_STATUS_DISCONNECTED)
 {
 
 }
@@ -20,11 +21,13 @@ void IUserAutoImpl::videoStart(int width, int height, int offsetX, int offsetY)
         printf("auto video width = %d, height = %d, offsetX = %d, offsetY =%d\r\n", width, height, offsetX, offsetY);
         mHandle->video_start(offsetX, offsetY,width - offsetX * 2, height - offsetY *2);
         mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
+        mConnectStatus = CONNECT_STATUS_CONNECT_SUCCEED;
     }
 }
 
 void IUserAutoImpl::videoStop()
 {
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(mHandle)
         mHandle->video_stop();
 }
@@ -86,19 +89,26 @@ void IUserAutoImpl::recordProc(char *buf, int len)
 
 void IUserAutoImpl::notifyStatus(int state)
 {
+    printf("11 notify status  = %d\r\n", state);
+
     static bool running = false;
 
     if(state == LINK_REMOVED || state == LINK_DISCONNECTED){
         running = false;
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         mHandle->record_stop();
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         mHandle->onSdkConnectStatus(CONNECT_STATUS_DISCONNECTED, UnKnown);
+        mConnectStatus = CONNECT_STATUS_DISCONNECTED;
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     }
     else if(state == LINK_SUCCESS){
         if(!running){
             AudioInfo info = {16000, 1, 16};
             mHandle->record_start(info);
+            mHandle->record_pause(true);
             mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
+            mConnectStatus = CONNECT_STATUS_CONNECT_SUCCEED;
             running = true;
             printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         }
@@ -115,9 +125,7 @@ void IUserAutoImpl::notifyStatus(int state)
         //mHandle->app_status(APP_FOREGROUND, nullptr);
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     }
-
-
-    printf("notify status = %d\r\n", state);
+    printf("22 notify status = %d\r\n", state);
 }
 
 void IUserAutoImpl::notifyPhoneBtInfo(const char *phoneBTAddr, int pairMethod)
@@ -127,7 +135,8 @@ void IUserAutoImpl::notifyPhoneBtInfo(const char *phoneBTAddr, int pairMethod)
 
 void IUserAutoImpl::getLocalBtAddr(char* mac)
 {
-
+    string data = mHandle->getCarBtAddress();;
+    mac = (char*)data.c_str();
 }
 
 AudioType IUserAutoImpl::ChangeAudioType(AutoAudioStreamType type)
@@ -198,7 +207,7 @@ bool AutoLink::stop()
 {
     if(mHandle){
         mHandle->getVideoFocus();
-        mHandle->getAudioFocus();
+        mHandle->releaseAudioFocus();
     }
     return true;
 }
@@ -272,7 +281,7 @@ void AutoLink::record_audio_callback(unsigned char *data, int len)
 
 void AutoLink::send_car_bluetooth(const string& name, const string& address, const string& pin)
 {
-
+    mbtaddress = address;
 }
 
 void AutoLink::send_phone_bluetooth(const string& address)
@@ -295,20 +304,118 @@ void AutoLink::send_touch(int x, int y, TouchCode touchCode)
 
 bool AutoLink::send_key(KeyCode keyCode)
 {
-    if(mHandle){
-        mHandle->sendKeyEvent(keyCode, 1);
-        mHandle->sendKeyEvent(keyCode, 0);
+    AutoKeyCode ret;
+    switch(keyCode) {
+          case KYE_HOME:
+              ret = KEYCODE_HOME;
+              break;
+          case KEY_SYSTEM_HOME:
+              ret = KEYCODE_MENU;
+              break;
+          case KEY_SYSTEM_BACK:
+              ret = KEYCODE_BACK;
+              break;
+          case KEY_VOICE_ASSISTANT:
+              ret = KEYCODE_SEARCH;
+              break;
+          case KEY_MUSIC_PLAY_PAUSE:
+              ret = KEYCODE_MEDIA_PLAY_PAUSE;
+              break;
+          case KEY_MUSIC_PLAY:
+              ret = KEYCODE_MEDIA_PLAY;
+              break;
+          case KEY_MUSIC_PAUSE:
+              ret = KEYCODE_MEDIA_STOP;
+              break;
+          case KEY_MUSIC_NEXT:
+              ret = KEYCODE_MEDIA_NEXT;
+              break;
+          case KEY_MUSIC_PREVIOUS:
+              ret = KEYCODE_MEDIA_PREVIOUS;
+              break;
+          case KEY_PHONE:
+             {
+                static bool call = false;
+                if(!call)
+                {
+                    ret = KEYCODE_CALL;
+                }else
+                {
+                    ret = KEYCODE_ENDCALL;
+                }
+                call = !call;
+             }
+              break;
+          case KEY_LIGHTMODE:
+              printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+              mHandle->setConfig("night_mode", 0);
+              printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+              return true;
+          case KEY_NIGHTMODE:
+              printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+              mHandle->setConfig("night_mode", 1);
+              return true;
+              printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+          default:
+              break;
+      }
+    if(ret == KEY_CAR_BACK){
+        set_background();
+    }
+    else if(ret == KEY_CAR_FRONT){
+        set_foreground();
+    }
+    else
+    {
+        mHandle->sendKeyEvent(ret, true);
+        usleep(20000);
+        mHandle->sendKeyEvent(ret, false);
     }
 }
 
 bool AutoLink::send_wheel(WheelCode wheel, bool foucs)
 {
+    if (!foucs) {
+        mHandle->sendKeyEvent(KEYCODE_DPAD_CENTER, true);
+        usleep(20000);
+        mHandle->sendKeyEvent(KEYCODE_DPAD_CENTER, false);
+    } else {
+        mHandle->sendKnobEvent(KEYCODE_ROTARY_CONTROLLER, wheel);
+    }
+}
 
+bool AutoLink::send_night_mode(bool night)
+{
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    if(mHandle){
+        mHandle->setConfig("night_mode", night);
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    }
+    return true;
+}
+
+bool AutoLink::send_right_hand_driver(bool right)
+{
+    if(mHandle)
+        mHandle->setConfig("driver_position", right);
+    return true;
 }
 
 bool AutoLink::open_page(AppPage appPage)
 {
-
+    int ret = 0;
+    if(appPage == APP_PAGE_NAVIGATION){
+        ret = KEYCODE_NAVIGATION;
+    }
+    else if(appPage == APP_PAGE_MAIN){
+        ret = KEYCODE_HOME;
+    }
+    else if(appPage == APP_PAGE_MUSIC){
+        ret = KEYCODE_MUSIC;
+    }
+    mHandle->sendKeyEvent(ret, true);
+    usleep(20000);
+    mHandle->sendKeyEvent(ret, false);
 }
 
 void AutoLink::request_status(RequestAppStatus requestAppStatus, void *reserved)

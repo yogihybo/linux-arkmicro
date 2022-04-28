@@ -34,8 +34,8 @@
 extern int dvr_enter_carback(void);
 extern int dvr_exit_carback(void);
 extern int dvr_detect_carback_signal(void);
+extern int dvr_get_layer_status(void);
 extern int ark_disp_set_layer_en(int layer_id, int enable);
-extern void dvr_set_track_status(void);
 #endif
 
 extern int get_bootanimation_status(void);
@@ -43,11 +43,16 @@ extern int get_bootanimation_status(void);
 struct carback_context* g_carback_context = NULL;
 static int delay_show_track = 0;
 
+#ifdef CONFIG_REVERSING_TRACK
 #define ARK_DISP_OSD_PIXFMT_RGBA888    6
  
 int first_draw_track = 1;
+int first_show_track = 1;
 int vbox_track_paint = 0; 
 
+#endif
+
+//#define TRACK_TEST
 
 static void carback_filter_timer_irq(struct timer_list *t)
 {	
@@ -172,10 +177,16 @@ static void uartx_timer_handler(struct timer_list *t)
 	mod_timer(&context->uartx_timer, jiffies +	msecs_to_jiffies(50));
 }
 
-
+#ifdef TRACK_TEST
 int track_id = 0,flag_count = 0;
+int fl_id=0,fl_count = 0;
+int fr_id=0,fr_count = 0;
+int rl_id=0,rl_count = 0;
+int rr_id=0,rr_count = 0;
+int radar_id=0;
 void track_change_test(void)
 {
+	#if 0
 	if(!flag_count){
 		track_id++;
 		set_disp_track_id(track_id);
@@ -187,7 +198,113 @@ void track_change_test(void)
 		if(track_id == 0)
 			flag_count = 0;
 	}
+	#else
+	static int wheel_count =0,id_fl=0,id_fr=0,id_rl=0,id_rr=0;
+
+	int fl_array[20]={0x00,0x01,0x02,0x03,0x04,0x10,0x11,0x12,0x13,0x14,0x20,0x21,0x22,0x23,0x24,0x40,0x41,0x42,0x43,0x44};
+
+	int fr_array[20]={0x00,0x01,0x02,0x04,0x10,0x11,0x12,0x14,0x20,0x21,0x22,0x24,0x30,0x31,0x32,0x34,0x40,0x41,0x42,0x44};
+
+	int rl_array[20]={0x00,0x01,0x02,0x03,0x04,0x10,0x11,0x12,0x13,0x14,0x20,0x21,0x22,0x23,0x24,0x40,0x41,0x42,0x43,0x44};
+
+	int rr_array[20]={0x00,0x01,0x02,0x04,0x10,0x11,0x12,0x14,0x20,0x21,0x22,0x24,0x30,0x31,0x32,0x34,0x40,0x41,0x42,0x44};
+/////////////wheel
+	if(!flag_count)
+	{
+	track_id++;
+	set_disp_track_id(track_id);
+	if(track_id == 80)
+	flag_count = 1;
+	}
+	else
+	{
+	track_id--;
+	set_disp_track_id(track_id);
+	if(track_id == 0)
+	flag_count = 0;
+	}
+	
+///////////////fl
+	if(!fl_count)
+	{
+	fl_id++;
+	if(fl_id == 19)
+	fl_count = 1;
+	}
+	else
+	{
+	fl_id--;
+	if(fl_id == 0)
+	fl_count = 0;
+	}
+/////////////fr
+	if(!fr_count)
+	{
+	fr_id++;
+	if(fr_id == 19)
+	fr_count = 1;
+	}
+	else
+	{
+	fr_id--;
+	if(fr_id == 0)
+	fr_count = 0;
+	}
+
+//////////////////rl
+	if(!rl_count)
+	{
+	rl_id++;
+	if(rl_id == 19)
+	rl_count = 1;
+	}
+	else
+	{
+	rl_id--;
+	if(rl_id == 0)
+	rl_count = 0;
+	}
+
+//////////////rr
+	if(!rr_count)
+	{
+	rr_id++;
+	if(rr_id == 19)
+	rr_count = 1;
+	}
+	else
+	{
+	rr_id--;
+	if(rr_id == 0)
+	rr_count = 0;
+	}
+	
+	if(fl_id  == 0)
+	{
+		fl_id=1;
+	}
+
+	if(fr_id  == 0)
+	{
+		fr_id=1;
+	}
+
+	if(rl_id  == 0)
+	{
+		rl_id=1;
+	}
+
+	if(rr_id  == 0)
+	{
+		rr_id=1;
+	}
+	radar_id =(fl_array[fl_id]<<= 24) | (fr_array[fr_id]<<= 16) | (rl_array[rl_id]<<= 8)| (rr_array[rr_id]<<= 0);
+
+	set_disp_radar_id(radar_id);
+#endif
 }
+#endif
+
 
 void track_paint_work(struct work_struct *work)
 {
@@ -196,11 +313,15 @@ void track_paint_work(struct work_struct *work)
 	int delay_count;
 
 	carback_signal_detect();
+	context->layer_status = dvr_get_layer_status();
+		
 	if(context->carback_signal == 0 )
-			set_disp_signal_id(SIGNAL_NORMAL_STATUS_ID);
+		set_disp_signal_id(SIGNAL_NORMAL_STATUS_ID);
 
-	if(context->carback_signal == 1)
+	if(context->carback_signal == 1){
+		if(context->layer_status)
 			set_disp_signal_id(IMAGE_ID_NONE);
+	}
 
 	//for vbox
 	if (!context->carback_status && !vbox_track_paint) return;
@@ -212,20 +333,29 @@ void track_paint_work(struct work_struct *work)
 		ark_track_alpha_blend();
 	}
 
-	void *dest = (void*)context->track_display_virtaddr; 
+	context->buffer_index = (context->buffer_index + 1) % TRACK_FRAME_NUM;
+	void *dest = (void*)context->tdisplay_virtaddr[context->buffer_index]; 
 	unsigned int dest_size = context->track_display_size; 
 	dest_size = track_paint_fill(dest, context->track_disp_width, context->track_disp_height);// need 30 ms   
-	ark_track_set_display_addr(context->track_display_phyaddr); 
+	if(dest_size > 0)
+		ark_track_set_display_addr(context->tdisplay_phyaddr[context->buffer_index]); 
 
 	if (first_draw_track) {
 		first_draw_track = 0;
 	}
 
-	//track_change_test();
+#ifdef TRACK_TEST
+	if(context->layer_status)
+		track_change_test();
+#endif
 
     mod_timer(&context->track_timer, jiffies + msecs_to_jiffies(carback->context.track_frame_delay));//  1000/(100+30)=8 frame per sec 
-
-    delay_count = 260/(carback->context.track_frame_delay+30);//delay 200ms show
+    if(first_show_track){
+		delay_count = 260/(carback->context.track_frame_delay+30) + 20;
+    }
+	else{
+    	delay_count = 260/(carback->context.track_frame_delay+30) + 20;//delay 260ms show
+	}
 
     if(vbox_track_paint) delay_count = 1;
 
@@ -234,8 +364,9 @@ void track_paint_work(struct work_struct *work)
 
 	if(++delay_show_track == delay_count)
 	{
+		first_show_track = 0;
 		context->track_data_status = 1;
-		dvr_set_track_status();
+		ark_disp_set_layer_en(2, 1);
 	}
 }
 
@@ -684,7 +815,7 @@ static int  ark_carback_probe(struct platform_device *pdev)
     struct resource *res;
 	void __iomem *regs;
 	dev_t dev;
-    int error = 0;
+    int error = 0,i;
 
     carback = devm_kzalloc(&pdev->dev, sizeof(*carback), GFP_KERNEL);
     if (!carback)
@@ -793,8 +924,12 @@ static int  ark_carback_probe(struct platform_device *pdev)
 #ifdef CONFIG_REVERSING_TRACK
     carback->context.track_frame_delay = 100;//100ms
     carback->context.track_data_status = 1;
-	carback->context.carback_signal = 0;
+	carback->context.carback_signal = 1;
 	carback->context.track_setting = 1;
+	carback->context.layer_status= 0;
+	carback->context.layer_status= 0;
+	carback->context.buffer_num = TRACK_FRAME_NUM;
+	carback->context.buffer_index = 0;
 
 	ark_track_get_screen_info(&carback->context.screen_width,&carback->context.screen_height);
 
@@ -814,14 +949,19 @@ static int  ark_carback_probe(struct platform_device *pdev)
 	//mod_timer(&carback->context.uartx_timer, jiffies +	msecs_to_jiffies(1));
 #endif	
 	INIT_WORK(&carback->context.track_work, track_paint_work);
-	carback->context.track_display_size = carback->context.screen_width * carback->context.screen_height * 4; 
+	carback->context.track_display_size = carback->context.screen_width * carback->context.screen_height * 4 * carback->context.buffer_num; 
 		carback->context.track_display_virtaddr =
 			    (unsigned int)dma_alloc_coherent(&pdev->dev, carback->context.track_display_size,
 							     &carback->context.track_display_phyaddr, GFP_KERNEL);  
 		if (!carback->context.track_display_virtaddr) { 
-				printk(KERN_ALERT "%s %d: ,alloc animation display buffer failed.\n",__FUNCTION__, __LINE__);  
+				printk(KERN_ALERT "%s %d: ,alloc track display buffer failed.\n",__FUNCTION__, __LINE__);  
 			} else {   
 				timer_setup(&carback->context.track_timer, track_timer_handler, 0);
+				
+				for(i = 0; i < carback->context.buffer_num; i++){
+					carback->context.tdisplay_virtaddr[i] = carback->context.track_display_virtaddr + carback->context.screen_width * carback->context.screen_height * 4*i;
+					carback->context.tdisplay_phyaddr[i] = carback->context.track_display_phyaddr + carback->context.screen_width * carback->context.screen_height * 4*i;
+				}
 			} 
 #endif
 	ark_carback_dev_init(&carback->context);
@@ -921,6 +1061,8 @@ static int ark_carback_remove(struct platform_device *pdev)
 		destroy_workqueue(carback->context.track_queue);
 	
 	track_paint_deinit();
+	if(carback->context.track_display_virtaddr)
+		dma_free_wc(&pdev->dev, carback->context.track_display_size, carback->context.track_display_virtaddr,carback->context.track_display_phyaddr);
 #endif			
 	//unregister_mcu_interface();
 

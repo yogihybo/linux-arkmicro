@@ -16,7 +16,6 @@ EasyConnectLink::~EasyConnectLink()
 #ifdef  USE_EASYCONNECT
 bool EasyConnectLink::init(LinkMode linkMode)
 {
-
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     ECLogConfig logCfg;
     string openPrint;
@@ -65,11 +64,12 @@ bool EasyConnectLink::init(LinkMode linkMode)
 
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 
-    toolkitListener.SetQRCallback(qr_callback_func,this);
-    ECSDKToolKit::getInstance()->initialize(&toolkitListener);
+    if(linkMode == Wireless){
+        toolkitListener.SetQRCallback(qr_callback_func,this);
+        ECSDKToolKit::getInstance()->initialize(&toolkitListener);
+    }
 
 
-    /*
     ECOTAResourceVersion OTARes;
     OTARes.softWareId = "123f071c";
     OTARes.softVersion = 5;
@@ -80,7 +80,7 @@ bool EasyConnectLink::init(LinkMode linkMode)
     OTAConf.otaResourceVersionList.push_back(OTARes);
     ECSDKOTAManager::getInstance()->initialize(&otaListener,OTAConf);
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
-    */
+
 
     // 设置sdk初始化参数
 
@@ -97,23 +97,20 @@ bool EasyConnectLink::init(LinkMode linkMode)
     string uuid;
     cfg.getCommonConfig("auth_uuid", uuid);
 
-    uint32_t supportFunction = EC_SUPPORT_FUNCTION_INPUT | EC_SUPPORT_FUNCTION_SPEECH_WAKE;
+    uint32_t supportFunction = EC_SUPPORT_FUNCTION_INPUT;
     cfg.setCommonConfig("car_supportFunction", supportFunction);
 
 
-/*
-    m_strID = id;
-    m_strVersion = verion;
-    // IECSDKListener 一般由ui继承，实现基类的纯虚函数，以显示不同的界面和提示
-    sdkListener.SetLinkPhoneTypeCallback( linkphonetype_callback_func ,this);
-    sdkListener.SetLinkstatusCallback( linkstatus_callback_func ,this);;
-*/
     sdkListener.SetLicenseAuthSuccessCallback(license_auth_success_func, this);
     sdkListener.SetLicenseAuthFailCallback(license_auth_failed_func,this);
-    sdkListener.registerStatusCallback(std::bind(&EasyConnectLink::status_callback_func, this,std::placeholders::_1));
+    sdkListener.registerStatusCallback(std::bind(&EasyConnectLink::status_callback_func, this,std::placeholders::_1,std::placeholders::_2));
     ECSDKFramework::getInstance()->initialize(&cfg, &sdkListener);    
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 
+    string ver = ECSDKFramework::getInstance()->getECVersion();
+    static const char *p = ver.c_str();
+    printf("==============carlink version = %s =============\n", p);
+    app_status(APP_VERSION, (void*)p);
     return true;
 }
 
@@ -127,7 +124,6 @@ bool EasyConnectLink::release()
 
 bool EasyConnectLink::start()
 {
-
     ECSDKFramework::getInstance()->start();
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     return true;
@@ -153,12 +149,14 @@ bool EasyConnectLink::stop_mirror()
 
 bool EasyConnectLink::set_background()
 {
-
+    stop_mirror();
+    app_status(APP_BACKGROUND);
 }
 
 bool EasyConnectLink::set_foreground()
 {
-
+    start_mirror();
+    app_status(APP_FOREGROUND);
 }
 
 bool EasyConnectLink::get_audio_focus()
@@ -279,6 +277,12 @@ bool EasyConnectLink::send_wheel(WheelCode wheel, bool foucs)
 
 }
 
+bool EasyConnectLink::send_night_mode(bool night)
+{
+
+    return true;
+}
+
 bool EasyConnectLink::open_page(AppPage appPage)
 {
 
@@ -300,6 +304,21 @@ void EasyConnectLink::request_status(RequestAppStatus requestAppStatus, void *re
 void EasyConnectLink::send_license(const string& license)
 {
     mLicense = license;
+}
+
+void EasyConnectLink::send_input_text(const string& text)
+{
+    ECSDKAPPManager::getInstance()->sendInputText(text);
+}
+
+void EasyConnectLink::send_input_selection(const int start, const int stop)
+{
+     ECSDKAPPManager::getInstance()->sendInputSelection(start, stop);
+}
+
+void EasyConnectLink::send_input_action(const int actionId, const int keyCode)
+{
+    ECSDKAPPManager::getInstance()->sendInputAction(actionId, keyCode);
 }
 
 void EasyConnectLink::start_video_callback_func(bool start, int width, int height)
@@ -359,12 +378,24 @@ void EasyConnectLink::rec_data_callback_func(string& recData)
 
 }
 
-void EasyConnectLink::status_callback_func(int status)
+void EasyConnectLink::status_callback_func(int status, int type)
 {
 #ifdef USE_EASYCONNECT
     printf("%s:%s:%d status = %d\r\n",__FILE__,__func__,__LINE__, status);
+
+    PhoneType phoneType = UnKnown;
+    if(type == EC_CONNECT_TYPE_ANDROID_USB){
+        phoneType = Phone_Android;
+    }
+    else if(type == EC_CONNECT_TYPE_IOS_USB_EAP ||
+            type == EC_CONNECT_TYPE_IOS_USB_MUX ||
+            type == EC_CONNECT_TYPE_IOS_USB_AIRPLAY||
+            type == EC_CONNECT_TYPE_IOS_USB_LIGHTNING)
+    {
+        phoneType = Phone_IOS;
+    }
     if(EC_CONNECT_STATUS_DEVICE_ATTACHED == status){
-//        onSdkConnectStatus(CONNECT_STATUS_DEVICE_ATTACHED, mPhoneType);
+        onSdkConnectStatus(CONNECT_STATUS_DEVICE_ATTACHED, phoneType);
     }
     else if(EC_CONNECT_STATUS_DEVICE_DEATTACHED == status){
         onSdkConnectStatus(CONNECT_STATUS_DISCONNECTED, UnKnown);
@@ -414,6 +445,9 @@ void EasyConnectLink::appstatus_callback_func(ECStatusMessage status)
        {
             printf("app running mode\r\n");
        }
+       else if(status == EC_STATUS_MESSAGE_SWITCH_TO_SYSTEM_MAIN_PAGE){
+            app_status(APP_BACKGROUND);
+       }
 
        prev_status = status;
     }
@@ -430,7 +464,7 @@ void EasyConnectLink::phonecall_callback_func(ECCallType type, const string name
 
 void EasyConnectLink::inputstart_callback_func(int inputType, int  imeOptions, string rawText, int minLines, int maxLines,  int maxLength)
 {
-    static ECInputInfo inputInfo = {0, 0, 0, 0, 0, 0};
+    static InputInfo inputInfo = {0, 0, 0, 0, 0, 0};
     inputInfo.inputType = inputType;
     inputInfo.imeOptions = imeOptions;
     inputInfo.rawText = rawText;
@@ -460,8 +494,8 @@ void EasyConnectLink::vr_textinfo_callback_func(int vrtype, int sequence, string
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 
-    static ECVRTextInfo vrTextInfo = {EC_VR_TEXT_FROM_UNKNOWN, 0, "", ""};
-    vrTextInfo.type = (ECVRTextType)vrtype;
+    static VRTextInfo vrTextInfo = {VR_TEXT_FROM_UNKNOWN, 0, "", ""};
+    vrTextInfo.type = (VRTextType)vrtype;
     vrTextInfo.sequence = sequence;
     vrTextInfo.plainText = plainText;
     vrTextInfo.htmlText = htmlText;
@@ -507,6 +541,8 @@ void EasyConnectLink::license_auth_success_func(int code, string msg, void* para
     sid.activate = true;
     sid.code = code;
     sid.msg = msg;
+    string ver = ECSDKFramework::getInstance()->getECVersion();
+    sid.ver = ver;
     pthis->app_status(APP_LICENSE, (void*)(&sid));
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
