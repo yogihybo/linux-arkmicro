@@ -217,13 +217,9 @@ static void switch_to_main_crystal_osc(void)
 	/* switch to sys pll clk */
 	/* ahb and pclk and pclk1 must have the same clk source */
 	/* change the config will cause mfc working fail */
-	/* ahb clk */
+	/* ahb and apb clk */
 	regval = 0x04040404;
-	regval |= (2 << 12) | (1 << 8);
-	write_sys_reg(regval, SYS_CLK_SEL);
-	udelay(50);
-	/* pclk */
-	regval |= (5 << 4) | 1;
+	regval |= (2 << 12) | (1 << 8) | (5 << 4) | 1;
 	write_sys_reg(regval, SYS_CLK_SEL);
 	udelay(50);
 	/* pclk1 */

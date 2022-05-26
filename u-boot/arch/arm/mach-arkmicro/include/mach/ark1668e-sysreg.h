@@ -15,6 +15,12 @@
 #define SYS_DDR_IO_CFG			0x19c
 #define SYS_PAD_CTRL00			0x1c0
 #define SYS_PAD_CTRL01			0x1c4
+#define SYS_PAD_CTRL02			0x1c8
+#define SYS_PAD_CTRL03			0x1cc
+#define SYS_PAD_CTRL04			0x1d0
+#define SYS_PAD_CTRL05			0x1d4
+#define SYS_PAD_CTRL06			0x1d8
+#define SYS_PAD_CTRL07			0x1dc
 #define SYS_PAD_CTRL08			0x1e0
 #define SYS_PAD_CTRL09			0x1e4
 #define SYS_IO_DRIVER01			0x1f4

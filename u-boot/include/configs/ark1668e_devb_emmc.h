@@ -99,7 +99,6 @@
 		"${mtdparts} " \
 		"root=${nandroot} " \
 		"rootfstype=${nandrootfstype}\0" \
-		"root=/dev/mmcblk0p2 rw rootfstype=ext2 rootwait \0" \
 	"nandroot=ubi0:rootfs rw ubi.mtd=rootfs ubi.fm_autoconvert=1\0" \
 	"nandrootfstype=ubifs rootwait\0" \
 	"nandboot=echo Booting from nand ...; " \
@@ -212,7 +211,7 @@
 		"root=${emmcroot} " \
 		"rootfstype=${emmcrootfstype}\0" \
 	"emmcroot=/dev/mmcblk0p10 rw\0" \
-	"emmcrootfstype=ext2 rootwait\0" \
+	"emmcrootfstype=ext4 rootwait\0" \
 	"emmcboot=echo Booting from emmc ...; " \
 		"run emmcargs; " \
 		"mmc dev ${emmc_dev_part}; " \

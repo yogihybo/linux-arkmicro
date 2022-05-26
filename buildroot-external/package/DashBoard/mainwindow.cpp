@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
 #ifdef __ARM__
-    QResource::registerResource("usr/share/images.rcc");
+    QResource::registerResource("/usr/share/images.rcc");
     this->setWindowFlag(Qt::FramelessWindowHint);
 #endif
     QPalette pal = palette();

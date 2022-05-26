@@ -23,6 +23,8 @@
 
 struct display_data *pdd = NULL;
 
+//#define DECODE_SCALE_PARALLEL
+
 static int get_shared_display_data(void)
 {
 	if (pdd == NULL) {
@@ -164,6 +166,7 @@ static void video_display_process(video_handle *handle, unsigned int yaddr, unsi
 	int out_w, out_h;
 	int winx = 0, winy = 0, winwidth = 0, winheight = 0;
 	unsigned int dst_phyaddr, read_addr = 0;
+	int ret;
 
 	if(!handle || !handle->handle_disp){
 		printf("%s: handle null, error.\n", __func__);
@@ -213,6 +216,42 @@ static void video_display_process(video_handle *handle, unsigned int yaddr, unsi
 	off_y = handle->cfg_vid.disp_y;
 	out_w = handle->cfg_vid.disp_width;
 	out_h = handle->cfg_vid.disp_height;
+
+#ifndef DECODE_SCALE_PARALLEL
+	if (yaddr == 0)
+		return;
+
+	if(handle->cfg_vid.win_src_width && handle->cfg_vid.win_src_height){
+		winx = handle->cfg_vid.win_src_x;
+		winy = handle->cfg_vid.win_src_y;
+		winwidth = handle->cfg_vid.win_src_width;
+		winheight = handle->cfg_vid.win_src_height;
+	}else{
+		winwidth = handle->out_buffer.codedWidth;
+		winheight = handle->out_buffer.codedHeight;
+	}
+
+	dst_phyaddr = handle->rotate_buffer[handle->rotate_buffer_index].busAddress;
+	handle->rotate_buffer_index = (handle->rotate_buffer_index + 1) % ROTATE_BUF_MAX;
+	arkapi_display_get_layer_addr(handle->handle_disp, &read_addr, NULL, NULL);
+	if (read_addr == dst_phyaddr)
+		arkapi_display_wait_for_vsync(handle->handle_disp);
+	ret = arkapi_scalar(yaddr, uaddr, vaddr,
+					ARK_SCALE_FORMAT_Y_UV420,
+					handle->out_buffer.frameWidth, handle->out_buffer.frameHeight,
+					winx, winy, winwidth, winheight,
+					0, 0, 0, 0,
+					handle->cfg_vid.disp_width, handle->cfg_vid.disp_height,
+					dst_phyaddr, dst_phyaddr + out_w * out_h, 0,
+					ARK_SCALE_OUT_FORMAT_Y_UV420,
+					SCALE_ROTATE_0);
+	if (ret) {
+		printf("arkapi_scalar fail.\n");
+		handle->last_display_addr = 0;
+	} else {
+		handle->last_display_addr = dst_phyaddr;
+	}
+#endif
 #endif
 
 	if (handle->last_display_addr) {
@@ -243,6 +282,7 @@ static void video_display_process(video_handle *handle, unsigned int yaddr, unsi
 		handle->last_display_addr = 0;
 	}
 
+#ifdef DECODE_SCALE_PARALLEL
 #if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668
 	if (yaddr == 0)
 		return;
@@ -257,23 +297,30 @@ static void video_display_process(video_handle *handle, unsigned int yaddr, unsi
 		winheight = handle->out_buffer.codedHeight;
 	}
 
-	arkapi_scalar_wait_idle();
-	dst_phyaddr = handle->rotate_buffer[handle->rotate_buffer_index].busAddress;
-	handle->rotate_buffer_index = (handle->rotate_buffer_index + 1) % ROTATE_BUF_MAX;
-	arkapi_display_get_layer_addr(handle->handle_disp, &read_addr, NULL, NULL);
-	if (read_addr == dst_phyaddr)
-		arkapi_display_wait_for_vsync(handle->handle_disp);
-	arkapi_scalar_nowait(yaddr, uaddr, vaddr,
-					ARK_SCALE_FORMAT_Y_UV420,
-					handle->out_buffer.frameWidth, handle->out_buffer.frameHeight,
-					winx, winy, winwidth, winheight,
-					0, 0, 0, 0,
-					handle->cfg_vid.disp_width, handle->cfg_vid.disp_height,
-					dst_phyaddr, dst_phyaddr + out_w * out_h, 0,
-					ARK_SCALE_OUT_FORMAT_Y_UV420,
-					SCALE_ROTATE_0);
-	handle->last_display_addr = dst_phyaddr;
-
+	ret = arkapi_scalar_wait_idle();
+	if (ret) {
+		printf("arkapi_scalar_wait_idle fail.\n");
+	} else {
+		dst_phyaddr = handle->rotate_buffer[handle->rotate_buffer_index].busAddress;
+		handle->rotate_buffer_index = (handle->rotate_buffer_index + 1) % ROTATE_BUF_MAX;
+		arkapi_display_get_layer_addr(handle->handle_disp, &read_addr, NULL, NULL);
+		if (read_addr == dst_phyaddr)
+			arkapi_display_wait_for_vsync(handle->handle_disp);
+		ret = arkapi_scalar_nowait(yaddr, uaddr, vaddr,
+						ARK_SCALE_FORMAT_Y_UV420,
+						handle->out_buffer.frameWidth, handle->out_buffer.frameHeight,
+						winx, winy, winwidth, winheight,
+						0, 0, 0, 0,
+						handle->cfg_vid.disp_width, handle->cfg_vid.disp_height,
+						dst_phyaddr, dst_phyaddr + out_w * out_h, 0,
+						ARK_SCALE_OUT_FORMAT_Y_UV420,
+						SCALE_ROTATE_0);
+		if (!ret)
+			handle->last_display_addr = dst_phyaddr;
+		else
+			printf("arkapi_scalar_nowait fail.\n");
+	}
+#endif
 #endif
 	//ark_dbg("%s: <---end.\n", __func__);
 }
@@ -296,7 +343,7 @@ void sig_handler(int sigio)
 		if (handle)
 			video_display_process(handle, handle->last_render_yaddr, handle->last_render_uaddr,
 				handle->last_render_vaddr);
-#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668
+#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668 && defined(DECODE_SCALE_PARALLEL)
 		video_display_process(handle, 0, 0, 0);
 #endif
 	}
@@ -670,7 +717,7 @@ int arkapi_video_play_eof(video_handle *handle, int fps)
 
 	arkapi_video_lock(handle);
 
-#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668
+#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668 && defined(DECODE_SCALE_PARALLEL)
 	video_display_process(handle, 0, 0, 0);
 #endif
 
@@ -690,7 +737,7 @@ int arkapi_video_play_eof(video_handle *handle, int fps)
 		}
 	}
 
-#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668
+#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668 && defined(DECODE_SCALE_PARALLEL)
 	video_display_process(handle, 0, 0, 0);
 #endif
 

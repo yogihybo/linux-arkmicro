@@ -235,6 +235,20 @@ static void ark_lcdc_init(struct udevice *dev)
 	else if(priv->interface_type == ARK1668E_LCDC_INTERFACE_TTL)
 	{
 		lcdc_writel_sys(priv, SYS_CTL_2A, SWITCH_LVDS_TO_TTL);
+		/* pad config */
+		value = lcdc_readl_sys(priv, SYS_PAD_CTRL05);
+		value &= ~(0x3ffff << 12);
+		value |= (1 << 27) | (1 << 24) | (1 << 21) | (1 << 18) | (1 << 15) | (1 << 12);
+		lcdc_writel_sys(priv, SYS_PAD_CTRL05, value);
+
+		value = (1<<27) | (1<<24) | (1<<21) | (1<<18) | (1<<15) | (1<<12) | (1<<9) | (1<<6) | (1<<3) | (1<<0);
+		lcdc_writel_sys(priv, SYS_PAD_CTRL06, value);
+		lcdc_writel_sys(priv, SYS_PAD_CTRL07, value);
+
+		value = lcdc_readl_sys(priv, SYS_PAD_CTRL08);
+		value &= ~((7 << 3) | (7 << 0));
+		value |= (1 << 3) | (1 << 0);
+		lcdc_writel_sys(priv, SYS_PAD_CTRL08, value);
 	}
 
 	/* sync always on */

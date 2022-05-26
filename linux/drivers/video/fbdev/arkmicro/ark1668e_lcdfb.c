@@ -282,7 +282,7 @@ static int ark1668e_lcdfb_check_var(struct fb_var_screeninfo *var,
 		var->xres_virtual = var->xres;
 
 	if (var->yres >= var->yres_virtual)
-		var->yres_virtual = var->yres * 2;
+		var->yres_virtual = var->yres * 3;
 
 	/* Force same alignment for each line */
 	var->xres = (var->xres + 3) & ~3UL;

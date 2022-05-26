@@ -211,7 +211,8 @@ static void animation_dec_work(struct work_struct *work)
 	if (timeout_count > 50) {
 		printk(KERN_ALERT "%s Error! Dec timeout.\n", __FUNCTION__);
 		context->animation_end = true;
-	} else if (context->animation_file_phyaddr + size >= context->animation_data_phyaddr + context->animation_data_size) {
+	} else if (context->animation_file_phyaddr + size >= context->animation_data_phyaddr + context->animation_data_size
+		&& frame < header->aniCount + header->hasBootlogo ? 1 : 0) {
 		printk(KERN_ALERT "%s Error! Animation data is beyond the mark.\n", __FUNCTION__);
 		context->animation_end = true;
 	}

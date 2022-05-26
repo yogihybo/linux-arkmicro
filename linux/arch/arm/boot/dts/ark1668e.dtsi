@@ -280,7 +280,7 @@
 				div-offset = <4>;
 				div-mask = <0xf>;
 				div-value = <1>;
-				div-mode = <ARK_CLK_DIVMODE_PLUSONE>;
+				div-mode = <ARK_CLK_DIVMODE_NOZERO>;
 				enable-reg = <0x48 0x50>;
 				enable-offset = <13 27>;			
 			};
@@ -400,7 +400,7 @@
 				div-offset = <24>;
 				div-mask = <0xf>;
 				div-value = <3>;
-				div-mode = <ARK_CLK_DIVMODE_PLUSONE>;
+				div-mode = <ARK_CLK_DIVMODE_NOZERO>;
 				//enable-reg = <0x44 0x4c 0x50 0x50>;
 				//enable-offset = <21 15 25 14>;
 			};
@@ -433,13 +433,13 @@
 				div-offset = <12>;
 				div-mask = <0xf>;
 				div-value = <1>;
-				div-mode = <ARK_CLK_DIVMODE_PLUSONE>;
+				div-mode = <ARK_CLK_DIVMODE_NOZERO>;
 			};
 
 			i2s_adc_clk: i2s_adc_clk {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
-				clocks = <&axipll>, <&audpll>;
+				clocks = <&xtal24mhz>, <&audpll>;
 				reg = <0x6c>;
 				index-offset = <0>;
 				index-mask = <0x1>;
@@ -449,7 +449,7 @@
 			i2s_dac_clk: i2s_dac_clk {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
-				clocks = <&axipll>, <&audpll>;
+				clocks = <&xtal24mhz>, <&audpll>;
 				reg = <0x6c>;
 				index-offset = <2>;
 				index-mask = <0x1>;
@@ -459,7 +459,7 @@
 			i2s2_dac_clk: i2s2_dac_clk {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
-				clocks = <&axipll>, <&audpll>;
+				clocks = <&xtal24mhz>, <&audpll>;
 				reg = <0x6c>;
 				index-offset = <4>;
 				index-mask = <0x1>;
@@ -521,7 +521,7 @@
 			compatible = "arkmicro,ark1668e-i2s";
 			reg = <0xe4000000 0x1000
 					0xe4900000 0x1000>;
-			//external-adc;
+			external-adc;
 			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
 			nco-reg = <0xe4900174>;
 			dmas = <&dmac 0 1 0>, <&dmac 1 0 1>;

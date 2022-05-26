@@ -261,7 +261,8 @@ int board_late_init(void)
 	need_update = env_get("need_update");
 	if (!strcmp(need_update, "yes")) {
 		loadaddr = env_get_hex("loadaddr", 0);
-
+		if (loadaddr)
+			memset(loadaddr, 0, strlen(ARK1668_UPDATE_MAGIC));
 		sprintf(cmd, "fatload %s %s %s update-magic", "mmc", env_get("sd_dev_part"), env_get("loadaddr"));
 		run_command(cmd, 0);
 		if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {

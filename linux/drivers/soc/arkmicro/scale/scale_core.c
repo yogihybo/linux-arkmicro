@@ -837,23 +837,26 @@ EXPORT_SYMBOL(ark_scale_get_busy_status);
 
 int ark_scale_start_nowait(struct ark_scale_context *context, struct ark_scale_param *param)
 {
-	int ret = 0;
-
 	if (unlikely(down_interruptible(&context->scale_sem))) {
 		printk(KERN_ALERT "down_interruptible scale error\n");
 		return -1;	
 	}
 
+	if (unlikely(context->busy)) {
+		printk(KERN_ALERT "%s error! scale is busy now.\n", __FUNCTION__);
+		return -1;
+	}
+
 	context->busy = 1;
 
-	clk_disable_unprepare(context->clk);
+	/* clk_disable_unprepare(context->clk);
 	scale_softreset(context);
-	clk_prepare_enable(context->clk);
+	clk_prepare_enable(context->clk); */
 
 	ark_scale_set_param(context, param);
 	ark_scale_start_writeback(context);
 
-	return ret;
+	return 0;
 }
 EXPORT_SYMBOL(ark_scale_start_nowait);
 
@@ -861,16 +864,6 @@ int ark_scale_wait_idle(struct ark_scale_context *context)
 {
 	int ret;
 
-	spin_lock(&context->lock);
-	if (!context->busy) {
-		//printk("scale is idle now.\n");
-		spin_unlock(&context->lock);
-		up(&context->scale_sem);
-		return 0;
-	}
-	spin_unlock(&context->lock);
-
-	//printk("scale is busy now.\n");
 	ret = ark_scale_wait_finish_int(context);
 	up(&context->scale_sem);
 
@@ -883,8 +876,10 @@ int ark_scale_start(struct ark_scale_context *context, struct ark_scale_param *p
 	int ret;
 
 	ret = ark_scale_start_nowait(context, param);
-	if (ret < 0)
+	if (ret < 0) {
+		up(&context->scale_sem);
 		return ret;
+	}
 
 	ret = ark_scale_wait_finish_int(context);
 
