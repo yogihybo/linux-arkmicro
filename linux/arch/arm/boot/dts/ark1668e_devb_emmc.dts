@@ -3,7 +3,7 @@
 #include "ark1668e.dtsi"
 #include "ark1668e-pinctrl.dtsi"
 
-//#define I2S_USE_EXTERNAL_CODEC
+//#define I2S_FULL_DUPLEX_CODEC_SUPPORT
 
 / {
 	i2c-gpio-0 {
@@ -43,25 +43,25 @@
 			reset-gpio = <&gportf 27 0>;
 			reg = <0x59>; /* i2c address(7 bits) */
 			default-channel = <0>;
-            carback-config = <1>;
+			carback-config = <1>;
 			port {
 				ark7116_0: endpoint@0{
 					remote-endpoint = <&itu_1>;
 				};
 			};
 		};
-
+	
 		rn6752: da380@4e {
-            compatible = "arkmicro,ark1668e_rn6752";
-            //reset-gpio = <&gpio3 11 0>;
-            reg = <0x2c>; /* i2c address(7 bits) */
-            default-channel = <0>;  /* 0:channel A; 1:channel B */
-            camera-format = <3>;    /* 0:unknown; 1:cvbs pal; 2:cvbs ntsc; 3:720p pal; 4:720p ntsc */
+			compatible = "arkmicro,ark1668e_rn6752";
+			//reset-gpio = <&gpio3 11 0>;
+			reg = <0x2c>; /* i2c address(7 bits) */
+			default-channel = <0>;  /* 0:channel A; 1:channel B */
+			camera-format = <3>;    /* 0:unknown; 1:cvbs pal; 2:cvbs ntsc; 3:720p pal; 4:720p ntsc */
 			port {
-                rn6752_0: endpoint@0{
-                    remote-endpoint = <&itu_0>;
-                };
-        	};
+				rn6752_0: endpoint@0{
+					remote-endpoint = <&itu_0>;
+				};
+			};
 		};
 
 		mclk: mclk@12K {
@@ -70,11 +70,20 @@
 			clock-frequency = <12288000>;
 		};
 
-		escodec: es8316@10 {
+		es8316_codec: es8316@10 {
 			compatible = "arkmicro,es8316";
 			reg = <0x10>;
 			clocks = <&mclk>;
 			clock-names = "mclk";
+			#sound-dai-cells = <0>;
+		};
+
+		es7210_codec: es7210@40 {
+			compatible = "arkmicro,es7210";
+			reg = <0x40>;/* i2c address(7 bits) */
+			clocks = <&mclk>;
+			clock-names = "mclk";
+			pinctrl-names = "default";
 			#sound-dai-cells = <0>;
 		};
 	};
@@ -108,38 +117,41 @@
 			"MIC1", "Mic Jack",
 			"MIC2", "Mic Jack";
 
-#ifdef I2S_USE_EXTERNAL_CODEC
+#ifdef I2S_FULL_DUPLEX_CODEC_SUPPORT
 		simple-audio-card,aux-devs = <&amp>;
 
 		simple-audio-card,format = "i2s";
-		simple-audio-card,cpu {
+		simple-audio-card,bitclock-master = <&dailink0_master>;
+		simple-audio-card,frame-master = <&dailink0_master>;
+		dailink0_master:simple-audio-card,cpu {
 			sound-dai = <&i2s_dac>;
 		};
 		simple-audio-card,codec {
-			sound-dai = <&escodec>;//External(DAC):escodec(es8316) ,cs4334_codec ;
+			sound-dai = <&es8316_codec>;
 		};
 #else
+		simple-audio-card,aux-devs = <&amp>;
 		simple-audio-card,dai-link@0 {		/* I2S - adc */
 			format = "i2s";
-			bitclock-master = <&capture_cpu>;
-			frame-master = <&capture_cpu>;
+			bitclock-master = <&capture_codec>;
+			frame-master = <&capture_codec>;
 			capture_cpu: cpu {
 				sound-dai = <&i2s_adc>;
 			};
 			capture_codec: codec {
-				sound-dai = <&sdadc>;//External(ADC):escodec(es8316) , cs5343_codec  ; Internal(ADC):sdadc
+				sound-dai = <&cs5343_codec>;//External(ADC):es8316_codec , cs5343_codec  ; Internal:ark_codec
 			};
 		};
 
 		simple-audio-card,dai-link@1 {		/* I2S - dac */
 			format = "i2s";
-			bitclock-master = <&playback_cpu>;
-			frame-master = <&playback_cpu>;
+			bitclock-master = <&playback_codec>;
+			frame-master = <&playback_codec>;
 			playback_cpu: cpu {
 				sound-dai = <&i2s_dac>;
 			};
 			playback_codec: codec {
-				sound-dai = <&sddac>;//External(DAC):escodec(es8316) ,cs4334_codec ; Internal(DAC):sddac
+				sound-dai = <&ark_codec>;//External(DAC):es8316_codec ,cs4334_codec ; Internal:ark_codec
 			};
 		};
 #endif
@@ -258,20 +270,11 @@
 	pinctrl-names = "default";
 };
 
-#ifndef ARK1668E_I2S_FULL_DUPLEX_MODE
 &i2s_dac {
-	pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata_out
+	pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata_in &pinctrl_i2sdac_sadata_out
 					&pinctrl_i2sdac_mclk &pinctrl_i2sdac_bclk>;
 	pinctrl-names = "default";
 };
-
-#else
-&i2s_dac {
-	pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata_out
-					&pinctrl_i2sdac_mclk &pinctrl_i2sdac_bclk &pinctrl_i2sdac_sadata>;
-	pinctrl-names = "default";
-};
-#endif
 
 &ethernet {
 	status = "okay";
@@ -293,7 +296,6 @@
 		};
 	};
 };
-
 
 &i2c0 {
 	gt911: touchscreen@5d {
@@ -401,8 +403,4 @@
 
 &can1{
 	status = "disabled";
-};
-
-&sdadc {
-	external-i2s;
 };

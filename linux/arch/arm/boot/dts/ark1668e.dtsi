@@ -40,13 +40,13 @@
 			next-level-cache = <&L2_CA7>;
 		};
 
-        cpu1: cpu@1 {
-            compatible = "arm,cortex-a7";
-            device_type = "cpu";
-            reg = <1>;
-            clock-frequency = <800000000>;
+		cpu1: cpu@1 {
+			compatible = "arm,cortex-a7";
+			device_type = "cpu";
+			reg = <1>;
+			clock-frequency = <800000000>;
 			next-level-cache = <&L2_CA7>;
-        };
+		};
 
 		L2_CA7: cache-controller-0 {
 			compatible = "cache";
@@ -519,9 +519,7 @@
 
 		i2s_adc: i2s-adc@e4000000 {
 			compatible = "arkmicro,ark1668e-i2s";
-			reg = <0xe4000000 0x1000
-					0xe4900000 0x1000>;
-			external-adc;
+			reg = <0xe4000000 0x1000>;
 			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
 			nco-reg = <0xe4900174>;
 			dmas = <&dmac 0 1 0>, <&dmac 1 0 1>;
@@ -532,9 +530,8 @@
 
 		i2s_dac: i2s-dac@e4200000 {
 			compatible = "arkmicro,ark1668e-i2s";
-			reg = <0xe4200000 0x1000
-					0xE4900000 0x1000>;
-			//external-dac;
+			reg = <0xe4200000 0x1000>;
+			//full-duplex-mode;
 			interrupts = <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
 			nco-reg = <0xe490019c>;
 			dmas = <&dmac 25 1 0>, <&dmac 26 0 1>;
@@ -543,24 +540,9 @@
 			#sound-dai-cells = <0>;
 		};
 
-		sdadc: sdadc@e4000000{
-			compatible = "arkmicro,ark1668e-sdadc";
-			reg = <0xe4000000 0x1000
-					0xE4900000 0x1000>;
-			//external-i2s;
-			left-volume = <100>;
-			right-volume = <100>;
-			#sound-dai-cells = <0>;
-		};
-
-		sddac: sddac@e4200000 {
-			compatible = "arkmicro,ark1668e-sddac";
-			reg = <0xe4200000 0x1000
-					0xE4900000 0x1000>;
-			//external-i2s;
-			//headphone-out;
-			left-volume = <60>;
-			right-volume = <60>;
+		ark_codec: ark-adac@e4900000 {
+			compatible = "arkmicro,ark-audio-codec";
+			reg = <0xe4900000 0x1000>;
 			#sound-dai-cells = <0>;
 		};
 

@@ -289,27 +289,36 @@ static u32 dma_chan_get_residue(struct axi_dma_chan *chan, dma_cookie_t cookie)
 	struct virt_dma_desc *vd;
 	unsigned long flags;
 	u32 residue = 0;
+	u32 sentf, sentr;
 	u32 llplo, llphi;
 	u64 llp;
 
+	spin_lock_irqsave(&chan->vc.lock, flags);
+
+	sentf = dma_chan_get_sent(chan);
 	llplo = axi_chan_ioread32(chan, CH_LLP);
 	llphi = axi_chan_ioread32(chan, CH_LLP + 4);
 	llp = ((u64)llphi << 32) | llplo;
+	sentr = dma_chan_get_sent(chan);
+	if (sentr < sentf) {
+		llplo = axi_chan_ioread32(chan, CH_LLP);
+		llphi = axi_chan_ioread32(chan, CH_LLP + 4);
+		llp = ((u64)llphi << 32) | llplo;
+	}
 
-	spin_lock_irqsave(&chan->vc.lock, flags);
 	vd = vchan_next_desc(&chan->vc);
 	if (vd) {
 		first = vd_to_axi_desc(vd);
 		residue = first->total_len;
 		if (llp == DWC_LLP_LOC(first->lli.llp)) {
 			/* Currently in progress */
-			residue -= dma_chan_get_sent(chan);
+			residue -= sentr;
 		} else {
 			residue -= first->len;
 			list_for_each_entry(desc, &first->xfer_list, xfer_list) {
 				if (llp == DWC_LLP_LOC(desc->lli.llp)) {
 					/* Currently in progress */
-					residue -= dma_chan_get_sent(chan);
+					residue -= sentr;
 					break;
 				} else {
 					residue -= desc->len;

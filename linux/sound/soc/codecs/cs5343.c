@@ -7,8 +7,6 @@
 #include <sound/soc.h>
 #include <linux/io.h>
 #include <linux/slab.h>
-#include "ark_i2s_sddac_regs.h"
-
 
 #define  CODEC_CS5343
 
@@ -41,44 +39,9 @@ struct cs5343_priv {
 	unsigned int 	vol_r;
 };
 
-static int cs5343_read(
-	struct snd_soc_component *component, unsigned int reg)
-{
-	struct cs5343_priv *cs5343 = snd_soc_component_get_drvdata(component);
-
-	return 0;
-}
-
-static int cs5343_write(
-	struct snd_soc_component *component, unsigned int reg, unsigned int value)
-{
-	struct cs5343_priv *cs5343 = snd_soc_component_get_drvdata(component);
-
-	return 0;
-}
-
-
-static int cs5343_mute(struct snd_soc_dai *dai, int mute)
-{
-	//struct snd_soc_codec *codec = dai->codec;
-
-	DBG("-->%d---\n",mute);
-	
-	return 0;
-}
-
-static int cs5343_set_bias_level(
-	struct snd_soc_component *component, enum snd_soc_bias_level level)
-{
-	
-	DBG("-->%d--------\n",level);
-	return 0;
-}
-
-
 static int cs5343_startup(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->play init start---cs5343----------\n");
 	DBG("-->play init end-------------\n");
 	return 0 ;
@@ -86,16 +49,14 @@ static int cs5343_startup(struct snd_pcm_substream *substream,
 
 static void cs5343_shutdown(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
-	//dump_stack();
-	return 0;
 }
 
 static int cs5343_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params,
 	struct snd_soc_dai *dai)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
 	return 0;
 }
@@ -103,14 +64,14 @@ static int cs5343_hw_params(struct snd_pcm_substream *substream,
 
 static int cs5343_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 				  int clk_id, unsigned int freq, int dir)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
 	return 0;
 }
 
 static int cs5343_set_dai_fmt(struct snd_soc_dai *codec_dai,
 			       unsigned int fmt)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
 	return 0;
 }
@@ -126,13 +87,6 @@ static const struct snd_soc_dai_ops cs5343_dai_ops = {
 
 static struct snd_soc_dai_driver cs5343_dai = {
 	.name 		= "cs5343_codec",
-	/*.playback 	= {
-		.stream_name 	= "Playback",
-		.channels_min	= 1,
-		.channels_max	= 2,
-		.rates			= SDDAC_RATES,
-		.formats		= SDDAC_FORMATS,
-	},*/
 	.capture = {
 		.stream_name = "Capture",
 		.channels_min = 1,
@@ -145,26 +99,16 @@ static struct snd_soc_dai_driver cs5343_dai = {
 
 
 static int cs5343_probe(struct snd_soc_component *component)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	struct cs5343_priv *cs5343;
-	int ret = -1;
 
 	DBG("-->\n");
-//	cs5343->mclk = devm_clk_get(codec->dev, "cs5343_mclk");
-//	if (PTR_ERR(cs5343->mclk) == -EPROBE_DEFER)
-//		return -EPROBE_DEFER;
-	
-	
 	cs5343 = kzalloc(sizeof(struct cs5343_priv), GFP_KERNEL);
 	if (cs5343 == NULL)
 		return -ENOMEM;
 
 	snd_soc_component_set_drvdata(component, cs5343);
 	return 0;
-
-err_free_mem:
-
-	return ret;
 }
 
 static void cs5343_remove(struct snd_soc_component *component)
@@ -175,7 +119,7 @@ static void cs5343_remove(struct snd_soc_component *component)
 	if (cs5343)
 		kfree(cs5343);
 
-	return 0;
+	return;
 }
 
 static const struct snd_soc_dapm_widget cs5343_dapm_widgets[] = {
@@ -192,13 +136,8 @@ static const struct snd_soc_dapm_route cs5343_intercon[] = {
 static struct snd_soc_component_driver soc_component_dev_cs5343 = {
 	.probe 				= cs5343_probe,
 	.remove				= cs5343_remove,
-	//.read				= cs5343_read,
-	//.write				= cs5343_write,
-	//.set_bias_level 			= cs5343_set_bias_level,
-	//.component_driver = {
-		.dapm_widgets 		= cs5343_dapm_widgets,
-		.num_dapm_widgets = ARRAY_SIZE(cs5343_dapm_widgets),
-	//}
+	.dapm_widgets 		= cs5343_dapm_widgets,
+	.num_dapm_widgets 	= ARRAY_SIZE(cs5343_dapm_widgets),
 };
 
 static int cs5343_codec_probe(struct platform_device *pdev)

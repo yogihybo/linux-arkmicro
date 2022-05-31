@@ -23,18 +23,11 @@ obj-$(CONFIG_SND_SOC_ARK_INTERNAL_DAC) += snd-soc-ark-internal-dac.o
 obj-$(CONFIG_SND_SOC_ARK_INTERNAL_ADC) += snd-soc-ark-internal-adc.o
 
 #ark1668e
-snd-soc-ark1668e-internal-dac-objs := ark1668e_dac_codec.o
-snd-soc-ark1668e-internal-adc-objs := ark1668e_adc_codec.o
-obj-$(CONFIG_SND_SOC_ARK1668E_INTERNAL_DAC) += snd-soc-ark1668e-internal-dac.o
-obj-$(CONFIG_SND_SOC_ARK1668E_INTERNAL_ADC) += snd-soc-ark1668e-internal-adc.o
+obj-$(CONFIG_SND_SOC_ARK1668E_INTERNAL_ADAC) += ark1668e_audio_codec.o
 
 #arkn141
 snd-soc-ark-arkn141-objs := arkn141_audio.o
 obj-$(CONFIG_SND_SOC_ARK_ARKN141) += snd-soc-ark-arkn141.o
-
-#ark1668e
-snd-soc-ark1668e-audio-objs := ark1668e_audio.o
-obj-$(CONFIG_SND_SOC_ARK1668E_AUDIO) += snd-soc-ark1668e-audio.o
 
 snd-soc-ark-bd37033-objs                  := BD37033.o
 obj-$(CONFIG_SND_SOC_BD37033) += snd-soc-ark-bd37033.o

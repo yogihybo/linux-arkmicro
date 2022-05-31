@@ -7,7 +7,6 @@
 #include <sound/soc.h>
 #include <linux/io.h>
 #include <linux/slab.h>
-#include "ark_i2s_sddac_regs.h"
 //#include "cs4334.h"
 
 
@@ -42,42 +41,9 @@ struct cs4334_priv {
 	unsigned int 	vol_r;
 };
 
-static int cs4334_read(
-	struct snd_soc_component *component, unsigned int reg)
-{
-	//struct cs4334_priv *cs4334 = snd_soc_codec_get_drvdata(codec);
-	struct cs4334_priv *cs4334 = snd_soc_component_get_drvdata(component);
-	return 0;
-}
-
-static int cs4334_write(
-	struct snd_soc_component *component, unsigned int reg, unsigned int value)
-{
-	//struct cs4334_priv *cs4334 = snd_soc_codec_get_drvdata(codec);
-	struct cs4334_priv *cs4334 = snd_soc_component_get_drvdata(component);
-	return 0;
-}
-
-
-static int cs4334_mute(struct snd_soc_dai *dai, int mute)
-{
-	DBG("-->%d---\n",mute);
-	
-	return 0;
-}
-
-static int cs4334_set_bias_level(
-	struct snd_soc_component *component, enum snd_soc_bias_level level)
-{
-	
-	DBG("-->%d--------\n",level);
-	return 0;
-}
-
-
 static int cs4334_startup(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->play init start---cs4334----------\n");
 	DBG("-->play init end-------------\n");
 	return 0 ;
@@ -85,16 +51,14 @@ static int cs4334_startup(struct snd_pcm_substream *substream,
 
 static void cs4334_shutdown(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
-	//dump_stack();
-	return 0;
 }
 
 static int cs4334_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params,
 	struct snd_soc_dai *dai)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
 	return 0;
 }
@@ -102,14 +66,14 @@ static int cs4334_hw_params(struct snd_pcm_substream *substream,
 
 static int cs4334_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 				  int clk_id, unsigned int freq, int dir)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
 	return 0;
 }
 
 static int cs4334_set_dai_fmt(struct snd_soc_dai *codec_dai,
 			       unsigned int fmt)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	DBG("-->-------\n");
 	return 0;
 }
@@ -132,50 +96,32 @@ static struct snd_soc_dai_driver cs4334_dai = {
 		.rates			= SDDAC_RATES,
 		.formats		= SDDAC_FORMATS,
 	},
-	/*.capture = {
-		.stream_name = "Capture",
-		.channels_min = 1,
-		.channels_max = 2,
-		.rates = SDDAC_RATES,
-		.formats = SDDAC_FORMATS,
-	},*/
 	.ops 		= &cs4334_dai_ops,
 };
 
 
 static int cs4334_probe(struct snd_soc_component *component)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	struct cs4334_priv *cs4334;
-	int ret = -1;
 
 	DBG("-->\n");
 
-//	cs4334->mclk = devm_clk_get(codec->dev, "cs4334_mclk");
-//	if (PTR_ERR(cs4334->mclk) == -EPROBE_DEFER)
-//		return -EPROBE_DEFER;
-	
 	cs4334 = kzalloc(sizeof(struct cs4334_priv), GFP_KERNEL);
 	if (cs4334 == NULL)
 		return -ENOMEM;
 
-	//snd_soc_codec_set_drvdata(codec, cs4334);
 	snd_soc_component_set_drvdata(component, cs4334);
 	return 0;
-
-err_free_mem:
-
-	return ret;
 }
 
 static void cs4334_remove(struct snd_soc_component *component)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	//struct cs4334_priv *cs4334 = snd_soc_codec_get_drvdata(codec);
+{
 	struct cs4334_priv *cs4334 = snd_soc_component_get_drvdata(component);
 	DBG("-->\n");
 	if (cs4334)
 		kfree(cs4334);
 
-	return 0;
+	return;
 }
 
 static const struct snd_soc_dapm_widget cs4334_dapm_widgets[] = {
@@ -189,26 +135,18 @@ static const struct snd_soc_dapm_route cs4334_intercon[] = {
 //	{"Line Input", NULL, "RLINEIN"},
 };
 
-//static struct snd_soc_codec_driver soc_codec_dev_cs4334 = {
 static struct snd_soc_component_driver soc_component_dev_cs4334 = {
 	.probe 				= cs4334_probe,
 	.remove				= cs4334_remove,
-	//.read				= cs4334_read,
-	//.write				= cs4334_write,
-	//.set_bias_level 			= cs4334_set_bias_level,
-	//.component_driver = {
-		.dapm_widgets 		= cs4334_dapm_widgets,
-		.num_dapm_widgets = ARRAY_SIZE(cs4334_dapm_widgets),
-	//}
+	.dapm_widgets 		= cs4334_dapm_widgets,
+	.num_dapm_widgets 	= ARRAY_SIZE(cs4334_dapm_widgets),
 };
 
 static int cs4334_codec_probe(struct platform_device *pdev)
-{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	int ret;
 
 	DBG("-->\n");
-//	ret = snd_soc_register_codec(&pdev->dev, 
-//		&soc_codec_dev_cs4334, &cs4334_dai, 1);
 	ret = devm_snd_soc_register_component(&pdev->dev, 
 		&soc_component_dev_cs4334, &cs4334_dai, 1);
 	return ret;

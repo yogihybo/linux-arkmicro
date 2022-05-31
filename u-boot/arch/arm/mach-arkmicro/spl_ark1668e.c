@@ -14,7 +14,7 @@
 #define APBPLL_CLK	552
 #define DDRPLL_CLK  400
 #define MACPLL_CLK	1000
-#define AUDPLL_CLK	108
+#define AUDPLL_CLK	720
 
 enum sscg_clk_id {
 	SSCG_CPU,

@@ -195,58 +195,68 @@
 
 	i2s {
 		pinctrl_i2sadc_sync: i2s0-sync {
-            ark,pins =
-                <ARK_PBANK_1 7 ARK_PVAL_2>;		/* i2s0 sync */
+			ark,pins =
+				<ARK_PBANK_1 7 ARK_PVAL_2>;		/* i2s0 sync */
 			group-mux = <0x204 10 1 1>;
-        };
+		};
 
 		pinctrl_i2sadc_sadata: i2s0-sadata {
-            ark,pins =
-                <ARK_PBANK_1 8 ARK_PVAL_2>;		/* i2s0 sadata */
+			ark,pins =
+				<ARK_PBANK_1 8 ARK_PVAL_2>;		/* i2s0 sadata */
 			group-mux = <0x204 8 1 1
-						 0x204 28 1 0>;			/* sadata in */
-        };
+							0x204 28 1 0>;		/* sadata in */
+		};
 
 		pinctrl_i2sadc_mclk: i2s0-mclk {
-            ark,pins =
-                <ARK_PBANK_1 9 ARK_PVAL_2>;		/* i2s0 mclk */
-        };
+			ark,pins =
+				<ARK_PBANK_1 9 ARK_PVAL_2>;		/* i2s0 mclk */
+			group-mux = <0x14c 16 1 0>;
+		};
 
 		pinctrl_i2sadc_bclk: i2s0-bclk {
-            ark,pins =
-                <ARK_PBANK_1 10 ARK_PVAL_2>;	/* i2s0 bclk */
+			ark,pins =
+				<ARK_PBANK_1 10 ARK_PVAL_2>;	/* i2s0 bclk */
 				//<ARK_PBANK_1 10 ARK_PVAL_4>;	/* i2s1 bclk out (use for fpga i2s1 playback master mode) */
-			group-mux = <0x204 9 1 1>;
-        };
+			group-mux = <0x204 9 1 1
+							0x204 4 1 0>;
+		};
 
 		pinctrl_i2sdac_sync: i2s1-sync {
-            ark,pins =
-                <ARK_PBANK_1 11 ARK_PVAL_2>;	/* i2s1 sync */
+			ark,pins =
+				<ARK_PBANK_1 11 ARK_PVAL_2>;	/* i2s1 sync */
 			group-mux = <0x204 14 1 1>;
-        };
+		};
 
 		pinctrl_i2sdac_sadata: i2s1-sadata {
-            ark,pins =
-                <ARK_PBANK_1 12 ARK_PVAL_2>;	/* i2s1 sadata */
+			ark,pins =
+				<ARK_PBANK_1 12 ARK_PVAL_2>;	/* i2s1 sadata */
 			group-mux = <0x204 29 1 1>;			/* sadata	in/out */
-        };
+		};
+
+		pinctrl_i2sdac_sadata_in: i2s1-sadata-in {
+			ark,pins =
+				<ARK_PBANK_1 12 ARK_PVAL_2>;	/* i2s1 sadata */
+			group-mux = <0x204 29 1 0>;			/* sadata	in/out */
+		};
 
 		pinctrl_i2sdac_mclk: i2s1-mclk {
-            ark,pins =
-                <ARK_PBANK_1 13 ARK_PVAL_2>;	/* i2s1 mclk */
+			ark,pins =
+				<ARK_PBANK_1 13 ARK_PVAL_2>;	/* i2s1 mclk */
 			group-mux = <0x14c 17 1 1>;
-        };
+		};
 
 		pinctrl_i2sdac_bclk: i2s1-bclk {
-            ark,pins =
-                <ARK_PBANK_1 14 ARK_PVAL_2>;	/* i2s1 bclk */
-			group-mux = <0x204 13 1 1>;
-        };
+			ark,pins =
+				<ARK_PBANK_1 14 ARK_PVAL_2>;	/* i2s1 bclk */
+			group-mux = <0x204 13 1 1
+							0x204 5 1 1>;
+		};
 
 		pinctrl_i2sdac_sadata_out: i2s1-sadata-out {
-            ark,pins =
-                <ARK_PBANK_1 15 ARK_PVAL_2>;	/* i2s1 sadata out */
-        };
+			ark,pins =
+				<ARK_PBANK_1 15 ARK_PVAL_2>;	/* i2s1 sadata out */
+			group-mux = <0x204 12 1 0>;			/*i2s1 sadata out*/
+		};
 	};
 
 	itu {

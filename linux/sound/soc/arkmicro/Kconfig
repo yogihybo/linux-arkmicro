@@ -59,19 +59,9 @@ config SND_SOC_ARK1668E_I2S
 	  Say Y or M if you want to add support for I2S driver for
 	  Arkmciro I2S device.
 
-config SND_SOC_ARK1668E_INTERNAL_DAC
-	tristate "ARK1668E Internal DAC for Audio out"
+config SND_SOC_ARK1668E_INTERNAL_ADAC
+	tristate "ARK1668E Internal audio codec for Audio In/out"
 	depends on SND_SOC_ARK && SND_SOC_ARK1668E_I2S
-
-config SND_SOC_ARK1668E_INTERNAL_ADC
-	tristate "ARK1668E Internal ADC for Audio In"
-	depends on SND_SOC_ARK && SND_SOC_ARK1668E_I2S
-
-config ARK1668E_I2S_FULL_DUPLEX_MODE
-	tristate "ARK1668E i2s full-duplex mode support"
-	depends on SND_SOC_ARK1668E_I2S
-	help
-		Say Y here if you want to use ark1668e internal i2s full-duplex mode on the Arkmicro platform.
 
 config SND_SOC_BD37033
         tristate "Support Audio BD37033 IC Driver"
