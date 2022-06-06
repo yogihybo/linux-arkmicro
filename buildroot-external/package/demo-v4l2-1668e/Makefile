@@ -6,7 +6,7 @@ SRCS = main.c
 
 INC = -I./include -I./include/sys
 LDFLAGS += -L./lib
-DLIBS = -lmfc -larkapi -lpthread  -lrt -lGAL
+DLIBS = -lpthread  -lrt
 OBJS = $(SRCS:.c=.o)
 
 #CFLAGS += -DgcdENABLE_3D=0
