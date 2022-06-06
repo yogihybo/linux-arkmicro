@@ -407,11 +407,19 @@ static u16 musb_h_flush_rxfifo(struct musb_hw_ep *hw_ep, u16 csr)
 	 * ignore dma (various models),
 	 * leave toggle alone (may not have been saved yet)
 	 */
+#if NICHOLAS_ADD
+	csr |= MUSB_RXCSR_FLUSHFIFO;
+	musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
+	csr &= ~(MUSB_RXCSR_H_REQPKT
+		| MUSB_RXCSR_H_AUTOREQ
+		| MUSB_RXCSR_AUTOCLEAR
+		| MUSB_RXCSR_RXPKTRDY);
+#else
 	csr |= MUSB_RXCSR_FLUSHFIFO | MUSB_RXCSR_RXPKTRDY;
 	csr &= ~(MUSB_RXCSR_H_REQPKT
 		| MUSB_RXCSR_H_AUTOREQ
 		| MUSB_RXCSR_AUTOCLEAR);
-
+#endif
 	/* write 2x to allow double buffering */
 	musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
 	musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
@@ -928,7 +936,12 @@ finish:
 				csr = MUSB_RXCSR_H_WR_DATATOGGLE
 					| MUSB_RXCSR_H_DATATOGGLE;
 			else
+#if NICHOLAS_ADD
+				csr |= MUSB_RXCSR_CLRDATATOG;
+#else
 				csr = 0;
+#endif
+
 			if (qh->type == USB_ENDPOINT_XFER_INT)
 				csr |= MUSB_RXCSR_DISNYET;
 
@@ -1483,7 +1496,14 @@ done:
 				done = true;
 			if (!done) {
 				offset = qh->offset;
+#if NICHOLAS_ADD
+				if (can_bulk_split(musb, qh->type))
+					length = min((u32) hw_ep->max_packet_sz_tx, urb->transfer_buffer_length - offset);
+				else
+					length = min((u32) qh->maxpacket, urb->transfer_buffer_length - offset);
+#else
 				length = urb->transfer_buffer_length - offset;
+#endif
 				transfer_pending = true;
 			}
 		}
@@ -1781,6 +1801,13 @@ static int musb_rx_dma_in_inventra_cppi41(struct dma_controller *dma,
 	 * transfer_buffer_length needs to be
 	 * adjusted first...
 	 */
+
+#if NICHOLAS_ADD
+	//Nicholas fix bug
+	if(length > urb->transfer_buffer_length)
+		length = urb->transfer_buffer_length;
+#endif
+
 	done = dma->channel_program(channel, qh->maxpacket,
 				   channel->desired_mode,
 				   buf, length);
@@ -2050,10 +2077,16 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 				urb->transfer_buffer_length);
 
 			if (musb_rx_dma_in_inventra_cppi41(c, hw_ep, qh, urb,
-							   xfer_len, iso_err))
+							   xfer_len, iso_err)) {
 				goto finish;
-			else
+			}
+			else {
+#if NICHOLAS_ADD
+				dma = NULL;
+#else
 				dev_err(musb->controller, "error: rx_dma failed\n");
+#endif
+			}
 		}
 
 		if (!dma) {

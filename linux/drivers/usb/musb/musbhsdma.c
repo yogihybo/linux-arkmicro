@@ -51,7 +51,7 @@
 #define MUSB_HSDMA_BURSTMODE_INCR8	2
 #define MUSB_HSDMA_BURSTMODE_INCR16	3
 
-#define MUSB_HSDMA_CHANNELS		8
+#define MUSB_HSDMA_CHANNELS		4
 
 struct musb_dma_controller;
 
@@ -120,7 +120,7 @@ static struct dma_channel *dma_channel_allocate(struct dma_controller *c,
 			channel = &(musb_channel->channel);
 			channel->private_data = musb_channel;
 			channel->status = MUSB_DMA_STATUS_FREE;
-			channel->max_len = 0x400;
+			channel->max_len = 0x200;
 			/* Tx => mode 1; Rx => mode 0 */
 			channel->desired_mode = transmit;
 			channel->actual_len = 0;
@@ -191,6 +191,10 @@ static int dma_channel_program(struct dma_channel *channel,
 	struct musb_dma_controller *controller = musb_channel->controller;
 	struct musb *musb = controller->private_data;
 
+#if NICHOLAS_ADD
+	if(len <= 64)
+		return false;
+#endif
 	musb_dbg(musb, "ep%d-%s pkt_sz %d, dma_addr %pad length %d, mode %d",
 		musb_channel->epnum,
 		musb_channel->transmit ? "Tx" : "Rx",

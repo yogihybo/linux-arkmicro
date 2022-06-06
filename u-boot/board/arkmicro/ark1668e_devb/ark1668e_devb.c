@@ -37,6 +37,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define rSYS_MFC_GMAC_CTL		*((volatile unsigned int *)(0xe490020c))
 #define rSYS_DEVICE_CLK_CFG7	*((volatile unsigned int *)(0xe4900230))
 #define rSYS_DEVICE_CLK_CFG8	*((volatile unsigned int *)(0xe4900234))
+#define rSYS_USB_CFG			*((volatile unsigned int *)(0xe4900260))
+#define rSYS_USB1_CFG			*((volatile unsigned int *)(0xe490026C))
 
 #define rWDT_CR		*((volatile unsigned int *)(0xe4b00000))
 
@@ -116,6 +118,10 @@ static void usb_controller_reset(void)
 	udelay(100);
 	rSYS_SOFT_RSTNA |= 3 << 5;
 	udelay(10);
+	/* enhance usb driving capability */
+	rSYS_USB_CFG = 0x3c2e0020;
+	udelay(10);
+	rSYS_USB1_CFG = 0x3c2e0020;
 }
 
 #define ARK_MMC_CLK     	24000000
