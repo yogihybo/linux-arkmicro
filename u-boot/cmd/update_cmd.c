@@ -56,8 +56,6 @@ static int burn_data_2_partition(char *partition_name)
 
 	file_size = env_get_ulong("filesize", 16, 0x2000);
 
-//      sprintf(cmd, "nand write ${loadaddr} %s ${filesize}",partition_name);
-
 	sprintf(cmd, "nand write %s %s 0x%x", env_get("loadaddr"), partition_name, file_size);
 	printf("cmd=%s\n", cmd);
 	ret = run_command(cmd, 0);
@@ -164,10 +162,12 @@ int do_Update_flash(cmd_tbl_t * cmdtp, int flag, int argc, char *const argv[])
 	printf("\r\n **** update from update bootloader .....\r\n");
 	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "bootloader", "u-boot.img");
 	printf("cmd=%s\n", cmd);
-	run_command(cmd, 0);
-	sprintf((char *)cmd,"disconfig 15");
-	run_command(cmd, 0);
-
+	ret = run_command(cmd, 0);
+	if(ret == 0)
+	{
+		sprintf((char *)cmd,"disconfig 15");
+		run_command(cmd, 0);
+	}
 
 	printf("\r\n **** update from update fdt .....\r\n");
 	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "fdt", update_fdt);
@@ -178,11 +178,11 @@ int do_Update_flash(cmd_tbl_t * cmdtp, int flag, int argc, char *const argv[])
 	{
 		sprintf(cmd, "setenv fdtsize %s",env_get("filesize"));
 		run_command(cmd, 0);
-		printf("cmd=%s\n", cmd);	
+		printf("cmd=%s\n", cmd);
 		mdelay(30);
+		sprintf((char *)cmd,"disconfig 20");
+		run_command(cmd, 0);
 	}
-    sprintf((char *)cmd,"disconfig 20");
-    run_command(cmd, 0);
 
 	printf("\r\n **** update from update kernel .....\r\n");
 	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "kernel", "zImage");
@@ -194,10 +194,10 @@ int do_Update_flash(cmd_tbl_t * cmdtp, int flag, int argc, char *const argv[])
 		sprintf(cmd, "setenv kernelsize %s",env_get("filesize"));
 		printf("cmd=%s\n", cmd);
 		run_command(cmd, 0);
+		sprintf((char *)cmd,"disconfig 30");
+		run_command(cmd, 0);
 	}
-    sprintf((char *)cmd,"disconfig 35");
-    run_command(cmd, 0);
-        
+
 	printf("\r\n **** update from update rootfs .....\r\n");
 	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "rootfs", "rootfs.ubi");
 	printf("cmd=%s\n", cmd);
@@ -207,19 +207,53 @@ int do_Update_flash(cmd_tbl_t * cmdtp, int flag, int argc, char *const argv[])
 	{
 		sprintf(cmd, "setenv rootfssize %s",env_get("filesize"));
 		printf("cmd=%s\n", cmd);
-		run_command(cmd, 0);	
+		run_command(cmd, 0);
 		mdelay(30);
+		sprintf((char *)cmd,"disconfig 70");
+		run_command(cmd, 0);
 	}
-    sprintf((char *)cmd,"disconfig 80");
-    run_command(cmd, 0);
+
+	printf("\r\n **** update from update bootanimation .....\r\n");
+	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "bootanimation", "bootanimation");
+	printf("cmd=%s\n", cmd);
+	ret = run_command(cmd, 0);
+	mdelay(30);
+	if(ret == 0)
+	{
+		sprintf(cmd, "setenv bootanimationsize %s",env_get("filesize"));
+		printf("cmd=%s\n", cmd);
+		run_command(cmd, 0);
+		mdelay(30);
+		sprintf((char *)cmd,"disconfig 75");
+		run_command(cmd, 0);
+	}
+
+	printf("\r\n **** update from update reversingtrack .....\r\n");
+	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "reversingtrack", "reversingtrack");
+	printf("cmd=%s\n", cmd);
+	ret = run_command(cmd, 0);
+	mdelay(30);
+	if(ret == 0)
+	{
+		sprintf(cmd, "setenv reversingtracksize %s",env_get("filesize"));
+		printf("cmd=%s\n", cmd);
+		run_command(cmd, 0);
+		mdelay(30);
+		sprintf((char *)cmd,"disconfig 80");
+		run_command(cmd, 0);
+	}
 
 	printf("\r\n **** update from update bootloader back.....\r\n");
-	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "bootloader_back", "u-boot.img");
+	sprintf(cmd, "Updata 0x%x 0x%x %s %s", NFLASH, index, "bootloader_bak", "u-boot.img");
 	printf("cmd=%s\n", cmd);
-	run_command(cmd, 0);
-    sprintf((char *)cmd,"disconfig 90");
-    run_command(cmd, 0);
+	ret = run_command(cmd, 0);
+	if(ret == 0)
+	{
+		sprintf((char *)cmd,"disconfig 90");
+		run_command(cmd, 0);
+	}
 
+	printf("##set update_from_flash no##\n");
 	env_set("update_from_flash", "no");
 	mdelay(10);
 	env_set("need_update", "no");

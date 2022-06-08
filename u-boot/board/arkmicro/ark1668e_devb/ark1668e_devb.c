@@ -263,12 +263,12 @@ int board_late_init(void)
 #endif
 
 	update_flash = env_get("update_from_flash");
-        printf("++++++++++%s+++++++\n",update_flash);
 	need_update = env_get("need_update");
+	printf("###need_update %s,update_flash %s####\n",need_update,update_flash);
 	if (!strcmp(need_update, "yes")) {
 		loadaddr = env_get_hex("loadaddr", 0);
 		if (loadaddr)
-			memset(loadaddr, 0, strlen(ARK1668_UPDATE_MAGIC));
+			memset((void*)loadaddr, 0, strlen(ARK1668_UPDATE_MAGIC));
 		sprintf(cmd, "fatload %s %s %s update-magic", "mmc", env_get("sd_dev_part"), env_get("loadaddr"));
 		run_command(cmd, 0);
 		if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {
@@ -301,7 +301,6 @@ int board_late_init(void)
 update_done:
 	if (do_update) {
 		run_command("nand erase.part userdata", 0);
-		env_set("need_update", "no");
 		env_set("do_update", "yes");
 		if (update_from_mmc) {
 			printf("update form mmc...\n");

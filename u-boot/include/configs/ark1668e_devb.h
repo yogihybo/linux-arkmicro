@@ -25,7 +25,7 @@
 #define CONFIG_NR_DRAM_BANKS			1
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
 #define CONFIG_SYS_SDRAM_SIZE		SZ_64M
-#define CONFIG_SYS_MALLOC_LEN		0x80000
+#define CONFIG_SYS_MALLOC_LEN		0x400000
 
 #ifdef CONFIG_SPL_BUILD
 #define CONFIG_SYS_INIT_SP_ADDR		0x308000
@@ -94,6 +94,10 @@
 		"nand erase.part reversingtrack; " \
 		"nand write ${loadaddr} reversingtrack ${filesize}; " \
 		"else setenv reversingtracksize 0; fi\0" \
+	"bootloaderupdate_back=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} u-boot.img; " \
+		"then setenv bootloadersize ${filesize}; " \
+		"nand erase.part bootloader_bak; " \
+		"nand write ${loadaddr} bootloader_bak ${filesize}; fi\0" \
 	"nandargs=setenv bootargs console=ttyS0,115200 " \
 		"earlyprintk  loglevel=8 clk_ignore_unused lpj=2285568 enable_console " \
 		"${mtdparts} " \
@@ -220,8 +224,9 @@
 		"bootz ${kerneladdr} - ${fdtaddr}\0"
 
 /* Environment */
-#define CONFIG_ENV_SIZE			4096	//CONFIG_PARTITION_UBOOT_ENV_SIZE
-#define CONFIG_ENV_OFFSET		0xA0000
+#define CONFIG_ENV_SIZE			8192	//CONFIG_PARTITION_UBOOT_ENV_SIZE
+#define CONFIG_ENV_OFFSET		0x240000
+#define CONFIG_ENV_OFFSET_REDUND	0x2C0000
 
 #define CONFIG_SYS_LOAD_ADDR	(CONFIG_SYS_SDRAM_BASE + 0x1000000)
 
@@ -309,6 +314,7 @@
 	"reversingtrackaddr=0x5ea00000\0" \
 	"reversingtracksize=0\0" \
 	"ipaddr=192.168.5.66\0" \
+	"nandfdt="CONFIG_DEFAULT_FDT_FILE"\0" \
 	NANDARGS
 
 #define CONFIG_BOOTCOMMAND	\
@@ -337,8 +343,13 @@
 		"echo update reversingtrack ...; " \
 		"run reversingtrackupdate; " \
 		"disconfig 90; "\
-		"setenv do_update no; " \
+		"echo update bootloader back ...; " \
+		"run bootloaderupdate_back; " \
 		"disconfig 95; "\
+		"setenv do_update no; " \
+		"echo set need_update no ...; " \
+		"setenv need_update no; " \
+		"disconfig 97; "\
 		"saveenv; " \
 		"disconfig 100; "\
 		"run nandboot; " \

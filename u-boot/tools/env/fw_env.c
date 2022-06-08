@@ -82,7 +82,7 @@ static int dev_current;
 #define DEVTYPE(i)    envdevices[(i)].mtd_type
 #define IS_UBI(i)     envdevices[(i)].is_ubi
 
-#define CUR_ENVSIZE 	0x1000//ENVSIZE(dev_current)
+#define CUR_ENVSIZE 	ENVSIZE(dev_current)
 #define USE_THE_EMMC       0
 
 static unsigned long usable_envsize;

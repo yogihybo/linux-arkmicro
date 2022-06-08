@@ -11,8 +11,16 @@
 #ln -sf libEGL.so.1 libEGL.so
 
 #install modules to target
+UBOOT_DIR=${BR2_EXTERNAL_ARK_PATH}/../u-boot
+UBOOT_OUTPUT_DIR=${BR2_EXTERNAL_ARK_PATH}/../output/board/ark1668e_devb/u-boot
+
 source ${BR2_EXTERNAL_ARK_PATH}/../env.source
 cd ${BR2_EXTERNAL_ARK_PATH}/../output/board/ark1668e_devb/linux
 make INSTALL_MOD_PATH=${TARGET_DIR} modules_install
+
+cp -f ${UBOOT_OUTPUT_DIR}/tools/env/fw_printenv ${TARGET_DIR}/usr/bin/
+cp ${UBOOT_DIR}/tools/env/fw_env.config ${TARGET_DIR}/etc
+cd ${TARGET_DIR}/usr/bin/ && \
+   ln -sf fw_printenv fw_setenv
 
 #sed -i '/# GENERIC_SERIAL$/s~^.*#~::respawn:-/bin/sh #~' ${TARGET_DIR}/etc/inittab
