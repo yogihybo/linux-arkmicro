@@ -51,7 +51,7 @@ int dvr_enter_carback(void);
 int dvr_exit_carback(void);
 static int vin_start(struct dvr_dev *dvr_dev);
 static void vin_init(struct ark1668e_vin_device *vin, struct vin_para *para);
-static void vin_exit(void);
+static int vin_exit(void);
 static inline void vin_reset(void);
 static int vin_aux_config(struct vin_para* para);
 static int vin_aux_start(struct dvr_dev *dvr_dev);
@@ -105,12 +105,13 @@ static int vin_buffer_prepare(struct vb2_buffer *vb)
 static int vin_config(void)
 {
 	struct ark1668e_vin_device* vin = NULL;
-	int ret = 0;
+	int ret;
 	vin = g_ark1668e_vin;
 	memset(&vin->dvr_dev->itu656in,0,sizeof(struct vin_para));
+	
 	vin->dvr_dev->itu656in.source = DVR_SOURCE_CAMERA;
 
-    if(!vin->sd_init){
+	if(!vin->sd_init){
 	    ret = v4l2_subdev_call(vin->current_subdev->sd,core,init,0);
 		if(ret < 0){
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
@@ -118,7 +119,6 @@ static int vin_config(void)
 		}
 		vin->sd_init = 1;
 	}
-	
 	if(vin->dvr_dev->chip_info == TYPE_RN6752){
 		ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_ENTER_CARBACK,0);
 		if(ret < 0){
@@ -133,18 +133,19 @@ static int vin_config(void)
 		printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
 		return ret;
 	}
- 
+	
 	ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_GET_PROGRESSIVE,&vin->dvr_dev->itu656in.progressive);
 	if(ret < 0){
 		printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
 		return ret;
 	}
 	memcpy(&vin->dvr_dev->itu656in_back, &vin->dvr_dev->itu656in, sizeof(struct vin_para));
+	vin_reset();
 	vin_init(vin, &vin->dvr_dev->itu656in);	
 	vin->dvr_dev->channel = g_ark1668e_vin->app_channel_set;
 	vin_start(vin->dvr_dev);
 	spin_unlock(&vin->dvr_dev->spin_lock);
-	return ret;
+	return 0;
 }
 
 static int vin_aux_config(struct vin_para* para)
@@ -193,6 +194,7 @@ static int vin_aux_config(struct vin_para* para)
 	vin->dvr_dev->interlace = !para->progressive;
 	memcpy(&vin->dvr_dev->itu656in_back, para, sizeof(struct vin_para));
 	vin_reset();
+	vin->dvr_dev->scale_framebuf_index = 0;
 	vin->dvr_dev->carback_exit_status = 0;
 	spin_unlock(&vin->dvr_dev->spin_lock);
 	return 0;
@@ -203,7 +205,7 @@ static void vin_setaddr(struct ark1668e_vin_device *vin)
 	dma_addr_t addr_dma;
 	/* Get the physical address of the assigned BUF  */
 	addr_dma = vb2_dma_contig_plane_dma_addr(&vin->cur_frm->vb.vb2_buf, 0);
-	printk("vin_setaddr addr_dma  : 0x%x\n",addr_dma);
+	//printk("vin_setaddr addr_dma  : 0x%x\n",addr_dma);
 	vin_writel(ARK1668E_ITU656_DRAM_DEST1, addr_dma);
 	vin_writel(ARK1668E_ITU656_DRAM_DEST1,addr_dma + vin->dvr_dev->src_width*vin->dvr_dev->src_height);
 }
@@ -230,7 +232,7 @@ static int vin_start_streaming(struct vb2_queue *vq, unsigned int count)
 	vin->stop = false;
 	reinit_completion(&vin->comp);
 	vin->cur_frm = list_first_entry(&vin->ark_queue,struct vin_buffer, list);
-	printk(KERN_DEBUG "start_streaming->get out buf: %p\n",vin->cur_frm->vb.vb2_buf.planes[0].mem_priv);
+	//printk(KERN_DEBUG "start_streaming->get out buf: %p\n",vin->cur_frm->vb.vb2_buf.planes[0].mem_priv);
 	list_del(&vin->cur_frm->list);
 	vin_setaddr(vin);
 	//spin_unlock_irqrestore(&vin->ark_queue_lock, flags);
@@ -270,8 +272,8 @@ static void vin_buffer_queue(struct vb2_buffer *vb)
 	/*app buf physical address can be obtained directly from this variable */
 	vb->planes[0].m.offset = addr_dma;
 
-	printk(KERN_DEBUG "!vin->cur_frm = %d,list_empty(&vin->ark_queue)= %d,vb2_is_streaming(vb->vb2_queue) = %d\n",!vin->cur_frm,list_empty(&vin->ark_queue),vb2_is_streaming(vb->vb2_queue));
-	//spin_lock_irqsave(&vin->ark_queue_lock, flags);
+	//printk(KERN_DEBUG "!vin->cur_frm = %d,list_empty(&vin->ark_queue)= %d,vb2_is_streaming(vb->vb2_queue) = %d\n",!vin->cur_frm,list_empty(&vin->ark_queue),vb2_is_streaming(vb->vb2_queue));
+	
 	if (!vin->cur_frm && list_empty(&vin->ark_queue) && vb2_is_streaming(vb->vb2_queue)){
 		vin->cur_frm = buf;
 		vin_setaddr(vin);
@@ -285,7 +287,6 @@ static void vin_buffer_queue(struct vb2_buffer *vb)
 			vin_setaddr(vin);
 		}
 	}
-	//spin_unlock_irqrestore(&vin->ark_queue_lock, flags);
 	
 }
 
@@ -393,18 +394,9 @@ static int vin_enum_input(struct file *file, void *priv,struct v4l2_input *inp)
 static int vin_g_input(struct file *file, void *priv, unsigned int *i)
 {
 	struct ark1668e_vin_device* vin = NULL;
-	int signal = 0;
-	int ret;
 	vin = g_ark1668e_vin;
-	spin_lock(&vin->dvr_dev->spin_lock);
-	ret = v4l2_subdev_call(vin->current_subdev->sd,video,g_input_status,&signal);
-	if(ret < 0){
-		printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
-		return ret;
-	}
-	*i = !signal;
-	spin_unlock(&vin->dvr_dev->spin_lock);
-	return ret;
+	*i = vin->dvr_dev->carback_signal;
+	return vin->dvr_dev->carback_signal;
 }
 
 static int vin_s_input(struct file *file, void *priv, unsigned int i)
@@ -462,6 +454,7 @@ static long vin_ioctl_default(struct file *file, void *priv,
 
 		case VIN_START:
 		{
+			g_ark1668e_vin->aux_status = 1;
 			vin_aux_start(dvr_dev);
 			break;
 		}
@@ -470,13 +463,14 @@ static long vin_ioctl_default(struct file *file, void *priv,
 		{
 			vin_aux_exit();
 			g_ark1668e_vin->aux_flag = 0;
+			g_ark1668e_vin->aux_status = 0;
 			break;
 		}
 
 		case VIN_SWITCH_CHANNEL:
 		{
 			int source = *((int *)param);
-			int ret;
+ 
 			if (source == DVR_SOURCE_AUX)
 				dvr_dev->channel = ARK7116_AV1;
 			else if (source == DVR_SOURCE_CAMERA)
@@ -672,10 +666,8 @@ void dvr_restart(void)
 	if(!vin->dvr_dev->carback_exit_status)
 	{
 		ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_GET_PROGRESSIVE,&vin->dvr_dev->itu656in.progressive);
-		if(ret < 0){
+		if(ret < 0)
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
-			return ret;
-		}
 
 		vin->dvr_dev->interlace = !vin->dvr_dev->itu656in.progressive;
 		ark_vin_disable_write();
@@ -710,6 +702,13 @@ int dvr_enter_carback(void)
 		vin->sd_init = 1;
 	}
 	if(vin->dvr_dev->chip_info == TYPE_RN6752){
+		if(vin->aux_status){
+			ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_SET_AVIN_MODE,0);
+			if(ret < 0){
+				printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
+				return ret;
+			}
+		}
 		ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_ENTER_CARBACK,0);
 		if(ret < 0){
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
@@ -746,27 +745,26 @@ int dvr_exit_carback(void)
 	int ret;
 	vin = g_ark1668e_vin;
 
-	if(!vin->aux_status)
+	if(!vin->aux_status){
 		vin->dvr_dev->carback_exit_status = 1;
+	}
+	if(vin->aux_status){
+		//The track layer is closed here to solve the abnormal display problem of only one track layer when carback and AVIN switch  
+		ark_disp_set_layer_en(2, 0);
+	}
 	vin->stream_flag = vin->vin_status;
 	ark_disp_set_layer_en(DISPLAY_LAYER, 0);
 	spin_lock(&vin->dvr_dev->spin_lock);
+	vin->dvr_dev->vin_mirror_config = MIRROR_NO;
 	vin->dvr_dev->work_status = 0;
 	vin->dvr_dev->scale_framebuf_index = 0;
 	vin->dvr_dev->show_video = 0;
 	vin->dvr_dev->carback_signal = 0;
+	vin->dvr_dev->layer_status = 0;
 	msleep(20);
 	ark_vin_disable_write(); /*stop write data back*/
 	ark_vin_disable();
 	spin_unlock(&vin->dvr_dev->spin_lock);
-	if(vin->aux_status){
-		vin_aux_config(&vin->dvr_dev->itu656in_back);
-		vin_aux_start(vin->dvr_dev);
-	}
-
-	if(vin->aux_status){
-		ark_disp_set_layer_en(DISPLAY_LAYER, 1);
-	}
 
 	if(vin->dvr_dev->chip_info == TYPE_RN6752){
 		ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_EXIT_CARBACK,0);
@@ -774,18 +772,38 @@ int dvr_exit_carback(void)
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
 			return ret;
 		}
+		if(vin->aux_status){
+			ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_SET_AVIN_MODE,0);
+			if(ret < 0){
+				printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
+				return ret;
+			}
+		}
 	}
+
+	if(vin->aux_status){
+		vin_aux_config(&vin->dvr_dev->itu656in_back);
+		vin_aux_start(vin->dvr_dev);
+	}
+
 	return 0;
 }
 EXPORT_SYMBOL(dvr_exit_carback);
+
+int dvr_set_mirror(int value)
+{
+	g_ark1668e_vin->dvr_dev->vin_mirror_config = value;
+	return 0;
+}
+EXPORT_SYMBOL(dvr_set_mirror);
 
 int dvr_get_pragressive(void)
 {
 	int pragressive;
 
-	spin_lock(&g_ark1668e_vin->dvr_dev->spin_lock);
+	//spin_lock(&g_ark1668e_vin->dvr_dev->spin_lock);
 	pragressive = !g_ark1668e_vin->dvr_dev->interlace;
-	spin_unlock(&g_ark1668e_vin->dvr_dev->spin_lock);
+	//spin_unlock(&g_ark1668e_vin->dvr_dev->spin_lock);
 	
 	return pragressive;
 }
@@ -794,47 +812,44 @@ EXPORT_SYMBOL(dvr_get_pragressive);
 static void vin_get_signal_work(struct work_struct *work)
 {
 	struct ark1668e_vin_device* vin = NULL;
-	int signal = 0,ret,detect_count;
+	int signal = 0,ret;
 	vin = g_ark1668e_vin;
 	if(!vin->dvr_dev->carback_exit_status){
 		ret = v4l2_subdev_call(vin->current_subdev->sd,video,g_input_status,&signal);
-		if(ret < 0){
+		if(ret < 0)
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
-			return ret;
-		}
 
 		if(!signal){
 			vin->dvr_dev->carback_signal = 1;       
 		}else{
 			vin->dvr_dev->carback_signal = 0;        //no signal
 		}
-		if (vin->dvr_dev->show_video) {
+		if (vin->dvr_dev->show_video && vin->dvr_dev->vin_buffer_status) {
 			if(vin->dvr_dev->carback_signal)
 			{
 				if(vin->dvr_dev->first_show_flag){
-					if(vin->dvr_dev->signal_flag == 30){
+					if(vin->dvr_dev->signal_flag == 20){
 					printk(KERN_ALERT "ark_vin_display_int_handler-->show_video\n");
+					ark_vin_display_init(DISPLAY_LAYER,vin->dvr_dev->screen_width,vin->dvr_dev->screen_height,vin->dvr_dev->screen_xpos,vin->dvr_dev->screen_ypos);
 					ark_disp_set_layer_en(DISPLAY_LAYER, 1);
 					vin->dvr_dev->layer_status = 1;
 					vin->dvr_dev->show_video = 0;
 					vin->dvr_dev->signal_flag = 0;
 					vin->dvr_dev->first_show_flag = 0;
 					}else{
+						vin->dvr_dev->layer_status = 0;
 						vin->dvr_dev->signal_flag++;
 					}
 				}else{
-					if(vin->dvr_dev->chip_info == TYPE_RN6752){
-						detect_count = 30;
-					}else{
-						detect_count = 20;
-					}
-					if(vin->dvr_dev->signal_flag == detect_count){
+					if(vin->dvr_dev->signal_flag == 10){
 						printk(KERN_ALERT "ark_vin_display_int_handler-->show_video\n");
+						ark_vin_display_init(DISPLAY_LAYER,vin->dvr_dev->screen_width,vin->dvr_dev->screen_height,vin->dvr_dev->screen_xpos,vin->dvr_dev->screen_ypos);
 						ark_disp_set_layer_en(DISPLAY_LAYER, 1);
 						vin->dvr_dev->layer_status = 1;
 						vin->dvr_dev->show_video = 0;
 						vin->dvr_dev->signal_flag = 0;
 					}else{
+						vin->dvr_dev->layer_status = 0;
 						vin->dvr_dev->signal_flag++;
 					}
 				}
@@ -876,7 +891,7 @@ EXPORT_SYMBOL(dvr_get_layer_status);
 void ark_vin_scale_work(struct work_struct *work)
 {
 	struct ark1668e_vin_device* vin = NULL;
-	int format,oformat,readaddr,dstaddr;
+	int format,oformat,dstaddr;
 	vin = g_ark1668e_vin;
 	if (vin->dvr_dev->work_status){
 		memset(&scale_param,0,sizeof(struct ark_scale_param));
@@ -885,6 +900,7 @@ void ark_vin_scale_work(struct work_struct *work)
 
 		dstaddr = vin->dvr_dev->scalebuf_phyaddr[vin->dvr_dev->scale_framebuf_index];
 		vin->dvr_dev->scale_framebuf_index = (vin->dvr_dev->scale_framebuf_index + 1) % ITU656_SCALE_FRAME_NUM;
+		//int readaddr;
 		//readaddr = ark_vin_get_display_addr();
 		//if(readaddr == dstaddr){
 		//	ark1668e_lcdc_wait_for_vsync();
@@ -895,25 +911,26 @@ void ark_vin_scale_work(struct work_struct *work)
 		scale_param.ivaddr = 0;
 		scale_param.ix = 0;
 		scale_param.iy = 0;
-		scale_param.iwinwidth = vin ->dvr_dev->src_width;
-		scale_param.iwinheight = vin ->dvr_dev->src_height;
-		scale_param.iwidth = vin ->dvr_dev->src_width;
-		scale_param.iheight = vin ->dvr_dev->src_height;
+		scale_param.iwinwidth = vin->dvr_dev->src_width;
+		scale_param.iwinheight = vin->dvr_dev->src_height;
+		scale_param.iwidth = vin->dvr_dev->src_width;
+		scale_param.iheight = vin->dvr_dev->src_height;
 		scale_param.iformat = format;
 		scale_param.left_cut = 0;
 		scale_param.right_cut = 25;
 		scale_param.up_cut = 0;
 		scale_param.bottom_cut = 15;
-		scale_param.owidth = vin ->dvr_dev->screen_width;
-		scale_param.oheight = vin ->dvr_dev->screen_height;
+		scale_param.owidth = vin->dvr_dev->screen_width;
+		scale_param.oheight = vin->dvr_dev->screen_height;
 		scale_param.oyaddr = dstaddr;
 		scale_param.ouaddr = 0;
 		scale_param.ovaddr = 0;
 		scale_param.oformat = oformat;
 		scale_param.rotate = 0;
 		ark_scale_start(scale_context,&scale_param);
-		
+
 		ark_vin_display_addr(dstaddr);
+		vin->dvr_dev->vin_buffer_status = 1;
 	}
 }
 
@@ -921,7 +938,7 @@ int ark_vin_display_int_handler(void)
 {
 	struct ark1668e_vin_device* vin = NULL;
 	unsigned int count = 0;
-	int i,frame_id,ret,signal;
+	int i,frame_id;
 	vin = g_ark1668e_vin;
 	if(!vin || !vin->dvr_dev || !vin->dvr_dev->work_status)
 		return -1;
@@ -1031,26 +1048,21 @@ static irqreturn_t ark_vin_int_handler(int irq, void *dev_id)
 	if(intr_stat & (1<<10))
 	{
 		printk(KERN_ALERT "pop error.\n");
-#if 0     //v4l2_stream 
-		list_for_each_entry(buf, &g_ark1668e_vin->ark_queue, list){
-			g_ark1668e_vin->cur_frm = buf;
-			vin_setaddr(g_ark1668e_vin);
-		}
-#endif
 		arkvin_frame_test_and_push(dvr_dev, frame_id);
 		push_frame_state = 1;
 	}	
 	if(intr_stat & TOTAL_LINE_CHANGED_INTERRUPT)
 	{
 		dvr_dev->show_video = 0;
-		/*in order to solve the problem that the track line can not be transparent when reversing plug and pull signal*/
-		
-		//if(!vin->stream_flag)
-		//ark_disp_set_layer_en(DISPLAY_LAYER, 0);
+		if(!vin->stream_flag)
+			ark_vin_display_init(DISPLAY_LAYER,0,0,0,0);
 		if (dvr_dev->itu656in.tvout)
 			ark_disp_set_layer_en(TVOUT_LAYER, 0);
 		ark_vin_disable_write();
-		mod_timer(&dvr_dev->timer, jiffies +  msecs_to_jiffies(50));
+		if(vin->dvr_dev->chip_info == TYPE_RN6752)
+			mod_timer(&dvr_dev->timer, jiffies +  msecs_to_jiffies(150));
+		else
+			mod_timer(&dvr_dev->timer, jiffies +  msecs_to_jiffies(50));
 	}	
 	
 	if (!dvr_dev->work_status) goto end; 
@@ -1061,7 +1073,7 @@ static irqreturn_t ark_vin_int_handler(int irq, void *dev_id)
 		if(vin->stream_flag){
 			spin_lock(&vin->ark_queue_lock);
 			if (vin->cur_frm) {
-				printk(KERN_DEBUG "v4l2 streaming vb2_buffer_done...\n");
+				//printk(KERN_DEBUG "v4l2 streaming vb2_buffer_done...\n");
 				vb = &vin->cur_frm->vb.vb2_buf;
 				vb->timestamp = ktime_get_ns();
 				vin->cur_frm->vb.sequence = vin->sequence++;
@@ -1071,7 +1083,7 @@ static irqreturn_t ark_vin_int_handler(int irq, void *dev_id)
 			if (!list_empty(&vin->ark_queue) && !vin->stop) {
 				vin->cur_frm = list_first_entry(&vin->ark_queue,
 							     struct vin_buffer, list);
-				printk(KERN_DEBUG "INT->get out buf: %p\n",vin->cur_frm->vb.vb2_buf.planes[0].mem_priv);
+				//printk(KERN_DEBUG "INT->get out buf: %p\n",vin->cur_frm->vb.vb2_buf.planes[0].mem_priv);
 				list_del(&vin->cur_frm->list);
 				vin_setaddr(vin);
 			}
@@ -1195,7 +1207,7 @@ static void ark_vin_reg_init(struct dvr_dev *dvr_dev)
     vin_writel(ARK1668E_ITU656_ENABLE_REG, val);
 
 	val = vin_readl(ARK1668E_ITU656_MIRR_SET);
-    val = 0x0;
+    val = g_ark1668e_vin->dvr_dev->vin_mirror_config;
     vin_writel(ARK1668E_ITU656_MIRR_SET, val);
 
 	val = vin_readl(ARK1668E_ITU656_OUTPUT_TYPE);
@@ -1292,8 +1304,6 @@ static void dither_timeout_timer(struct timer_list *t)
 		vin_push_frame_buffer(dvr_dev,i);
         vin->dvr_dev->framebuf_status[i] = FRAMEBUF_STATUS_FREE;
 	}
-	if(!vin->stream_flag)
-		ark_vin_display_init(DISPLAY_LAYER,dvr_dev->screen_width,dvr_dev->screen_height,dvr_dev->screen_xpos,dvr_dev->screen_ypos);
 	 
 	ark_vin_enable_write();	
 	//spin_unlock_irqrestore(&dvr_dev->spin_lock, flags);
@@ -1308,6 +1318,7 @@ static int vin_start(struct dvr_dev *dvr_dev)
 		dvr_dev->work_status = 1;
 		dvr_dev->discard_frame = START_DISCARD_FRAME;
 		dvr_dev->cur_frame = 0;
+		dvr_dev->vin_buffer_status = 0;
 		deinterlace_init();
 		ret = v4l2_subdev_call(vin->current_subdev->sd,video,s_routing,dvr_dev->channel,0,0);
 		if(ret < 0){
@@ -1321,19 +1332,36 @@ static int vin_start(struct dvr_dev *dvr_dev)
 	return ret;
 }
 
-static void vin_exit(void)
+static int vin_exit(void)
 {
 	struct ark1668e_vin_device* vin = NULL;
+	int ret;
+
 	vin = g_ark1668e_vin;
+	vin->dvr_dev->carback_exit_status = 1;
+	vin->stream_flag = vin->vin_status;
+	ark_disp_set_layer_en(DISPLAY_LAYER, 0);
 	spin_lock(&vin->dvr_dev->spin_lock);
+	vin->dvr_dev->vin_mirror_config = MIRROR_NO;
+	vin->dvr_dev->work_status = 0;
+	vin->dvr_dev->scale_framebuf_index = 0;
 	vin->dvr_dev->show_video = 0;
 	vin->dvr_dev->carback_signal = 0;
-	vin->dvr_dev->work_status = 0;
-	ark_disp_set_layer_en(DISPLAY_LAYER, 0);
+	vin->dvr_dev->layer_status = 0;
 	msleep(20);
 	ark_vin_disable_write(); /*stop write data back*/
 	ark_vin_disable();
 	spin_unlock(&vin->dvr_dev->spin_lock);
+
+	if(vin->dvr_dev->chip_info == TYPE_RN6752){
+		ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_EXIT_CARBACK,0);
+		if(ret < 0){
+			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
 
@@ -1366,6 +1394,7 @@ static int vin_aux_start(struct dvr_dev *dvr_dev)
 		dvr_dev->work_status = 1;
 		dvr_dev->discard_frame = START_DISCARD_FRAME;
 		dvr_dev->cur_frame = 0;
+		dvr_dev->vin_buffer_status = 0;
 		ret = v4l2_subdev_call(vin->current_subdev->sd,video,s_routing,vin->app_channel_set,0,0);
 		if(ret < 0){
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
@@ -1390,18 +1419,18 @@ static void vin_aux_exit(void)
 	vin->dvr_dev->show_video = 0;
 	vin->dvr_dev->carback_signal = 0;
 	vin->dvr_dev->work_status = 0;
+	vin->dvr_dev->layer_status = 0;
 	ark_disp_set_layer_en(DISPLAY_LAYER, 0);
+	vin->dvr_dev->scale_framebuf_index = 0;
+	spin_unlock(&vin->dvr_dev->spin_lock);
 	msleep(20);
 	ark_vin_disable_write(); /*stop write data back*/
 	ark_vin_disable();
 	if(vin->dvr_dev->chip_info == TYPE_RN6752){
 		ret = v4l2_subdev_call(vin->current_subdev->sd,core,ioctl,VIDIOC_EXIT_CARBACK,0);
-		if(ret < 0){
+		if(ret < 0)
 			printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
-			return ret;
-		}
 	}
-	spin_unlock(&vin->dvr_dev->spin_lock);
 }
 
 static irqreturn_t ark_deinterlace_int_handler(int irq, void *dev_id)
@@ -1482,6 +1511,7 @@ static int vin_async_complete(struct v4l2_async_notifier *notifier)
 	if(chipinfo == TYPE_RN6752){
 		printk(KERN_ALERT "decoder chip is rn6752\n");
 		ark_vin->dvr_dev->chip_info = TYPE_RN6752;
+		ark_vin->dvr_dev->framebuf_num = 8;
 	}else if(chipinfo == TYPE_ARK7116){
 		printk(KERN_ALERT "decoder chip is ark7116\n");
 		ark_vin->dvr_dev->chip_info = TYPE_ARK7116;
@@ -1498,13 +1528,22 @@ static int vin_async_complete(struct v4l2_async_notifier *notifier)
 	}
 	
 	if(support_max_resolution == TYPE_1080P){
-		ark_vin->dvr_dev->buffer_size = ITU656_PROGRESSIVE_FRAME_SIZE_1080P*ITU656_FRAME_NUM;
+		if(ark_vin->dvr_dev->chip_info == TYPE_RN6752)
+			ark_vin->dvr_dev->buffer_size = ITU656_PROGRESSIVE_FRAME_SIZE_1080P*ark_vin->dvr_dev->framebuf_num;
+		else
+			ark_vin->dvr_dev->buffer_size = ITU656_PROGRESSIVE_FRAME_SIZE_1080P*ITU656_FRAME_NUM;
 	}
 	else if(support_max_resolution == TYPE_720P){
-		ark_vin->dvr_dev->buffer_size = ITU656_PROGRESSIVE_FRAME_SIZE*ITU656_FRAME_NUM;
+		if(ark_vin->dvr_dev->chip_info == TYPE_RN6752)
+			ark_vin->dvr_dev->buffer_size = ITU656_PROGRESSIVE_FRAME_SIZE*ark_vin->dvr_dev->framebuf_num;
+		else
+			ark_vin->dvr_dev->buffer_size = ITU656_PROGRESSIVE_FRAME_SIZE*ITU656_FRAME_NUM;
 	}
 	else{
-		ark_vin->dvr_dev->buffer_size = ITU656_FRAME_SIZE*ITU656_FRAME_NUM;
+		if(ark_vin->dvr_dev->chip_info == TYPE_RN6752)
+			ark_vin->dvr_dev->buffer_size = ITU656_FRAME_SIZE*ark_vin->dvr_dev->framebuf_num;
+		else
+			ark_vin->dvr_dev->buffer_size = ITU656_FRAME_SIZE*ITU656_FRAME_NUM;
 	}
 	
 	ark_vin->dvr_dev->scale_buffer_size = ark_vin->dvr_dev->scale_alloc_width*ark_vin->dvr_dev->scale_alloc_height*2*ark_vin->dvr_dev->scale_framebuf_num;
@@ -1592,6 +1631,8 @@ static int vin_driver_init(struct device *dev)
 	vin->dvr_dev->carback_signal = 0;
 	vin->dvr_dev->frame_finish_count = 0;
 	vin->dvr_dev->scale_framebuf_index = 0;
+	vin->dvr_dev->vin_buffer_status = 0;
+	vin->dvr_dev->vin_mirror_config = MIRROR_NO;
 	vin->dvr_dev->framebuf_num = ITU656_FRAME_NUM;
 	vin->dvr_dev->scale_framebuf_num = ITU656_SCALE_FRAME_NUM;
 	vin->dvr_dev->carback_exit_status = 1;

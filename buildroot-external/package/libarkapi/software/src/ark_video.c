@@ -48,6 +48,7 @@ static int get_shared_display_data(void)
 				return errno;
 			}
 			p->kernel_used = 0;
+			p->avin_used = 0;
 			p->display_mode = DISP_NONE;
 			p->active_handle = NULL;
 			p->init = 1;
@@ -361,7 +362,7 @@ video_handle *arkapi_video_init(int stream_type)
 	int ret;
 
 	ark_dbg("%s: stream_type=%d.\n", __func__, stream_type);
-	printf("arkapi_video_init -20220406\n");
+	printf("arkapi video init -20220531\n");
 
 	if(stream_type < RAW_STRM_TYPE_H264 || (stream_type > RAW_STRM_TYPE_MP4_CUSTOM && \
 	                                       stream_type != RAW_STRM_TYPE_H264_NOREORDER)){
@@ -528,6 +529,7 @@ int arkapi_video_set_display_mode(int mode)
 int arkapi_video_show(video_handle *handle, int enable)
 {
 	int ret = 0;
+	video_handle *pdd_handle;
 
 	if(!handle || !handle->handle_disp){
 		printf("%s: handle=0x%p, handle->0x%p, error.\n", __func__, handle, handle->handle_disp);
@@ -539,12 +541,22 @@ int arkapi_video_show(video_handle *handle, int enable)
 	if(enable){
 		handle->active = 1;
 		printf("%s: set video handle=0x%p active=1.\n", __func__, handle);
-		if (!handle->first_show)
-			ret = arkapi_display_show_layer(handle->handle_disp);
 		display_lock();
+		pdd_handle = pdd->active_handle;
 		pdd->active_handle = handle;
 		pdd->active_pid = getpid();
 		display_unlock();
+		if (!pdd_handle) {
+			handle->first_show = 1;
+			if (handle)
+				video_display_process(handle, handle->last_render_yaddr, handle->last_render_uaddr,
+					handle->last_render_vaddr);
+#if LIBARKAPI_PLATFORM != LIBARKAPI_ARK1668
+			video_display_process(handle, 0, 0, 0);
+#endif
+		}
+		if (!handle->first_show)
+			ret = arkapi_display_show_layer(handle->handle_disp);
 	}else{
 		handle->active = 0;
 		display_lock();
@@ -599,7 +611,8 @@ void arkapi_video_release(video_handle *handle)
 
 	arkapi_video_lock(handle);
 
-	arkapi_display_hide_layer(handle->handle_disp);
+	if(!pdd->kernel_used)
+		arkapi_display_hide_layer(handle->handle_disp);
 	if (handle->handle_disp)
 		arkapi_display_close_layer(handle->handle_disp);
 
@@ -771,9 +784,11 @@ int arkapi_exit_carback(void)
 	get_shared_display_data();
 
 	display_lock();
-	pdd->kernel_used = 0;
-	if (pdd->active_handle && pdd->active_pid > 0)
-		kill(pdd->active_pid, SIGUSR2);
+	if(!pdd->avin_used) {
+		pdd->kernel_used = 0;
+		if (pdd->active_handle && pdd->active_pid > 0)
+			kill(pdd->active_pid, SIGUSR2);
+	}
 	display_unlock();
 
 	return 0;
@@ -786,6 +801,7 @@ int arkapi_set_vin_start(int start)
 	if (start){
 		if (pdd->active_handle == NULL) {
 			pdd->kernel_used = 1;
+			pdd->avin_used = 1;
 			display_unlock();
 			return 0;
 		}
@@ -793,8 +809,10 @@ int arkapi_set_vin_start(int start)
 		if (pdd->active_pid > 0)
 			kill(pdd->active_pid, SIGUSR1);
 		pdd->kernel_used = 1;
+		pdd->avin_used = 1;
 	}else{
 		pdd->kernel_used = 0;
+		pdd->avin_used = 0;
 		if (pdd->active_handle && pdd->active_pid > 0)
 			kill(pdd->active_pid, SIGUSR2);
 	}

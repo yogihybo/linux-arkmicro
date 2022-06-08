@@ -24,7 +24,6 @@
 
 extern int dvr_get_pragressive(void);
 extern void dvr_restart(void);
-//#define RN6752_USE_TIMER
 //#define RN6752_CVBS_PAL_CHECK_ERR	//rn6752 signal check error
 #define RN6752V1_CVBS_PAL_PROGRESSIVE	
 
@@ -35,11 +34,9 @@ struct rn6752 {
 	struct workqueue_struct *eq_queue;
 	struct work_struct eq_work;
 	struct i2c_client	*client;
-#ifdef RN6752_USE_TIMER
 	struct timer_list timer;
 	volatile bool timer_start;
 	volatile int timer_timeout;
-#endif
 	struct timer_list work_timer;
 	int mode;
 	int itu601in;
@@ -69,6 +66,7 @@ static bool rn6752_dbg = false;
 #define VIDIOC_ENTER_CARBACK  		_IOWR('V', BASE_VIDIOC_PRIVATE + 4, int)
 #define VIDIOC_EXIT_CARBACK			_IOWR('V', BASE_VIDIOC_PRIVATE + 5, int)
 #define VIDIOC_GET_ITU601_ENABLE			_IOWR('V', BASE_VIDIOC_PRIVATE + 6, int)
+#define VIDIOC_SET_AVIN_MODE			_IOWR('V', BASE_VIDIOC_PRIVATE + 7, int)
 
 #define ARK_DVR_BRIGHTNESS_MASK		(1<<0)
 #define ARK_DVR_CONTRAST_MASK		(1<<1)
@@ -2130,7 +2128,7 @@ static void rn6752_eq_work(struct work_struct *work)
 		curr_cfg = rn6752v1_input_signal_check(decoder);
 	}
 
-	if(!decoder->enter_carback && !decoder->enter_auxin)
+	if(!decoder->enter_carback)
 	{
 exit:
 #ifdef CONFIG_RN6752_LOW_POWER_MODE
@@ -2261,28 +2259,22 @@ static void rn6752_work_timer(struct timer_list *t)
 	mod_timer(&decoder->work_timer, jiffies +  msecs_to_jiffies(100));
 }
 
-#ifdef RN6752_USE_TIMER
 static void rn6752_timeout_timer(struct timer_list *t)
 {
 	//printk(KERN_ALERT "rn6752_timeout_timer entry\n");
 	struct rn6752 *decoder = from_timer(decoder, t, timer);
 	if(decoder)
 	{
-		if(decoder->enter_carback) {
-			if(!decoder->enter_eq_work)
-				queue_work(decoder->eq_queue, &decoder->eq_work);
+		if(!decoder->enter_eq_work)
+			queue_work(decoder->eq_queue, &decoder->eq_work);
 
-			if(decoder->timer_timeout > 0)
-			{
-				decoder->timer_timeout --;
-				mod_timer(&decoder->timer, jiffies +  msecs_to_jiffies(100));
-			}
-			else
-			{
-				decoder->timer_start = false;
-			}
-		} else {
-			decoder->timer_timeout = 0;
+		if(decoder->timer_timeout > 0)
+		{
+			decoder->timer_timeout --;
+			mod_timer(&decoder->timer, jiffies +  msecs_to_jiffies(100));
+		}
+		else
+		{
 			decoder->timer_start = false;
 		}
 	}
@@ -2301,7 +2293,6 @@ static void rn6752_start_timer(struct rn6752 *decoder,int timeout_100ms)
 		}
 	}
 }
-#endif
 
 /* ----------------------------------------------------------------------- */
 
@@ -2348,36 +2339,6 @@ static int rn6752_g_input_status(struct v4l2_subdev *sd, u32 *status)
 
 	if(decoder)
 	{
-#ifdef RN6752_USE_TIMER
-		if(decoder->enter_carback)	//for carback
-		{
-			if(!decoder->timer_start)
-			{
-				rn6752_start_timer(decoder,50);
-			}
-		}
-		else	//for auxin 
-		{
-			decoder->enter_auxin = 1;
-			decoder->dvr_start = 1;
-			
-#ifdef CONFIG_RN6752_LOW_POWER_MODE
-			if(rn6752_read_byte(decoder,0x80) & 0x04)
-				rn6752_power_on();
-#endif
-			//queue_work(decoder->eq_queue, &decoder->eq_work);
-		}
-#else
-		if(decoder->enter_carback)	//for carback
-		{
-		}
-		else	//for auxin 
-		{
-			decoder->enter_auxin = 1;
-			decoder->dvr_start = 1;
-		}
-		//queue_work(decoder->eq_queue, &decoder->eq_work);
-#endif
 		if (status) {
 			*status = 0;
 
@@ -2446,7 +2407,7 @@ static int rn6752_s_routing(struct v4l2_subdev *sd, u32 input,
 			     u32 output, u32 config)
 {
 	struct rn6752 *decoder = to_rn6752(sd);
-	printk(KERN_ALERT "rn6752_select_channel %d \n",input);
+	//printk(KERN_ALERT "rn6752_select_channel %d \n",input);
 	rn6752_select_input(decoder, input);
 	decoder->input = input;
 	return 0;
@@ -2493,26 +2454,25 @@ static long rn6752_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	}
 	case VIDIOC_ENTER_CARBACK:
 	{
-#ifdef RN6752_USE_TIMER
-		if(!decoder->timer_start)
-		{
-			rn6752_start_timer(decoder,100);
-		}
-#endif
+		rn6752_start_timer(decoder,20);
 		decoder->enter_carback = 1;
-		if(!decoder->enter_eq_work)
- 			queue_work(decoder->eq_queue, &decoder->eq_work);
 		break;
 	}
 	case VIDIOC_EXIT_CARBACK:
 	{
 		decoder->enter_carback = 0;
+		rn6752_start_timer(decoder,20);
 		break;
 	}
 	case VIDIOC_GET_ITU601_ENABLE:
 	{
 		int* temp = (int *)arg;
 		*temp = 0;
+		break;
+	}
+	case VIDIOC_SET_AVIN_MODE:
+	{
+		rn6752_reset(decoder);
 		break;
 	}
 	default:
@@ -2549,7 +2509,6 @@ static int rn6752_parse_dt(struct rn6752 *decoder, struct device_node *np)
 	int value;
 	if(!of_property_read_u32(np, "default-channel", &value)) {
 		decoder->curr_channel = value;
-		printk(KERN_ALERT "default-channel  = %d \n",value);
 	} else {
 		decoder->curr_channel = 0;
 	}
@@ -2637,10 +2596,9 @@ static int rn6752_probe(struct i2c_client *client,
 	queue_work(decoder->eq_queue, &decoder->eq_work);
 #endif
 
-#ifdef RN6752_USE_TIMER
 	decoder->timer_start = false;
 	timer_setup(&decoder->timer, rn6752_timeout_timer,0);
-#endif
+
 	timer_setup(&decoder->work_timer, rn6752_work_timer,0);
 	
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
@@ -2682,9 +2640,9 @@ static int rn6752_remove(struct i2c_client *client)
 	dev_dbg(sd->dev, 
 		"rn6752.c: removing rn6752 adapter on address 0x%x\n",
 		client->addr << 1);
-#ifdef RN6752_USE_TIMER
+	
 	del_timer(&decoder->timer);
-#endif
+
 	del_timer(&decoder->work_timer);
 	if(decoder->eq_queue)
 		destroy_workqueue(decoder->eq_queue);

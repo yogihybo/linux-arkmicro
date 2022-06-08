@@ -13,6 +13,7 @@
 #define ITU656_FRAME_NUM			4
 #define ITU656_BUFFER_NUM			3
 #define ITU656_SCALE_FRAME_NUM		3
+#define ITU656_FRAME_NUM_MAX		8
 
 #define ARK_VIN_NAME				"ark1668e_vin"
 #define PAL							0
@@ -30,7 +31,7 @@
 #define ITU656_FIELD_SIZE			(CVBS_WIDTH*CVBS_HEIGHT*2)
 #define ITU656_FRAME_SIZE			(ITU656_FIELD_SIZE*2)
 #define ITU656_PROGRESSIVE_FRAME_SIZE	        (1280*720*2)
-#define ITU656_PROGRESSIVE_FRAME_SIZE_1080P	(1920*1080*2)
+#define ITU656_PROGRESSIVE_FRAME_SIZE_1080P	(1920*1080*3/2)
 
 #define ARK_IOW(num, dtype)		_IOW('O', num, dtype)
 #define ARK_IOR(num, dtype)		_IOR('O', num, dtype)
@@ -44,7 +45,7 @@
 #define VIDIOC_ENTER_CARBACK  				_IOWR('V', BASE_VIDIOC_PRIVATE + 4, int)
 #define VIDIOC_EXIT_CARBACK					_IOWR('V', BASE_VIDIOC_PRIVATE + 5, int)
 #define VIDIOC_GET_ITU601_ENABLE			_IOWR('V', BASE_VIDIOC_PRIVATE + 6, int)
-
+#define VIDIOC_SET_AVIN_MODE				_IOWR('V', BASE_VIDIOC_PRIVATE + 7, int)
 
 #define TVOUT_LAYER			0
 #define DISPLAY_LAYER			1
@@ -89,6 +90,15 @@ enum dvr_source {
 	DVR_SOURCE_AUX,
 	DVR_SOURCE_DVD,
 };
+
+enum itu656_mirror{
+	MIRROR_NO = 0,
+	MIRROR_LEVEL,
+	MIRROR_VERTICAL,
+	MIRROR_LEVEL_VERTICAL,
+	MIRROR_END,
+};
+
 
 enum {
 	TYPE_UNDEF = -1,
@@ -157,6 +167,8 @@ struct dvr_dev{
 	int carback_signal;
 	int layer_status;
 	int signal_flag;
+	int vin_mirror_config;
+	int vin_buffer_status;
 	int first_show_flag;
 	int dev_major, dev_minor;
     spinlock_t spin_lock;
@@ -171,14 +183,14 @@ struct dvr_dev{
 	struct timer_list timer;
 	struct timer_list signal_timer;
 	
-	unsigned int framebuf_phyaddr[ITU656_FRAME_NUM];
-	unsigned int framebuf_status[ITU656_FRAME_NUM];
+	unsigned int framebuf_phyaddr[ITU656_FRAME_NUM_MAX];
+	unsigned int framebuf_status[ITU656_FRAME_NUM_MAX];
 	unsigned int scalebuf_phyaddr[ITU656_SCALE_FRAME_NUM];
 	unsigned int framebuf_num;
 	unsigned int scale_framebuf_num;
 	unsigned int scale_framebuf_index;
 	unsigned int cur_frame;
-	unsigned int frame_finish[ITU656_FRAME_NUM];//store frame id
+	unsigned int frame_finish[ITU656_FRAME_NUM_MAX];//store frame id
 	int frame_finish_count;
 	wait_queue_head_t frame_finish_waitq;
     struct ark_itu656in_context context;

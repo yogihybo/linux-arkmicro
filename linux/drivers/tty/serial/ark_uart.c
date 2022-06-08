@@ -189,11 +189,10 @@ struct uart_amba_port {
 
 static bool enable_console = true;//false;
 
-static void (*mcu_serial_rev_handler)(int ch);
+static void (*mcu_serial_rev_handler)(unsigned char ch);
 static struct work_struct *mcu_serial_rev_task;
 static bool (*tool_serial_rev_handler)(char ch);
 static bool (*tool_serial_rev_enable_check)(char ch);
-static void (*track_serial_rev_handler)(unsigned char ch);
 
 
 static int __init enable_console_setup(char *str)
@@ -279,10 +278,6 @@ static int pl011_fifo_to_tty(struct uart_amba_port *uap)
 
 		if (uart_handle_sysrq_char(&uap->port, ch & 255))
 			continue;
-
-		if (uap->use_for_mcu && track_serial_rev_handler) {
-			track_serial_rev_handler(ch);
-		}
 
 		if (uap->use_for_mcu && mcu_serial_rev_handler) {
 			mcu_serial_rev_handler(ch);
@@ -2579,7 +2574,7 @@ int mcu_serial_send(const unsigned char *buf, int len)
 }
 EXPORT_SYMBOL(mcu_serial_send);
 
-void mcu_serial_register_rev_handler(void (*handler)(int ch), struct work_struct *task)
+void mcu_serial_register_rev_handler(void (*handler)(unsigned char ch), struct work_struct *task)
 {
 	mcu_serial_rev_handler = handler;
 	mcu_serial_rev_task = task;
@@ -2620,19 +2615,6 @@ void tool_serial_unregister_rev_handler(void)
 	tool_serial_rev_enable_check = NULL;
 }
 EXPORT_SYMBOL(tool_serial_unregister_rev_handler);
-
-void track_serial_register_rev_handler(void (*handler)(unsigned char ch))
-{
-	track_serial_rev_handler = handler;
-}
-EXPORT_SYMBOL(track_serial_register_rev_handler);
-
-void track_serial_unregister_rev_handler(void)
-{
-	track_serial_rev_handler = NULL;
-}
-EXPORT_SYMBOL(track_serial_unregister_rev_handler);
-
 
 static int ark_uart_probe(struct platform_device *pdev)
 {

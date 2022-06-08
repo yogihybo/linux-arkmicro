@@ -4,6 +4,7 @@
 #include "ark1668e-pinctrl.dtsi"
 
 //#define I2S_FULL_DUPLEX_CODEC_SUPPORT
+//#define DYNAMIC_TRACK_DISPLAY
 
 / {
 	i2c-gpio-0 {
@@ -163,8 +164,20 @@
 		interrupts = <1 IRQ_TYPE_EDGE_BOTH>;
 		detect-gpios = <&gportd 1 GPIO_ACTIVE_HIGH>;
 		debounce-detect = <0>;
+		mirror-config = <0>;   /* 0:no mirror; 1:level mirror; 2:vertical mirror; 3:vertical && level mirror; */
+#ifdef DYNAMIC_TRACK_DISPLAY
+		dynamic-track = <1>;
+#else
+		dynamic-track = <0>;
+#endif
 		reg = <0x5ea00000 0x400000>;
 	};
+
+#ifdef DYNAMIC_TRACK_DISPLAY
+	mcu_serial: mcu-serial@0 {
+        compatible = "arkmicro,ark-mcu-serial";
+    };
+#endif
 
 	adc {
         compatible = "arkmicro,ark1668e-adc";
@@ -235,10 +248,12 @@
 	status = "okay";
 };
 
+#ifdef DYNAMIC_TRACK_DISPLAY
 &uart3 {
     use-in-kernel;
     use-for-mcu;
 };
+#endif
 
 &ituin {
 	status = "okay";

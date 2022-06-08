@@ -1378,9 +1378,10 @@ EXPORT_SYMBOL(ark_track_display_init);
 
 int ark_track_set_display_addr(unsigned int addr)
 { 
-	ark1668e_lcdc_set_osd_addr(ARK1668E_LCDC_LAYER_OSD1, addr);
-	ark1668e_lcdc_wait_for_vsync();
-
+	//ark1668e_lcdc_set_osd_addr(ARK1668E_LCDC_LAYER_OSD1, addr);
+	//ark1668e_lcdc_wait_for_vsync();
+	
+	lcdfb_info->render_addr[ARK1668E_LCDC_LAYER_OSD1].yaddr = addr;
 	return 0;
 }
 EXPORT_SYMBOL(ark_track_set_display_addr);

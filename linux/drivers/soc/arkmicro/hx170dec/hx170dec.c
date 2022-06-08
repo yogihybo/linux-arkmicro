@@ -225,7 +225,7 @@ static void animation_dec_work(struct work_struct *work)
 					  context->animation_display_phyaddr);
 		}
 		iounmap((void*)context->animation_data_virtaddr);
-		p->context.anmation_stats = 1;
+		p->context.anmation_stats = 0;
 		destroy_workqueue(context->animation_queue);
 		return;
 	}
@@ -650,6 +650,7 @@ static int vdec_probe(struct platform_device *pdev)
 				dev_err(&pdev->dev, "alloc animation display buffer failed.\n");
 				p->context.animation_end = true;
 			} else {
+				p->context.anmation_stats = 1;
 				p->context.animation_end = false;
 				p->context.animation_dec_finish = false;
 				p->context.animation_initdisplay = false;

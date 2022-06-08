@@ -40,7 +40,6 @@ struct carback_context {
         struct work_struct track_work;
         struct workqueue_struct *track_queue;
 		struct timer_list track_timer;
-		struct timer_list uartx_timer;
 		struct timer_list carback_filter_timer;	
 		struct work_struct carback_work;
 		struct workqueue_struct *carback_queue;
@@ -56,7 +55,6 @@ struct carback_context {
 		void (*get_wheel_angle)(unsigned char ch);
 		void (*get_radar_info)(unsigned char ch);
 		void (*send_mcu_carback)(bool en);
-		void (*get_mcu_carback_data)(unsigned char ch);
 		int track_disp_width;
 		int track_disp_height;
 		int track_disp_xpos;
@@ -81,6 +79,8 @@ struct ark_carback {
         int minor_start;
         int minor_num;
         int num;
+		int mirror_config;
+		int dynamic_track_config;
         struct cdev cdev;
         struct class *carback_class;
         struct device *carback_device;
@@ -93,6 +93,14 @@ enum ui_scaler_type_id {
 	UI_SCALER_VGA, //scaler mode, can set posx posy throught arkdata.ini
 	UI_SCALER_CVBS, //scaler mode, can set posx posy throught arkdata.ini
 	UI_SCALER_END,
+};
+
+enum itu656_mirror{
+	MIRROR_NO = 0,
+	MIRROR_LEVEL,
+	MIRROR_VERTICAL,
+	MIRROR_LEVEL_VERTICAL,
+	MIRROR_END,
 };
 
 /*************************************************************************

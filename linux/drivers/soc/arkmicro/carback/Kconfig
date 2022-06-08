@@ -8,11 +8,6 @@ config ARK1668E_CARBACK
        bool "ark carback driver"
        default y if SOC_ARK1668E
 
-config DISABLE_GET_MCU_DATA
-
-       tristate "disable mcu get data"
-       depends on ARK1668E_CARBACK
-
 config REVERSING_TRACK
 
        tristate "support carback track"

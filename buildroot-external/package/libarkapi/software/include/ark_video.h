@@ -19,6 +19,7 @@ struct display_data {
 	sem_t sem;
 	int init;
 	int kernel_used;
+	int avin_used;
 	int display_mode;
 	int active_pid;
 	video_handle *active_handle;

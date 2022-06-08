@@ -219,7 +219,6 @@ const idmap_info radar_idmap[RADAR_MAX] =
 };	
 
 extern int dvr_detect_carback_signal(void); 
-extern  int vbox_track_paint;
 
 track_context *g_ptrack_context;
 static user_header* g_pheader_buf;
@@ -235,7 +234,7 @@ extern int first_draw_track;
 static user2_header* g_pheader2_buf;
 track_context2 *g_ptrack_context2 = NULL;
 
-
+#if 0
 static unsigned int get_time_ms(void)
 {
     struct timeval tv;
@@ -244,6 +243,7 @@ static unsigned int get_time_ms(void)
     //s = tv.tv_usec; s *= 0.000001; s += tv.tv_sec;
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+#endif
 
 static void show_header_info(void)
 {
@@ -284,52 +284,7 @@ static void show_header_info(void)
 								p->radar[1].image_type,p->radar[1].image_store_id,p->radar[1].image_id,p->radar[1].image_offset,p->radar[1].image_size);
 	ARKTRACK_DBGPRTK("track2[0]image===> image_type=%d  image_store_id=%d  image_id=0x%0x  image_offset=0x%0x image_size=0x%0x\n",\
 								p->track2[0].image_type,p->track2[0].image_store_id,p->track2[0].image_id,p->track2[0].image_offset,p->track2[0].image_size);
-}
-
-static void set_rect_default(void)
-{
-	user_header* p = g_pheader_buf;
-
-	p->car_total   = 0;
-	p->radar_total = 0;
-
-	p->track_rect.pos_x = 0;
-	p->track_rect.pos_y = 0;
-	p->track_rect.width = g_carback_context->screen_width;
-	p->track_rect.height= g_carback_context->screen_height;
-
-	p->car_rect.pos_x = 0;
-	p->car_rect.pos_y = 0;
-	p->car_rect.width = 0;
-	p->car_rect.height= 0;	
-
-	p->radar_rect[0].pos_x = 0;
-	p->radar_rect[0].pos_y = 0;
-	p->radar_rect[0].width = 0;
-	p->radar_rect[0].height= 0;
-
-	p->radar_rect[1].pos_x = 0;
-	p->radar_rect[1].pos_y = 0;
-	p->radar_rect[1].width = 0;
-	p->radar_rect[1].height= 0;
-
-	p->radar_rect[2].pos_x = 0;
-	p->radar_rect[2].pos_y = 0;
-	p->radar_rect[2].width = 0;
-	p->radar_rect[2].height= 0;
-
-	p->radar_rect[3].pos_x = 0;
-	p->radar_rect[3].pos_y = 0;
-	p->radar_rect[3].width = 0;
-	p->radar_rect[3].height= 0;
-
-	
-	p->track2_rect.pos_x = 0;
-	p->track2_rect.pos_y = 0;
-	p->track2_rect.width = 0;
-	p->track2_rect.height= 0;
-	
-}
+} 
 
 static int check_header_info(void)
 {
@@ -604,7 +559,7 @@ static int init_track_context(unsigned int addr)
 
 	show_header_info();
 
-	if(check_header_info < 0){
+	if(check_header_info() < 0){
 
 		printk(KERN_ERR "identity info error!\n");
 		return ret;
@@ -942,28 +897,7 @@ static unsigned int get_picture_size(enum image_type type, unsigned int id)
 		image_size = g_pheader_buf->track2[id].image_size;
 	}
 	return image_size;
-}
-
-static unsigned int get_picture_num(enum image_type type)
-{
-	unsigned int picture_num = 0;
-
-	if(type == IMAGE_TYPE_TRACK){
-		picture_num = g_pheader_buf->track_total;
-	}
-	else if(type == IMAGE_TYPE_CAR){
-		picture_num = g_pheader_buf->car_total;
-	}
-	else if(type == IMAGE_TYPE_RADAR){
-		picture_num = g_pheader_buf->radar_total;
-	}
-	else if(type == IMAGE_TYPE_TRACK2){
-		picture_num = g_pheader_buf->track2_total;
-	}
-	//printk("get image_type = %d, num = %d !",type,picture_num);
-	return picture_num;
-}
-
+} 
 
 /* Returns length of decompressed data. */
 static int zlib_uncompress_block(void *dst, int dstlen, void *src, int srclen)
@@ -1289,17 +1223,13 @@ static unsigned int subjoin_radar_pic(void *dest)
 			}
 		}
 		
-		if(vbox_track_paint){
-			copy_pic_data(dest,dest_radar,IMAGE_TYPE_RADAR,image_id,SRC_COVER_DST2);//wheel paint
-		}else{
-			if(channel == RADAR_CHANNEL_RR){
-				copy_pic_data(dest,dest_radar,IMAGE_TYPE_RADAR,image_id,SRC_COVER_DST);
-				//copy_pic_data(dest,dest_radar,IMAGE_TYPE_RADAR,image_id,DST_COVER_SRC2);
-			}
-			else{
-				copy_pic_data(dest,dest_radar,IMAGE_TYPE_RADAR,image_id,SRC_COVER_DST);
-			}
+		if(channel == RADAR_CHANNEL_RR){
+			copy_pic_data(dest,dest_radar,IMAGE_TYPE_RADAR,image_id,SRC_COVER_DST);
 		}
+		else{
+			copy_pic_data(dest,dest_radar,IMAGE_TYPE_RADAR,image_id,SRC_COVER_DST);
+		}
+		
 		
 	}
 	
@@ -1455,10 +1385,6 @@ int track_paint_init(void)
 		printk(KERN_ALERT "track paint init out width or height fail!\n" );
 		ret = -1;
 	}
-	
-	if(vbox_track_paint){
-		return ret;
-	} 
 
 	return ret; 
 }
@@ -1484,16 +1410,14 @@ void track_paint_deinit(void)
 }
 
 unsigned int track_paint_fill(void *dest, unsigned int width, unsigned int height)
-{
-	unsigned int fill_size, source_size, dest_size, source_offset;
+{ 
 	static unsigned int last_track_id = 0;
 	static unsigned int last_car_id   = 0;
 	static unsigned int last_radar_id = 0;
 	static unsigned int last_signal_id = -1;
 	static unsigned int last_track2_id= 0;
 	track_context *p = g_ptrack_context;
-	user_header* ph = g_pheader_buf;
-	void *source;
+	user_header* ph = g_pheader_buf; 
  
 	if(p == NULL || g_carback_context == NULL){
 		printk(KERN_ERR "track_paint_fill g_ptrack_context or carback_context null\n" );
@@ -1520,6 +1444,14 @@ unsigned int track_paint_fill(void *dest, unsigned int width, unsigned int heigh
 
 	if (p->disp_track_id == IMAGE_ID_NONE){
 		memset(dest,0,p->disp_track_size);
+		if(ph->car_total)
+			subjoin_car_pic(dest);
+
+		if(ph->radar_total)  
+			subjoin_radar_pic(dest);
+		last_track_id = p->disp_track_id;
+		last_car_id   = p->disp_car_id;
+		last_radar_id = p->disp_radar_id;
 		return p->disp_track_size;
 	}
 	
@@ -1550,7 +1482,7 @@ unsigned int track_paint_fill(void *dest, unsigned int width, unsigned int heigh
 			if(ph->track2_total) 
 				subjoin_track2_pic(dest);
 			
-			if(g_ptrack_context2 && vbox_track_paint) {
+			if(g_ptrack_context2) {
 				subjoin_mradar_pic(dest);
 			}
 		}
@@ -1564,7 +1496,7 @@ unsigned int track_paint_fill(void *dest, unsigned int width, unsigned int heigh
 	
 	last_signal_id = p->disp_signal_id;
  
-	return fill_size; 
+	return g_carback_context->track_display_size; 
 }
 
 
