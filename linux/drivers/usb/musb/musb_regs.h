@@ -126,6 +126,7 @@
 
 /* TXCSR in Peripheral and Host mode */
 #define MUSB_TXCSR_AUTOSET		0x8000
+#define MUSB_TXCSR_MODE			0x2000
 #define MUSB_TXCSR_DMAENAB		0x1000
 #define MUSB_TXCSR_FRCDATATOG		0x0800
 #define MUSB_TXCSR_DMAMODE		0x0400
@@ -262,7 +263,6 @@
 
 #include "tusb6010.h"		/* Needed "only" for TUSB_EP0_CONF */
 
-#define MUSB_TXCSR_MODE			0x2000
 
 /* "bus control"/target registers, for host side multipoint (external hubs) */
 #define MUSB_TXFUNCADDR		0x00

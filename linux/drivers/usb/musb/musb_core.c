@@ -526,6 +526,7 @@ void musb_hnp_stop(struct musb *musb)
 
 static void musb_recover_from_babble(struct musb *musb);
 
+#if 0
 static void musb_handle_intr_resume(struct musb *musb, u8 devctl)
 {
 	musb_dbg(musb, "RESUME (%s)",
@@ -902,6 +903,7 @@ static void musb_handle_intr_reset(struct musb *musb)
 		}
 	}
 }
+#endif
 
 /*
  * Interrupt Service Routine to record USB "global" interrupts.

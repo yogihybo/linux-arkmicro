@@ -21,6 +21,8 @@
 #include "musb_host.h"
 #include "musb_trace.h"
 
+#define UDISK_INTERVAL  0x10
+
 /* MUSB HOST status 22-mar-2006
  *
  * - There's still lots of partial code duplication for fault paths, so
@@ -407,19 +409,11 @@ static u16 musb_h_flush_rxfifo(struct musb_hw_ep *hw_ep, u16 csr)
 	 * ignore dma (various models),
 	 * leave toggle alone (may not have been saved yet)
 	 */
-#if NICHOLAS_ADD
-	csr |= MUSB_RXCSR_FLUSHFIFO;
-	musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
-	csr &= ~(MUSB_RXCSR_H_REQPKT
-		| MUSB_RXCSR_H_AUTOREQ
-		| MUSB_RXCSR_AUTOCLEAR
-		| MUSB_RXCSR_RXPKTRDY);
-#else
 	csr |= MUSB_RXCSR_FLUSHFIFO | MUSB_RXCSR_RXPKTRDY;
 	csr &= ~(MUSB_RXCSR_H_REQPKT
 		| MUSB_RXCSR_H_AUTOREQ
 		| MUSB_RXCSR_AUTOCLEAR);
-#endif
+
 	/* write 2x to allow double buffering */
 	musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
 	musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
@@ -578,13 +572,14 @@ musb_rx_reinit(struct musb *musb, struct musb_qh *qh, u8 epnum)
 		musb_writew(ep->regs, MUSB_TXCSR, 0);
 
 	/* scrub all previous state, clearing toggle */
-	}
-	csr = musb_readw(ep->regs, MUSB_RXCSR);
-	if (csr & MUSB_RXCSR_RXPKTRDY)
-		WARNING("rx%d, packet/%d ready?\n", ep->epnum,
-			musb_readw(ep->regs, MUSB_RXCOUNT));
+	} else {
+		csr = musb_readw(ep->regs, MUSB_RXCSR);
+		if (csr & MUSB_RXCSR_RXPKTRDY)
+			WARNING("rx%d, packet/%d ready?\n", ep->epnum,
+				musb_readw(ep->regs, MUSB_RXCOUNT));
 
-	musb_h_flush_rxfifo(ep, MUSB_RXCSR_CLRDATATOG);
+		musb_h_flush_rxfifo(ep, MUSB_RXCSR_CLRDATATOG);
+	}
 
 	/* target addr and (for multipoint) hub addr/port */
 	if (musb->is_multipoint) {
@@ -855,7 +850,9 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 
 		/* protocol/endpoint/interval/NAKlimit */
 		if (epnum) {
+            musb_ep_select(mbase, epnum);
 			musb_writeb(epio, MUSB_TXTYPE, qh->type_reg);
+            musb_writeb(epio, MUSB_TXINTERVAL, qh->intv_reg);
 			if (can_bulk_split(musb, qh->type)) {
 				qh->hb_mult = hw_ep->max_packet_sz_tx
 						/ packet_sz;
@@ -866,7 +863,7 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 						qh->maxpacket |
 						((qh->hb_mult - 1) << 11));
 			}
-			musb_writeb(epio, MUSB_TXINTERVAL, qh->intv_reg);
+			
 		} else {
 			musb_writeb(epio, MUSB_NAKLIMIT0, qh->intv_reg);
 			if (musb->is_multipoint)
@@ -1219,7 +1216,7 @@ irqreturn_t musb_h_ep0_irq(struct musb *musb)
 			musb_h_ep0_flush_fifo(hw_ep);
 		}
 
-		musb_writeb(epio, MUSB_NAKLIMIT0, 0);
+		musb_writeb(epio, MUSB_NAKLIMIT0, qh->intv_reg);
 
 		/* clear it */
 		musb_writew(epio, MUSB_CSR0, 0);
@@ -1335,7 +1332,15 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		musb_writew(epio, MUSB_TXCSR,
 				MUSB_TXCSR_H_WZC_BITS
 				| MUSB_TXCSR_TXPKTRDY);
-		return;
+
+		if(qh->intv_reg == UDISK_INTERVAL){
+			//Is U Disk
+			status = -ETIMEDOUT;
+		} 
+		else{
+			//IS Phone
+			return;
+		}
 #else
 
 		status = -ETIMEDOUT;
@@ -1386,7 +1391,7 @@ done:
 		musb_writew(epio, MUSB_TXCSR, tx_csr);
 		/* REVISIT may need to clear FLUSHFIFO ... */
 		musb_writew(epio, MUSB_TXCSR, tx_csr);
-		musb_writeb(epio, MUSB_TXINTERVAL, 0);
+		musb_writeb(epio, MUSB_TXINTERVAL, qh->intv_reg);
 
 		done = true;
 	}
@@ -1455,11 +1460,6 @@ done:
 			musb_dbg(musb,
 				"DMA complete but FIFO not empty, CSR %04x",
 				tx_csr);
-#if 0//NICHOLAS_ADD
-			musb_writew(epio, MUSB_TXCSR,
-				    tx_csr | MUSB_TXCSR_FLUSHFIFO);
-			tx_csr = musb_readw(epio, MUSB_TXCSR);
-#endif
 			return;
 		}
 	}
@@ -1527,7 +1527,6 @@ done:
 	} else if ((usb_pipeisoc(pipe) || transfer_pending) && dma) {
 		if (musb_tx_dma_program(musb->dma_controller, hw_ep, qh, urb,
 				offset, length)) {
-			udelay(25);
 			if (is_cppi_enabled(musb) || tusb_dma_omap(musb))
 				musb_h_tx_dma_start(hw_ep);
 			return;
@@ -1572,8 +1571,15 @@ done:
 	qh->segsize = length;
 
 	musb_ep_select(mbase, epnum);
+#if NICHOLAS_ADD    
+	tx_csr = musb_readw(epio, MUSB_TXCSR);
 	musb_writew(epio, MUSB_TXCSR,
-			MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
+		tx_csr | MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
+#else
+    musb_writew(epio, MUSB_TXCSR,
+		MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
+#endif
+
 }
 
 #ifdef CONFIG_USB_TI_CPPI41_DMA
@@ -1913,12 +1919,20 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 		rx_csr |= MUSB_RXCSR_H_REQPKT;
 		musb_writew(epio, MUSB_RXCSR, rx_csr);
 
-		musb_writeb(epio, MUSB_RXINTERVAL, 0x10);
-		goto finish;
+		musb_writeb(epio, MUSB_RXINTERVAL, qh->intv_reg);
+        
+		if(qh->intv_reg == UDISK_INTERVAL){
+			//Is U Disk
+			status = -ETIMEDOUT;
+		} 
+		else{
+			//IS Phone
+			goto finish;
+		}
 #else
 
 		status = -EPROTO;
-		musb_writeb(epio, MUSB_RXINTERVAL, 0);
+		musb_writeb(epio, MUSB_RXINTERVAL, qh->intv_reg);
 
 		rx_csr &= ~MUSB_RXCSR_H_ERROR;
 		musb_writew(epio, MUSB_RXCSR, rx_csr);
@@ -1943,28 +1957,20 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 				return;
 			}
 			musb_ep_select(mbase, epnum);
-			rx_csr |= MUSB_RXCSR_H_WZC_BITS;
+			rx_csr &= ~MUSB_RXCSR_H_REQPKT;
+		    musb_writew(epio, MUSB_RXCSR, rx_csr);
 			rx_csr &= ~MUSB_RXCSR_DATAERROR;
 			musb_writew(epio, MUSB_RXCSR, rx_csr);
 
 #if NICHOLAS_ADD
-#if 0
-			if(qh->intv_reg == 0x10)	{
-				//Is U Disk
-				schedule_work(&musb->irq_work);
-				return;
-			} else
-#endif
-			{
-				rx_csr = musb_readw(epio, MUSB_RXCSR);
-				rx_csr |= MUSB_RXCSR_FLUSHFIFO;
-				musb_writew(epio, MUSB_RXCSR, rx_csr);
+			rx_csr = musb_readw(epio, MUSB_RXCSR);
+			rx_csr |= MUSB_RXCSR_FLUSHFIFO;
+			musb_writew(epio, MUSB_RXCSR, rx_csr);
 
-				rx_csr = musb_readw(epio, MUSB_RXCSR);
-				rx_csr |= MUSB_RXCSR_H_REQPKT;
-				musb_writew(epio, MUSB_RXCSR, rx_csr);
-				goto finish;
-			}
+			rx_csr = musb_readw(epio, MUSB_RXCSR);
+			rx_csr |= MUSB_RXCSR_H_REQPKT;
+			musb_writew(epio, MUSB_RXCSR, rx_csr);
+			goto finish;
 #else
 			goto finish;
 #endif
@@ -1988,7 +1994,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 			xfer_len = dma->actual_len;
 		}
 		musb_h_flush_rxfifo(hw_ep, MUSB_RXCSR_CLRDATATOG);
-		musb_writeb(epio, MUSB_RXINTERVAL, 0);
+		musb_writeb(epio, MUSB_RXINTERVAL, qh->intv_reg);
 		done = true;
 		goto finish;
 	}
@@ -2181,7 +2187,7 @@ static int musb_schedule(
 	 * REVISIT what we really want here is a regular schedule tree
 	 * like e.g. OHCI uses.
 	 */
-	best_diff = 4096;
+	best_diff = 4096 * 2;
 	best_end = -1;
 
 	for (epnum = 1, hw_ep = musb->endpoints + 1;
@@ -2242,7 +2248,11 @@ static int musb_schedule(
 		 * NAK timeout interval is 8 (128 uframe or 16ms) for HS and
 		 * 4 (8 frame or 8ms) for FS device.
 		 */
+#if NICHOLAS_ADD		 
+		if (is_in && qh->dev) 
+#else          
 		if (qh->dev)
+#endif          
 			qh->intv_reg =
 				(USB_SPEED_HIGH == qh->dev->speed) ? 8 : 4;
 		goto success;
@@ -2423,7 +2433,7 @@ static int musb_urb_enqueue(
 					if(desc)
 					{
 						if(desc->bInterfaceClass == 0x8)	//Is U Disk
-							interval = 0x10;
+							interval = UDISK_INTERVAL;
 						else
 							interval = 0;
 					}
