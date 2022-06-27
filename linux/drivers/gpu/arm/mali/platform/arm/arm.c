@@ -25,6 +25,7 @@
 #include "mali_kernel_common.h"
 #include <linux/dma-mapping.h>
 #include <linux/moduleparam.h>
+#include <linux/of.h>
 
 #include "arm_core_scaling.h"
 #include "mali_pp_scheduler.h"
@@ -191,6 +192,7 @@ int mali_platform_device_init(struct platform_device *device)
 	u32 m400_gp_version;
 #endif
 	struct resource *map = NULL;
+	u32 shared_mem_size = 0;
 
 	/* Detect present Mali GPU and connect the correct resources to the device */
 #if defined(CONFIG_ARCH_VEXPRESS)
@@ -268,6 +270,11 @@ int mali_platform_device_init(struct platform_device *device)
 		mali_gpu_data.fb_start = map->start;
 		mali_gpu_data.fb_size = resource_size(map);	
 	}
+
+	if(!of_property_read_u32(device->dev.of_node, "shared-mem-size", &shared_mem_size)) {
+	    mali_gpu_data.shared_mem_size = shared_mem_size;
+	}
+
 	err = platform_device_add_data(device, &mali_gpu_data, sizeof(mali_gpu_data));
 
 	if (0 == err) {

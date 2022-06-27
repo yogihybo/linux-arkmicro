@@ -260,8 +260,8 @@ static int ark1668e_lcdfb_check_var(struct fb_var_screeninfo *var,
 			     struct fb_info *info)
 {
 	struct device *dev = info->device;
-	/* struct ark1668e_lcdfb_info *sinfo = info->par;
-	struct ark1668e_lcdfb_pdata *pdata = &sinfo->pdata; */
+	struct ark1668e_lcdfb_info *sinfo = info->par;
+	struct ark1668e_lcdfb_pdata *pdata = &sinfo->pdata;
 
 	dev_dbg(dev, "%s:\n", __func__);
 
@@ -281,8 +281,12 @@ static int ark1668e_lcdfb_check_var(struct fb_var_screeninfo *var,
 	if (var->xres >= var->xres_virtual)
 		var->xres_virtual = var->xres;
 
-	if (var->yres >= var->yres_virtual)
-		var->yres_virtual = var->yres * 3;
+	if (var->yres >= var->yres_virtual) {
+		if (pdata->fb_buffer_nums > 0)
+			var->yres_virtual = var->yres * pdata->fb_buffer_nums;
+		else
+			var->yres_virtual = var->yres * 3;
+	}
 
 	/* Force same alignment for each line */
 	var->xres = (var->xres + 3) & ~3UL;
@@ -379,7 +383,7 @@ static int ark1668e_lcdfb_pan_display(struct fb_var_screeninfo *var,
 	addr = fix->smem_start + var->yoffset * fix->line_length
 		+ var->xoffset * info->var.bits_per_pixel / 8;
 
-	lcdc_writel(sinfo, ARK1668E_LCDC_OSD2_ADDR, addr);
+	sinfo->render_addr[ARK1668E_LCDC_LAYER_OSD2].yaddr = addr;
 
 	//printk(KERN_ALERT "ark1668e_lcdfb_pan_display 0x%x.\n", addr);
 
@@ -625,6 +629,8 @@ static int ark1668e_lcdfb_of_init(struct ark1668e_lcdfb_info *sinfo)
 		dev_err(dev, "failed to get property bits-per-pixel\n");
 		goto put_display_node;
 	}
+
+	ret = of_property_read_u32(display_np, "fb-buffer-nums", &pdata->fb_buffer_nums);
 
 	INIT_LIST_HEAD(&pdata->pwr_gpios);
 	ret = -ENOMEM;
