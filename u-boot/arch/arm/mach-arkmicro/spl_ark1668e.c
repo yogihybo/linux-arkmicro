@@ -9,7 +9,7 @@
 
 #define CPUPLL_CLK  800
 #define LCDPLL_CLK	480
-#define AXIPLL_CLK	720
+#define AXIPLL_CLK	480
 #define AHBPLL_CLK	336
 #define APBPLL_CLK	552
 #define DDRPLL_CLK  400

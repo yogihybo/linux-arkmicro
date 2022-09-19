@@ -383,7 +383,7 @@
 				index-value = <2>;
 				div-offset = <11>;
 				div-mask = <0xf>;
-				div-value = <2>;
+				div-value = <3>;
 				div-mode = <ARK_CLK_DIVMODE_NOZERO>;
 				enable-reg = <0x44 0x4c 0x50>;
 				enable-offset = <19 8 23>;
@@ -399,7 +399,7 @@
 				index-value = <1>;
 				div-offset = <24>;
 				div-mask = <0xf>;
-				div-value = <3>;
+				div-value = <2>;
 				div-mode = <ARK_CLK_DIVMODE_NOZERO>;
 				//enable-reg = <0x44 0x4c 0x50 0x50>;
 				//enable-offset = <21 15 25 14>;
@@ -504,7 +504,7 @@
 			compatible = "snps,axi-dma-1.01a";
 			reg = <0xe0000000 0x1000>;
 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&axipll>, <&axipll>;
+			clocks = <&ahbpll>, <&ahbpll>;
 			clock-names = "core-clk", "cfgr-clk";
 			#dma-cells = <3>;
 

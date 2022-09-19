@@ -21,32 +21,7 @@
 #define DMAC_MAX_CHANNELS	8
 #define DMAC_MAX_MASTERS	2
 #define DMAC_MAX_BLK_SIZE	0x200000
-#define DMAX_MAX_BLK_MASK	(0x1fffff)
-#define DMAC_MAX_NR_REQUESTS	32
-
-/* Bitfields in LLP */
-#define DWC_LLP_LMS(x)		((x) & 1)	/* list master select */
-#define DWC_LLP_LOC(x)		((x) & ~0x3f)	/* next lli */
-
-
-/**
- * struct dw_axi_dma_slave - Controller-specific information about a slave
- *
- * @dma_dev:	required DMA master device
- * @src_id:	src request line
- * @dst_id:	dst request line
- * @m_master:	memory master for transfers on allocated channel
- * @p_master:	peripheral master for transfers on allocated channel
- * @hs_polarity:set active low polarity of handshake interface
- */
-struct dw_axi_dma_slave {
-	struct device		*dma_dev;
-	u8			src_id;
-	u8			dst_id;
-	u8			m_master;
-	u8			p_master;
-	bool			hs_polarity;
-};
+#define DMAX_MAX_BLK_MASK	0x1fffff
 
 struct dw_axi_dma_hcfg {
 	u32	nr_channels;
@@ -63,27 +38,24 @@ struct axi_dma_chan {
 	struct axi_dma_chip		*chip;
 	void __iomem			*chan_regs;
 	u8				id;
+	u8				hw_handshake_num;
 	atomic_t			descs_allocated;
 
+	struct dma_pool			*desc_pool;
 	struct virt_dma_chan		vc;
 
+	struct axi_dma_desc		*desc;
+	struct dma_slave_config		config;
+	enum dma_transfer_direction	direction;
+	bool				cyclic;
 	/* these other elements are all protected by vc.lock */
 	bool				is_paused;
-
-	enum dma_transfer_direction	direction;
-
-	/* custom slave configuration */
-	struct dw_axi_dma_slave	dws;
-
-	/* configuration passed via .device_config */
-	struct dma_slave_config dma_sconfig;
-	int	cyclic;
 };
 
 struct dw_axi_dma {
 	struct dma_device	dma;
 	struct dw_axi_dma_hcfg	*hdata;
-	struct dma_pool		*desc_pool;
+	struct device_dma_parameters	dma_parms;
 
 	/* channels */
 	struct axi_dma_chan	*chan;
@@ -115,13 +87,20 @@ struct __packed axi_dma_lli {
 	__le32		reserved_hi;
 };
 
+struct axi_dma_hw_desc {
+	struct axi_dma_lli	*lli;
+	dma_addr_t		llp;
+	u32			len;
+};
+
 struct axi_dma_desc {
-	struct axi_dma_lli		lli;
+	struct axi_dma_hw_desc	*hw_desc;
+
 	struct virt_dma_desc		vd;
 	struct axi_dma_chan		*chan;
-	struct list_head		xfer_list;
-	size_t				len;
-	size_t				total_len;		
+	u32				completed_blocks;
+	u32				length;
+	u32				period_len;
 };
 
 static inline struct device *dchan2dev(struct dma_chan *dchan)
@@ -193,6 +172,7 @@ static inline struct axi_dma_chan *dchan_to_axi_dma_chan(struct dma_chan *dchan)
 #define CH_INTSIGNAL_ENA	0x090 /* R/W Chan Interrupt Signal Enable */
 #define CH_INTCLEAR		0x098 /* W Chan Interrupt Clear */
 
+#define MAX_BLOCK_SIZE		0x1000 /* 1024 blocks * 4 bytes data width */
 
 /* DMAC_CFG */
 #define DMAC_EN_POS			0
@@ -208,7 +188,6 @@ static inline struct axi_dma_chan *dchan_to_axi_dma_chan(struct dma_chan *dchan)
 #define DMAC_CHAN_SUSP_WE_SHIFT		24
 
 /* CH_CTL_H */
-#define CH_CTL_H_IOC_BLKTFR_EN	BIT(26)
 #define CH_CTL_H_ARLEN_EN		BIT(6)
 #define CH_CTL_H_ARLEN_POS		7
 #define CH_CTL_H_AWLEN_EN		BIT(15)
@@ -236,8 +215,6 @@ enum {
 
 #define CH_CTL_L_DST_MSIZE_POS		18
 #define CH_CTL_L_SRC_MSIZE_POS		14
-#define DWC_CTLL_DST_MSIZE(n)	((n)<<CH_CTL_L_DST_MSIZE_POS)	/* burst, #elements */
-#define DWC_CTLL_SRC_MSIZE(n)	((n)<<CH_CTL_L_SRC_MSIZE_POS)
 
 enum {
 	DWAXIDMAC_BURST_TRANS_LEN_1	= 0,
@@ -254,8 +231,6 @@ enum {
 
 #define CH_CTL_L_DST_WIDTH_POS		11
 #define CH_CTL_L_SRC_WIDTH_POS		8
-#define DWC_CTLL_DST_WIDTH(n)		((n)<<CH_CTL_L_DST_WIDTH_POS)	/* bytes per element */
-#define DWC_CTLL_SRC_WIDTH(n)		((n)<<CH_CTL_L_SRC_WIDTH_POS)
 
 #define CH_CTL_L_DST_INC_POS		6
 #define CH_CTL_L_SRC_INC_POS		4
@@ -263,15 +238,9 @@ enum {
 	DWAXIDMAC_CH_CTL_L_INC		= 0,
 	DWAXIDMAC_CH_CTL_L_NOINC
 };
-#define DWC_CTLL_DST_INC			(DWAXIDMAC_CH_CTL_L_INC<<CH_CTL_L_DST_INC_POS)		/* DAR update/not */
-#define DWC_CTLL_DST_FIX			(DWAXIDMAC_CH_CTL_L_NOINC<<CH_CTL_L_DST_INC_POS)
-#define DWC_CTLL_SRC_INC			(DWAXIDMAC_CH_CTL_L_INC<<CH_CTL_L_SRC_INC_POS)		/* SAR update/not */
-#define DWC_CTLL_SRC_FIX			(DWAXIDMAC_CH_CTL_L_NOINC<<CH_CTL_L_SRC_INC_POS)
 
 #define CH_CTL_L_DST_MAST		BIT(2)
 #define CH_CTL_L_SRC_MAST		BIT(0)
-#define DWC_CTLL_DMS(n)			((n)<<2)	/* dst master select */
-#define DWC_CTLL_SMS(n)			((n)<<0)	/* src master select */
 
 /* CH_CFG_H */
 #define CH_CFG_H_PRIORITY_POS		17
@@ -293,7 +262,6 @@ enum {
 	DWAXIDMAC_TT_FC_MEM_TO_PER_DST,
 	DWAXIDMAC_TT_FC_PER_TO_PER_DST
 };
-#define DWC_CFGH_FC(n)		((n) << CH_CFG_H_TT_FC_POS)
 
 /* CH_CFG_L */
 #define CH_CFG_L_DST_PER_POS			11
