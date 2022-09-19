@@ -4,6 +4,7 @@
 #include "ark1668e-pinctrl.dtsi"
 
 //#define I2S_FULL_DUPLEX_CODEC_SUPPORT
+//#define DYNAMIC_TRACK_DISPLAY
 
 / {
 	i2c-gpio-0 {
@@ -20,10 +21,10 @@
 				status = "okay";
 				compatible = "arkmicro,drv_bd37033";
 				reg = <0x40>;		/* i2c address(7 bit)*/
-				flout-gain = <65>;	/*min = 0 ;max = 95*/
-				frout-gain = <65>;	/*min = 0 ;max = 95*/
-				rlout-gain = <65>;	/*min = 0 ;max = 95*/
-				rrout-gain = <65>;	/*min = 0 ;max = 95*/
+				flout-gain = <80>;	/*min = 0 ;max = 95*/
+				frout-gain = <80>;	/*min = 0 ;max = 95*/
+				rlout-gain = <80>;	/*min = 0 ;max = 95*/
+				rrout-gain = <80>;	/*min = 0 ;max = 95*/
 				#sound-dai-cells = <0>;
 		};
 	};
@@ -121,9 +122,9 @@
 		simple-audio-card,aux-devs = <&amp>;
 
 		simple-audio-card,format = "i2s";
-		simple-audio-card,bitclock-master = <&dailink0_master>;
-		simple-audio-card,frame-master = <&dailink0_master>;
-		dailink0_master:simple-audio-card,cpu {
+		simple-audio-card,bitclock-master = <&cpu_master>;
+		simple-audio-card,frame-master = <&cpu_master>;
+		cpu_master:simple-audio-card,cpu {
 			sound-dai = <&i2s_dac>;
 		};
 		simple-audio-card,codec {
@@ -139,7 +140,7 @@
 				sound-dai = <&i2s_adc>;
 			};
 			capture_codec: codec {
-				sound-dai = <&cs5343_codec>;//External(ADC):es8316_codec , cs5343_codec  ; Internal:ark_codec
+				sound-dai = <&cs5343_codec>;//External(ADC):cs5343_codec  ; Internal:ark_codec
 			};
 		};
 
@@ -151,7 +152,19 @@
 				sound-dai = <&i2s_dac>;
 			};
 			playback_codec: codec {
-				sound-dai = <&ark_codec>;//External(DAC):es8316_codec ,cs4334_codec ; Internal:ark_codec
+				sound-dai = <&ark_codec>;//Internal:ark_codec
+			};
+		};
+
+		simple-audio-card,dai-link@2 {		/* I2S2 - dac */
+			format = "i2s";
+			bitclock-master = <&cpu_master>;
+			frame-master = <&cpu_master>;
+			cpu_master: cpu {
+				sound-dai = <&i2s2_dac>;
+			};
+			codec_master: codec {
+				sound-dai = <&cs4334_codec>;//External(DAC):cs4334_codec ;
 			};
 		};
 #endif
@@ -163,8 +176,20 @@
 		interrupts = <1 IRQ_TYPE_EDGE_BOTH>;
 		detect-gpios = <&gportd 1 GPIO_ACTIVE_HIGH>;
 		debounce-detect = <0>;
+		mirror-config = <0>;   /* 0:no mirror; 1:level mirror; 2:vertical mirror; 3:vertical && level mirror; */
+#ifdef DYNAMIC_TRACK_DISPLAY
+		dynamic-track = <1>;
+#else
+		dynamic-track = <0>;
+#endif
 		reg = <0x5ea00000 0x400000>;
 	};
+
+#ifdef DYNAMIC_TRACK_DISPLAY
+	mcu_serial: mcu-serial@0 {
+        compatible = "arkmicro,ark-mcu-serial";
+    };
+#endif
 
 	adc {
         compatible = "arkmicro,ark1668e-adc";
@@ -236,10 +261,12 @@
 	status = "okay";
 };
 
+#ifdef DYNAMIC_TRACK_DISPLAY
 &uart3 {
     use-in-kernel;
     use-for-mcu;
 };
+#endif
 
 &ituin {
 	status = "okay";
@@ -274,6 +301,12 @@
 &i2s_dac {
 	pinctrl-0 = <&pinctrl_i2sdac_sync &pinctrl_i2sdac_sadata_in &pinctrl_i2sdac_sadata_out
 					&pinctrl_i2sdac_mclk &pinctrl_i2sdac_bclk>;
+	pinctrl-names = "default";
+};
+
+&i2s2_dac {
+	pinctrl-0 = <&pinctrl_i2s2dac_sync &pinctrl_i2s2dac_sadata_out
+					&pinctrl_i2s2dac_mclk &pinctrl_i2s2dac_bclk>;
 	pinctrl-names = "default";
 };
 

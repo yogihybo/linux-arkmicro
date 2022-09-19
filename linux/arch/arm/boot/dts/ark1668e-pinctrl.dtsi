@@ -257,6 +257,27 @@
 				<ARK_PBANK_1 15 ARK_PVAL_2>;	/* i2s1 sadata out */
 			group-mux = <0x204 12 1 0>;			/*i2s1 sadata out*/
 		};
+
+		pinctrl_i2s2dac_sync: i2s2-sync {
+			ark,pins =
+				<ARK_PBANK_4 14 ARK_PVAL_1>;		/* i2s2 sync */
+		};
+
+		pinctrl_i2s2dac_sadata_out: i2s2-sadata {
+			ark,pins =
+				<ARK_PBANK_4 15 ARK_PVAL_1>;		/* i2s2 sadata */
+			group-mux = <0x204 30 1 1>;			/* sadata out */
+		};
+
+		pinctrl_i2s2dac_mclk: i2s2-mclk {
+			ark,pins =
+				<ARK_PBANK_4 16 ARK_PVAL_1>;		/* i2s2 mclk */
+		};
+
+		pinctrl_i2s2dac_bclk: i2s2-bclk {
+			ark,pins =
+				<ARK_PBANK_4 17 ARK_PVAL_1>;	/* i2s2 bclk */
+		};
 	};
 
 	itu {

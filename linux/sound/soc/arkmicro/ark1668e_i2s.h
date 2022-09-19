@@ -6,8 +6,8 @@
 #ifndef __ARK1668E_I2S_H
 #define __ARK1668E_I2S_H
 
-#define SLAVE_ON		0
-#define MASTER_ON	1
+#define SLAVE_MODE	0
+#define MASTER_MODE	1
 
 //struct ark1668e_i2s1_data_in{
 //	int i2s1_data ;
@@ -66,6 +66,8 @@
 #define DACR0_LHPVOL(x)   (((x) & 0x3f) << 0)  /* HPOUT Lefit Channel Volume */
 #define DACR0_RHPVOL_MASK (0x3f << 24)
 #define DACR0_RHPVOL(x)   (((x) & 0x3f) << 24)  /* HPOUT Right Channel Volume */
+
+#define DACR0_L_R_OUT_MUTE(x)   ((x) << 27)  /* LOUT and ROUT mute control */
 
 #define SASR0_RFL(x) 	((x) << 16) /* Rx FIFO Level */
 #define SASR0_TFL(x) 	((x) << 8) 	/* Tx FIFO Level */

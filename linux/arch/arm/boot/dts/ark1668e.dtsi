@@ -552,6 +552,17 @@
 			#sound-dai-cells = <0>;
 		};
 
+		i2s2_dac: i2s2-dac@e4800000 {
+			compatible = "arkmicro,ark1668e-i2s";
+			reg = <0xe4800000 0x1000>;
+			interrupts = <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>;
+			nco-reg = <0xe4900178>;
+			dmas = <&dmac 23 1 0>, <&dmac 24 0 1>;
+			dma-names = "rx", "tx";
+			clocks = <&i2s2_dac_clk>;
+			#sound-dai-cells = <0>;
+		};
+
 		ark_codec: ark-adac@e4900000 {
 			compatible = "arkmicro,ark-audio-codec";
 			reg = <0xe4900000 0x1000>;

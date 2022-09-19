@@ -629,7 +629,8 @@ int bd37033_set_default(struct bd37033_data *bd)
 	if(mp.input_channel >= 0)
 		bd37033_set_stream(mp.input_channel);
 	else
-		bd37033_select_input_channel(bd,BD37033_INPUT_SELECTOR_D_SINGLE);	//default: navi
+		bd37033_select_input_channel(bd,BD37033_INPUT_SELECTOR_B_SINGLE);	//default: BD37033_INPUT_SELECTOR_D_SINGLE
+		//bd37033_select_input_channel(bd,BD37033_INPUT_SELECTOR_D_SINGLE);       //default: navi
 	
 	//set loudness f0
 	bd37033_mixing_setup(my_bd,BD37033_MIXING_LOUDNESS_F0_TYPE,1);	//1: 800HZ

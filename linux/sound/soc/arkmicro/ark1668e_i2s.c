@@ -19,7 +19,7 @@
 #define DRV_NAME	"ark1668e-i2s"
 
 //struct ark1668e_i2s1_data_in i2s_data;
-int master_status = SLAVE_ON;////only for junjie
+int audio_codec_mode= SLAVE_MODE;////only for junjie
 
 struct ark1668e_i2s_dev {
 	struct  device	*dev;
@@ -50,39 +50,54 @@ static int ark1668e_i2s_startup(
 	udelay(1);
 	writel(0, i2s->base + I2S_SACR0);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		/*i2s_regs_init*/
+	if(i2s->full_duplex_en){
 		sacr0 = SACR0_TLFIRST | SACR0_CH_LOCK | SACR0_TFTH(15) | SACR0_TDMAEN;
-		if(i2s->full_duplex_en)
-			sacr0 |= SACR0_RLFIRST | SACR0_CH_LOCK | SACR0_RFTH(16) | SACR0_RDMAEN;
-		if (i2s->master)
-			sacr0 |=  SACR0_BCKD | SACR0_SYNCD;//ark1668e-i2s:Master mode
-		else
-			sacr0 &=  ~(SACR0_BCKD | SACR0_SYNCD);//ark1668e-i2s:slave mode
-		writel(sacr0, i2s->base + I2S_SACR0);
-
-		writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
-		if(i2s->full_duplex_en)
-			writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
-		writel(0x7f, i2s->base + I2S_SAICR);
-		writel(0, i2s->base + I2S_SAICR);
-	} else if(substream->stream == SNDRV_PCM_STREAM_CAPTURE){
-		/*i2s_regs_init*/
-		if(i2s->full_duplex_en)
-			sacr0 = SACR0_TLFIRST | SACR0_CH_LOCK | SACR0_TFTH(15) | SACR0_TDMAEN;
 		sacr0 |= SACR0_RLFIRST | SACR0_CH_LOCK | SACR0_RFTH(16) | SACR0_RDMAEN;
+
 		if (i2s->master)
 			sacr0 |= SACR0_BCKD | SACR0_SYNCD;//ark1668e-i2s:Master mode
 		else
 			sacr0 &= ~(SACR0_BCKD | SACR0_SYNCD);//ark1668e-i2s:slave mode
 		writel(sacr0, i2s->base + I2S_SACR0);
-		if(i2s->full_duplex_en)
-			writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
-		writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
+		//if(i2s->full_duplex_en)
+		//	writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
+		//writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
 		writel(0x7f, i2s->base + I2S_SAICR);
 		writel(0, i2s->base + I2S_SAICR);
-	}
+	}else{
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			/*i2s_regs_init*/
+			sacr0 = SACR0_TLFIRST | SACR0_CH_LOCK | SACR0_TFTH(15) | SACR0_TDMAEN;
+			if(i2s->full_duplex_en)
+				sacr0 |= SACR0_RLFIRST | SACR0_CH_LOCK | SACR0_RFTH(16) | SACR0_RDMAEN;
+			if (i2s->master)
+				sacr0 |=  SACR0_BCKD | SACR0_SYNCD;//ark1668e-i2s:Master mode
+			else
+				sacr0 &=  ~(SACR0_BCKD | SACR0_SYNCD);//ark1668e-i2s:slave mode
+			writel(sacr0, i2s->base + I2S_SACR0);
 
+			//writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
+			//if(i2s->full_duplex_en)
+			//	writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
+			writel(0x7f, i2s->base + I2S_SAICR);
+			writel(0, i2s->base + I2S_SAICR);
+		} else if(substream->stream == SNDRV_PCM_STREAM_CAPTURE){
+			/*i2s_regs_init*/
+			if(i2s->full_duplex_en)
+				sacr0 = SACR0_TLFIRST | SACR0_CH_LOCK | SACR0_TFTH(15) | SACR0_TDMAEN;
+			sacr0 |= SACR0_RLFIRST | SACR0_CH_LOCK | SACR0_RFTH(16) | SACR0_RDMAEN;
+			if (i2s->master)
+				sacr0 |= SACR0_BCKD | SACR0_SYNCD;//ark1668e-i2s:Master mode
+			else
+				sacr0 &= ~(SACR0_BCKD | SACR0_SYNCD);//ark1668e-i2s:slave mode
+			writel(sacr0, i2s->base + I2S_SACR0);
+			//if(i2s->full_duplex_en)
+			//	writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
+			//writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
+			writel(0x7f, i2s->base + I2S_SAICR);
+			writel(0, i2s->base + I2S_SAICR);
+		}
+	}
 	udelay(1);
 	sacr0 &= ~SACR0_CH_LOCK;
 	writel(sacr0, i2s->base + I2S_SACR0);
@@ -159,7 +174,7 @@ static int ark1668e_i2s_trigger(
 		writel(readl(i2s->base + I2S_SACR0) | SACR0_ENB, i2s->base + I2S_SACR0);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		/* if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		/*if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 			writel(readl(i2s->base + I2S_SACR1) | SACR1_DRPL, i2s->base + I2S_SACR1);
 		else
 			writel(readl(i2s->base + I2S_SACR1) | SACR1_DREC, i2s->base + I2S_SACR1);
@@ -289,9 +304,10 @@ static irqreturn_t ark1668e_i2s_interrupt(int irq, void *dev_id)
 	status = readl(i2s->base + I2S_SASR0);
 
 	dev_dbg(i2s->dev, "ark1668e_i2s_interrupt status=0x%x.0x%x.\n", status, readl(i2s->base + I2S_SACR0));
+	//printk("ark1668e_i2s_interrupt status=0x%x.0x%x.\n", status, readl(i2s->base + I2S_SACR0));
 
 	writel(status, i2s->base + I2S_SAICR);
-	writel(0, i2s->base + I2S_SAICR);
+	//writel(0, i2s->base + I2S_SAICR);
 
 	return IRQ_HANDLED;
 }
