@@ -317,9 +317,13 @@
 				reg = <0x58>;
 				index-offset = <8>;
 				index-mask = <0xf>;
-				index-value = <3>;
-				enable-reg = <0x58>;
-				enable-offset = <5>;			
+				index-value = <1>;
+				div-offset = <0>;
+				div-mask = <0x1f>;
+				div-value = <10>;
+				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
+				enable-reg = <0x58 0x58>;
+				enable-offset = <5 7>;
 			};
 
 			mmc1clk: mmc1clk {
@@ -329,9 +333,13 @@
 				reg = <0x5c>;
 				index-offset = <8>;
 				index-mask = <0xf>;
-				index-value = <3>;
-				enable-reg = <0x5c>;
-				enable-offset = <5>;			
+				index-value = <1>;
+				div-offset = <0>;
+				div-mask = <0x1f>;
+				div-value = <10>;
+				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
+				enable-reg = <0x5c 0x5c>;
+				enable-offset = <5 7>;
 			};
 
 			mmc2clk: mmc2clk {
@@ -341,9 +349,13 @@
 				reg = <0x7c>;
 				index-offset = <8>;
 				index-mask = <0xf>;
-				index-value = <3>;
-				enable-reg = <0x7c>;
-				enable-offset = <5>;			
+				index-value = <1>;
+				div-offset = <0>;
+				div-mask = <0x1f>;
+				div-value = <10>;
+				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
+				enable-reg = <0x7c 0x7c>;
+				enable-offset = <5 7>;
 			};
 
 			lcdclk: lcdclk {
