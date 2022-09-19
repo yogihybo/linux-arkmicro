@@ -91,6 +91,36 @@ int MFCH264Decode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 			break;
 
 		case H264DEC_PIC_DECODED: /* a picture was decoded */
+			g_picDecodeNumber++;
+
+			if (H264DecNextPicture(handle->decInst, &decPic, 0) == H264DEC_PIC_RDY) {
+				if(outBuffer->num >= MAX_OUTFRAME_NUM)
+					return 0;
+
+				outBuffer->buffer[outBuffer->num].keyPicture =
+					decPic.isIdrPicture;
+				if (!handle->ppInst) {
+					outBuffer->buffer[outBuffer->num].yBusAddress =
+						decPic.outputPictureBusAddress;
+					outBuffer->buffer[outBuffer->num].pyVirAddress =
+						decPic.pOutputPicture;
+					outBuffer->frameWidth = decInfo.picWidth;
+					outBuffer->frameHeight = decInfo.picHeight;
+					outBuffer->num++;
+				} else if (PPGetResult(handle->ppInst) == PP_OK) {
+					outBuffer->buffer[outBuffer->num].yBusAddress = PP_OUTBUFFER_PHYADDR(handle->ppOutBufferIndex);
+					outBuffer->buffer[outBuffer->num].pyVirAddress = (void*)PP_OUTBUFFER_VIRADDR(handle->ppOutBufferIndex);
+					outBuffer->frameWidth = handle->ppOutWidth;
+					outBuffer->frameHeight = handle->ppOutHeight;
+					outBuffer->num++;
+
+					handle->ppOutBufferIndex = (handle->ppOutBufferIndex + 1) % PP_OUTBUF_NUM;
+					pp_reset_outimg_addr(handle, PP_OUTBUFFER_PHYADDR(handle->ppOutBufferIndex));
+				}
+			}
+
+			break;
+
 		case H264DEC_PENDING_FLUSH:
 			g_picDecodeNumber++;
 
