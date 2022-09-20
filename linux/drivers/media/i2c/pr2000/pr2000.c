@@ -77,7 +77,10 @@ enum {
 };
 
 enum {
-	TYPE_UNDEF = 1,
+	TYPE_UNDEF = -1,
+	TYPE_ARK7116 = 0,
+	TYPE_ARK7116H,
+	TYPE_RN6752,
 	TYPE_PR2000,
 };
 

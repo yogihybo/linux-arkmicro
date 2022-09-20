@@ -1078,6 +1078,16 @@ config VIDEO_ARK7116
 	  To compile this driver as a module, choose M here: the
 	  module will be called ark7116.
 
+config VIDEO_ARK7116H
+	tristate "Arkmicro ark7116h video decoder"
+	depends on VIDEO_V4L2 && I2C
+	select V4L2_FWNODE
+	---help---
+	  Support for the Arkmicro ark7116h video decoder.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ark7116h.
+
 config VIDEO_RN6752
     tristate "Arkmicro rn6752 video decoder"
     depends on VIDEO_V4L2 && I2C

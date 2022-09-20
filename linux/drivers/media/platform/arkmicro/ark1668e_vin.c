@@ -1203,7 +1203,10 @@ static void ark_vin_reg_init(struct dvr_dev *dvr_dev)
     vin_writel(ARK1668E_ITU656_SEP_MODE_SEL, val);
 
 	val = vin_readl(ARK1668E_ITU656_ENABLE_REG);
-    val = 0x0000200a;//0x0000600a;
+    if(g_ark1668e_vin->dvr_dev->chip_info == TYPE_ARK7116H)
+        val = 0x0000000a;//0x0000600a;
+    else
+        val = 0x0000200a;//0x0000600a;
     vin_writel(ARK1668E_ITU656_ENABLE_REG, val);
 
 	val = vin_readl(ARK1668E_ITU656_MIRR_SET);
@@ -1512,12 +1515,20 @@ static int vin_async_complete(struct v4l2_async_notifier *notifier)
 		printk(KERN_ALERT "decoder chip is rn6752\n");
 		ark_vin->dvr_dev->chip_info = TYPE_RN6752;
 		ark_vin->dvr_dev->framebuf_num = 8;
+        ret = v4l2_subdev_call(ark_vin->current_subdev->sd,core,ioctl,VIDIOC_ENABLE_TIME,0);
+        if(ret < 0){
+        printk(KERN_ALERT "%s %d: v4l2_subdev_call error \n",__FUNCTION__, __LINE__);
+        return ret;
+        }
 	}else if(chipinfo == TYPE_ARK7116){
 		printk(KERN_ALERT "decoder chip is ark7116\n");
 		ark_vin->dvr_dev->chip_info = TYPE_ARK7116;
+	}else if(chipinfo == TYPE_ARK7116H){
+		printk(KERN_ALERT "decoder chip is ark7116h\n");
+		ark_vin->dvr_dev->chip_info = TYPE_ARK7116H;
 	}else if(chipinfo == TYPE_PR2000){
 		printk(KERN_ALERT "decoder chip is pr2000\n");
-		ark_vin->dvr_dev->chip_info = TYPE_ARK7116;
+		ark_vin->dvr_dev->chip_info = TYPE_PR2000;
 	}else{
 		printk(KERN_ALERT "no find decoder chip info\n");
 	}

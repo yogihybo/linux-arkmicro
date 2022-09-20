@@ -67,6 +67,7 @@ static bool rn6752_dbg = false;
 #define VIDIOC_EXIT_CARBACK			_IOWR('V', BASE_VIDIOC_PRIVATE + 5, int)
 #define VIDIOC_GET_ITU601_ENABLE			_IOWR('V', BASE_VIDIOC_PRIVATE + 6, int)
 #define VIDIOC_SET_AVIN_MODE			_IOWR('V', BASE_VIDIOC_PRIVATE + 7, int)
+#define VIDIOC_ENABLE_TIME			_IOWR('V', BASE_VIDIOC_PRIVATE + 8, int)
 
 #define ARK_DVR_BRIGHTNESS_MASK		(1<<0)
 #define ARK_DVR_CONTRAST_MASK		(1<<1)
@@ -143,7 +144,9 @@ enum carback_camera_mode {
 enum {
 	TYPE_UNDEF = -1,
 	TYPE_ARK7116 = 0,
+	TYPE_ARK7116H,
 	TYPE_RN6752,
+	TYPE_PR2000,
 };
 
 const char rxchip_rn6752_cvbs_pal[] = {
@@ -2475,6 +2478,11 @@ static long rn6752_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		rn6752_reset(decoder);
 		break;
 	}
+    case VIDIOC_ENABLE_TIME:
+    {
+        mod_timer(&decoder->work_timer, jiffies +  msecs_to_jiffies(1));
+        break;
+    }
 	default:
 		return -ENOIOCTLCMD;
 	}
@@ -2525,7 +2533,6 @@ static int rn6752_parse_dt(struct rn6752 *decoder, struct device_node *np)
 		decoder->itu601in = 0;
 	}
 	
-	_rn6752_init(decoder);
 
 	return ret;
 }
@@ -2621,8 +2628,6 @@ static int rn6752_probe(struct i2c_client *client,
 	res = v4l2_async_register_subdev(sd);
 	if (res < 0)
 		goto err;
-
-	mod_timer(&decoder->work_timer, jiffies +  msecs_to_jiffies(1));
 	
 	return 0;
 err:

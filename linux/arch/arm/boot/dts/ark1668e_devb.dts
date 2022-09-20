@@ -5,6 +5,7 @@
 
 //#define I2S_FULL_DUPLEX_CODEC_SUPPORT
 //#define DYNAMIC_TRACK_DISPLAY
+#define DECODE_ARK7116
 
 / {
 	i2c-gpio-0 {
@@ -39,6 +40,7 @@
 		i2c-gpio,delay-us = <6>;	/* clk freq = 500/delay KHz */
 		i2c-gpio,scl-output-only;
 
+#ifdef DECODE_ARK7116
 		ark7116: ark7116@B2 {
 			compatible = "arkmicro,ark7116_1668e_devb";
 			reset-gpio = <&gportf 27 0>;
@@ -51,6 +53,20 @@
 				};
 			};
 		};
+#else
+		ark7116h: ark7116h@B2 {
+			compatible = "arkmicro,ark7116h_1668e_devb";
+			reset-gpio = <&gportf 27 0>;
+			reg = <0x59>; /* i2c address(7 bits) */
+			default-channel = <0>;
+			carback-config = <1>;
+			port {
+				ark7116h_0: endpoint@0{
+					remote-endpoint = <&itu_1>;
+				};
+			};
+		};
+#endif
 	
 		rn6752: da380@4e {
 			compatible = "arkmicro,ark1668e_rn6752";
@@ -284,11 +300,17 @@
 			remote-endpoint = <&rn6752_0>;
             channel = <0>;
 		};
-
+#ifdef DECODE_ARK7116
 		itu_1: endpoint@1 {
 			remote-endpoint = <&ark7116_0>;
 			channel = <1>;
 		};
+#else
+		itu_1: endpoint@1 {
+			remote-endpoint = <&ark7116h_0>;
+			channel = <1>;
+		};
+#endif
 	};
 };
 
