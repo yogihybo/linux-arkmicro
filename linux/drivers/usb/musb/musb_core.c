@@ -1219,6 +1219,7 @@ b_host:
 
 		switch (musb->xceiv->otg->state) {
 		case OTG_STATE_A_HOST:
+		case OTG_STATE_A_WAIT_BCON:
 		case OTG_STATE_A_SUSPEND:
 			musb_host_resume_root_hub(musb);
 			musb_root_disconnect(musb);

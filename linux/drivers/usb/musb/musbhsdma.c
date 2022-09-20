@@ -191,7 +191,7 @@ static int dma_channel_program(struct dma_channel *channel,
 	struct musb_dma_controller *controller = musb_channel->controller;
 	struct musb *musb = controller->private_data;
 
-#if 0//NICHOLAS_ADD
+#if NICHOLAS_ADD
 	if(len <= 64)
 		return false;
 #endif
