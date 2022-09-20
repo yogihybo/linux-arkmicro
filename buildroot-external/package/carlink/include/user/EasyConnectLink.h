@@ -2,11 +2,12 @@
 #define ECLINK_H
 
 #include "IUserLinkPlayer.h"
+
+
+#ifdef USE_EASYCONNECT
 #include "AudioPlayer.h"
 #include "AudioRecoder.h"
 #include "VideoPlayer.h"
-
-#ifdef USE_EASYCONNECT
 #include "ECSDKFramework.h"
 #include "SDKListener.h"
 #include "MirrorListener.h"
@@ -53,6 +54,10 @@ protected:
     virtual void send_input_text(const string& text);
     virtual void send_input_selection(const int start, const int stop);
     virtual void send_input_action(const int actionId, const int keyCode);
+    virtual void send_bluetooth_cmd(const string& cmd ){}
+    virtual void send_broadcast(bool enable){}
+    virtual void send_delay_record(int millisecond){}
+    virtual void send_wifi_state_changed(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp);
 private:
     //EClinkPlayer *m_pEClinkPlayer;
     static void mirror_direction_callback(int direction, void* parameter);

@@ -1,8 +1,14 @@
 #ifndef USBHOSTSERVICE_H
 #define USBHOSTSERVICE_H
+
+#ifdef __cplusplus
+
 #include <stdint.h>
 #include <memory.h>
+#include <functional>
 
+using namespace std;
+typedef function<void (int, int)> funcHotplug;
 
 class LinkAssist;
 class UsbHostServicePrivate;
@@ -12,8 +18,7 @@ public:
     UsbHostService();
     ~UsbHostService();
 
-    void addHotplugListener(LinkAssist *pLinkAssist);
-
+    void addHotplugListener(funcHotplug hotplug);
     bool start();
     void stop();
 
@@ -22,5 +27,7 @@ private:
     UsbHostServicePrivate *mHandle;
 
 };
+
+#endif
 
 #endif // USBHOSTSERVICE_H

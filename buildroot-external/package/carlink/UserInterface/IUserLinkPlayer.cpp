@@ -3,6 +3,7 @@
 #include "CarplayLink.h"
 #include "EasyConnectLink.h"
 #include "MirrorLink.h"
+#include "HiCarLink.h"
 #include "UsbHostService.h"
 #include "VideoDecoder.h"
 #include "AudioDecoder.h"
@@ -17,8 +18,6 @@
 #include <sys/time.h>
 using namespace XEngine;
 
-#define MIRROR_WIDTH 1280
-#define MIRROR_HEIGHT 720
 
 uint64_t getTickCount()
 {
@@ -27,8 +26,9 @@ uint64_t getTickCount()
     return ((uint64_t)tv.tv_sec) * 1000 + tv.tv_usec / 1000;
 }
 
-IUserLinkPlayer::IUserLinkPlayer():mpIULPlayer(this),mpMusicDecoder(new AudioDecoder()),
-mpTTSDecoder(new AudioDecoder()),mpVRDecoder(new AudioDecoder()),mpCallDecoder(new AudioDecoder()),mFuncAppStatusCallback(nullptr),mFuncConnectCallback(nullptr),mConnected(false),mVideoStart(false)
+IUserLinkPlayer::IUserLinkPlayer():mpIULPlayer(this),mpMusicDecoder(new AudioDecoder("plug:softvol2")),
+mpTTSDecoder(new AudioDecoder("plug:softvol1")),mpVRDecoder(new AudioDecoder("plug:softvol4")),mpCallDecoder(new AudioDecoder("plug:softvol3")),mFuncAppStatusCallback(nullptr),mFuncConnectCallback(nullptr),mConnected(false),mVideoStart(false)
+,mFuncBlueToothPhoneCallback(nullptr)
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
@@ -52,10 +52,16 @@ void IUserLinkPlayer::RegisterAppStatusCallback(FUNCAPPSTATUSCALLBACK funcAppSta
     mFuncAppStatusCallback = funcAppStatusCallback;
 }
 
+void IUserLinkPlayer::RegisterBlueToothPhoneCallback(FUNCBLUETOOTHPHONECALLBACK funcBlueToothPhoneCallback)
+{
+    mFuncBlueToothPhoneCallback = funcBlueToothPhoneCallback;
+}
+
 void IUserLinkPlayer::GetIniConfig(LinkAssist *pLinkAssist)
 {
     mLinkConfig = pLinkAssist->GetConfigInfo();
     mCarplayConfig = pLinkAssist->GetCarplayInfo();
+    mCarlifeConfig = pLinkAssist->GetCarlifeInfo();
 }
 
 bool IUserLinkPlayer::Initialize(LinkMode linkMode, PhoneType phoneType)
@@ -65,8 +71,6 @@ bool IUserLinkPlayer::Initialize(LinkMode linkMode, PhoneType phoneType)
     mpIULPlayer->set_inserted(true, phoneType);
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     mpIULPlayer->init(linkMode);
-    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
-    mpIULPlayer->SendScreenSize(MIRROR_WIDTH, MIRROR_HEIGHT); //请求大小,不一定是车机大小
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     return true;
 }
@@ -121,6 +125,12 @@ bool IUserLinkPlayer::SetForeground()
     if(mpIULPlayer)
         mpIULPlayer->set_foreground();
     return true;
+}
+
+void IUserLinkPlayer::SetInserted(bool inserted, PhoneType phoneType)
+{
+    if(mpIULPlayer)
+        mpIULPlayer->set_inserted(inserted, phoneType);
 }
 
 void IUserLinkPlayer::SendScreenSize(int width, int height)
@@ -185,6 +195,35 @@ void IUserLinkPlayer::SendCarWifi(WifiInfo& info){
 
     if(mpIULPlayer){
         mpIULPlayer->send_car_wifi(info);
+    }
+}
+
+void IUserLinkPlayer::SendBlueToothCmd(const string& cmd)
+{
+
+    if(mpIULPlayer){
+        mpIULPlayer->send_bluetooth_cmd(cmd);
+    }
+}
+
+void IUserLinkPlayer::SendBroadcast(bool enable)
+{
+    if(mpIULPlayer){
+        mpIULPlayer->send_broadcast(enable);
+    }
+}
+
+void IUserLinkPlayer::SendDelayRecord(int millisecond)
+{
+    if(mpIULPlayer){
+        mpIULPlayer->send_delay_record(millisecond);
+    }
+}
+
+void IUserLinkPlayer::SendWifiStateChanged(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp)
+{
+    if(mpIULPlayer){
+        mpIULPlayer->send_wifi_state_changed(action, state, phoneIp, carIp);
     }
 }
 
@@ -326,10 +365,12 @@ void IUserLinkPlayer::video_start(int offset_x, int offset_y, int width, int hei
 
 void IUserLinkPlayer::video_stop()
 {
-    printf("video_stop\r\n");
+    printf("++ video_stop ++\r\n");
     Autolock l(&mMutexVideo);
     mVideoStart = false;
     VideoDecoder::instance()->Uninit();
+    printf("-- video_stop --\r\n");
+
 }
 
 void IUserLinkPlayer::video_play(const void *data, int32_t len)
@@ -355,44 +396,56 @@ void IUserLinkPlayer::video_play(const void *data, int32_t len)
         frameCounter = 0;
     }
 
-    //printf("++ video len = %d ++\n", len);
+//    printf("++ video len = %d ++\n", len);
     Autolock l(&mMutexVideo);
     if(mVideoStart)
         VideoDecoder::instance()->InputDecoder(data, len);
-    //printf("-- video len = %d --\n", len);
+//    printf("-- video len = %d --\n", len);
 }
 
 void IUserLinkPlayer::record_start(AudioInfo &audioInfo)
 {
-    printf("%d:%s\r\n",__LINE__, __func__);
+   printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     AudioRecord::instance()->registerRecordAudio(std::bind(&IUserLinkPlayer::record_audio_callback,this, std::placeholders::_1,std::placeholders::_2));
     AudioRecord::instance()->setMediaParam(audioInfo.sampleRate, audioInfo.format, audioInfo.channel);
     AudioRecord::instance()->start();
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
 
 void IUserLinkPlayer::record_stop()
 {
     printf("%d:%s\r\n",__LINE__, __func__);
+    AudioRecord::instance()->Release();
     AudioRecord::instance()->join();
     printf("%d:%s\r\n",__LINE__, __func__);
 }
 
 void IUserLinkPlayer::record_pause(bool pause)
 {
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(pause)
         AudioRecord::instance()->stopRecordSound();
     else
         AudioRecord::instance()->resumeRecordSound();
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
 
 bool IUserLinkPlayer::app_status(AppStatusMessage appStatusMessage, void *reserved)
 {
     printf("appStatusMessage = %d\r\n", appStatusMessage);
     if(mConnected){
+
         if(appStatusMessage == APP_FOREGROUND){
             VideoDecoder::instance()->Show(true);
         }
         else if(appStatusMessage == APP_BACKGROUND){
+
+            printf("back :%d\r\n", reserved);
+            if((bool)reserved){
+                Autolock l(&mMutexVideo);
+                mVideoStart = false;
+            }
+
             VideoDecoder::instance()->Show(false);
         }
     }
@@ -405,7 +458,10 @@ bool IUserLinkPlayer::app_status(AppStatusMessage appStatusMessage, void *reserv
 bool IUserLinkPlayer::bt_call_action(CallType callType, const char *name, const char* number)
 {
     printf("calltype = %d, name = %s, number = %s\r\n",callType, name, number);
-
+    if(mFuncBlueToothPhoneCallback)
+    {
+        mFuncBlueToothPhoneCallback(callType, (char*)name, (char*)number);
+    }
     return true;
 }
 
@@ -418,7 +474,7 @@ bool IUserLinkPlayer::audio_start(AudioType audioType, int rate, int bit, int ch
     }
     else if(audioType == AUDIO_TYPE_TTS){
         mpTTSDecoder->setMediaParam(rate,bit, channel);
-        app_status(APP_NAVI_STARTED, nullptr);
+        app_status(APP_NAVI_SOUND_STARTED, nullptr);
     }
     else if(audioType == AUDIO_TYPE_VR){
         mpVRDecoder->setMediaParam(rate,bit, channel);
@@ -434,7 +490,7 @@ bool IUserLinkPlayer::audio_start(AudioType audioType, int rate, int bit, int ch
 
 bool IUserLinkPlayer::audio_stop(AudioType audioType)
 {
-    printf("stop audiotype = %d\r\n", audioType);
+    printf("stop audio type = %d\r\n", audioType);
 
     if(audioType == AUDIO_TYPE_MUSIC){
         mpMusicDecoder->release();
@@ -442,7 +498,7 @@ bool IUserLinkPlayer::audio_stop(AudioType audioType)
     }
     else if(audioType == AUDIO_TYPE_TTS){
         mpTTSDecoder->release();
-        app_status(APP_NAVI_STOPPED, nullptr);
+        app_status(APP_NAVI_SOUND_STOPPED, nullptr);
     }
     else if(audioType == AUDIO_TYPE_VR){
         mpVRDecoder->release();
@@ -455,10 +511,28 @@ bool IUserLinkPlayer::audio_stop(AudioType audioType)
     return true;
 }
 
+static int PrintCurrentSpeaker(int length)
+{
+    static long   length_1s   = 0;
+    static time_t old_time    = 0;
+    time_t  now_time    = time(NULL);
+    if(old_time == 0) old_time = now_time;
+    length_1s += length;
+    if((now_time - old_time) >= 1){
+        printf("consume speaker out:%ld byte/s\n ", length_1s/(now_time - old_time));
+        old_time = now_time;
+        length_1s = 0;
+    }
+    return 0;
+}
+
 void IUserLinkPlayer::audio_play(AudioType audioType, const void* data, uint32_t len)
 {
-    //printf("audiotype = %d , len = %d\r\n", audioType, len);
+
+//    printf("audiotype = %d , len = %d\r\n", audioType, len);
+//    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(audioType == AUDIO_TYPE_MUSIC){
+ //       PrintCurrentSpeaker(len);
         mpMusicDecoder->playSound((unsigned char*)data, len);
     }
     else if(audioType == AUDIO_TYPE_TTS){
@@ -470,7 +544,7 @@ void IUserLinkPlayer::audio_play(AudioType audioType, const void* data, uint32_t
     else if(audioType == AUDIO_TYPE_CALL){
         mpCallDecoder->playSound((unsigned char*)data, len);
     }
-
+//    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
 
 

@@ -1,8 +1,7 @@
 #ifndef LINKBASE_H
 #define LINKBASE_H
 
-#endif // LINKBASE_H
-
+#ifdef __cplusplus
 using namespace std;
 #include <string>
 
@@ -47,6 +46,8 @@ typedef enum
     DBUS_RECOGNITION_STOPPED,            //voices recognition stop(record stop)
     DBUS_PHONE_STARTED,                  //phone call start
     DBUS_PHONE_STOPPED,                  //phone call stop
+    DBUS_NAVI_SOUND_STARTED,             //navigation sound start
+    DBUS_NAVI_SOUND_STOPPED,             //navigation sound stop
 }DbusSend;
 
 //carlink receive or user's request
@@ -82,6 +83,8 @@ typedef enum
     APP_RECOGNITION_STOPPED,            //voices recognition stop(record stop)
     APP_PHONE_STARTED,                  //phone call start
     APP_PHONE_STOPPED,                  //phone call stop
+    APP_NAVI_SOUND_STARTED,             //navigation sound start
+    APP_NAVI_SOUND_STOPPED,             //navigation sound stop
     LAUNCH_PHONE_APP,                   //notify open phone's app
     APP_QRCODE,                         //qr code 's information
     APP_LICENSE,                        //license information
@@ -90,6 +93,12 @@ typedef enum
     APP_VRTEXT,                         //voices information
     APP_VOICE_CMD,                      //voices controls information
     APP_VERSION,                        //version
+    APP_VOICE_DUCK,                     //duck
+    APP_VOICE_UNDUCK,                   //unduck
+    APP_PINCODE,                        //wireless pin code(hicar)
+    APP_BT_CMD,                         //bt at cmd
+    APP_BT_DISCONNECTED,                //bt disconnect
+    APP_CARLINK_INIT_DONE,              //carlink done
     APP_RESERVED,                       //reserved
 }AppStatusMessage;
 
@@ -216,10 +225,43 @@ struct BlueToothInfo{
     string pin;
 };
 
+struct BT_CMD{
+    string cmd;
+    int len;
+};
+
+struct DuckInfo{
+    double inDurationSecs;
+    double volume;
+};
+
+enum WifiStateAction
+{
+    WIFI_STATE_CHANGED_ACTION = 0,		 ///<AP, STATION
+    WIFI_P2P_STATE_CHANGED_ACTION = 1,    ///< P2P
+};
+
+enum WifiState
+{
+    WIFI_STATE_UNKNOWN = 0,
+    WIFI_STATE_ENABLE,              ///< The network is available
+    WIFI_STATE_DISABLE,			  ///< Network unavailable
+    WIFI_STATE_CONNECTED,		      ///< Network connected
+    WIFI_STATE_DISCONNECTED,        ///< Network disconnection
+};
+
+struct NetWorkInfo
+{
+    int32_t		state;                 ///<see ECWifiState
+    string		phoneIp;			   ///<phone ip
+    string		carIp;				   ///<car ip
+};
+
+
 enum  KeyCode
 {
     // for driving mode
-    KYE_HOME = 1,
+    KEY_HOME = 1,
     KEY_PHONE = 2,
     KEY_TALKIE = 3,                         ///< start talkie
     KEY_NAVIGATION = 4,                     ///< start navigation
@@ -228,8 +270,8 @@ enum  KeyCode
     KEY_MUSIC_NEXT = 7,                     ///< play next music
     KEY_MUSIC_PREVIOUS = 8,                 ///< play previous music
     KEY_MUSIC_PAUSE = 9,                    ///< music pause
-    KEY_MUSIC_STOP = 10,			            ///< music stop
-    KEY_MUSIC_PLAY_PAUSE = 11,               ///< music switch between pause and stop
+    KEY_MUSIC_STOP = 10,			        ///< music stop
+    KEY_MUSIC_PLAY_PAUSE = 11,              ///< music switch between pause and stop
 
     KEY_VOLUME_UP = 12,                      ///< increase the volume of phone
     KEY_VOLUME_DOWN = 13,                    ///< decrease the volume of phone
@@ -244,8 +286,8 @@ enum  KeyCode
     KEY_APP_FRONT = 20,						///< make the app of android phone switch to the foreground
     KEY_APP_BACK = 21,                       ///< it works like the function of the back button to the app of the connected phone.
 
-    KEY_CAR_FRONT = 22,
-    KEY_CAR_BACK = 23,
+    KEY_CAR_FOREGROUND = 22,                       ///it carlinks 's ui foreground
+    KEY_CAR_BACKGROUND = 23,                       ///it carlinks 's ui background
 
     KEY_ENFORCE_LANDSCAPE = 24,              ///< make the android phone enforce landscape.
     KEY_CANCEL_LANDSCAPE = 25,               ///< make the android phone cancel landscape.
@@ -256,6 +298,8 @@ enum  KeyCode
     KEY_PICKUP_PHONE = 29,                          /// pick up phone
     KEY_HANGUP_PHONE = 30,                          ///hang up phone
 
+    KEY_CAR_OK = 31,                                ///make car links 'ui enter comfirm
+    KEY_CAR_BACK = 32,                                ///make car links 'ui back page
     KEY_MAX,                                     ///< reserve
 };
 
@@ -293,6 +337,9 @@ struct CarplayConfig
     int screen_physical_height;
     int aec_delay;
     int fps;
+    string vehicle_name;
+    string vehicle_icon_label;
+    string vehicle_icon_path;
 };
 
 class LinkBase
@@ -318,7 +365,7 @@ protected:
     virtual void send_car_bluetooth(const string& name, const string& address, const string& pin) = 0;
     virtual void send_phone_bluetooth(const string& address) = 0;
     virtual void send_car_wifi(WifiInfo& info) = 0;
-    virtual void send_touch(int x, int y, TouchCode TouchCode) = 0;
+    virtual void send_touch(int x, int y, TouchCode touchCode) = 0;
     virtual void send_multi_touch(int x1, int y1, TouchCode touchCode1, int x2, int y2, TouchCode touchCode2) = 0;
     virtual bool send_key(KeyCode keyCode) = 0;
     virtual bool send_wheel(WheelCode wheel, bool foucs) = 0;
@@ -330,6 +377,10 @@ protected:
     virtual void send_input_text(const string& text) = 0;
     virtual void send_input_selection(const int start, const int stop) = 0;
     virtual void send_input_action(const int acionId, const int keyCode) = 0;
-
+    virtual void send_bluetooth_cmd(const string& cmd ) = 0;
+    virtual void send_broadcast(bool enable) = 0;
+    virtual void send_delay_record(int millisecond) = 0;
+    virtual void send_wifi_state_changed(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp) = 0;
 };
-
+#endif
+#endif // LINKBASE_H

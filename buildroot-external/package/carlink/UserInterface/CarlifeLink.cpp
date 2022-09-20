@@ -4,9 +4,25 @@
 #include "AudioRecord.h"
 #include "CCarLifeLibWrapper.h"
 #include "UsbHostService.h"
+#include "arkIphoneusbtethering.h"
+#include "arkusbtetheringcallbacks.h"
 using namespace CCarLifeLibH;
 
+#define MIRROR_WIDTH 1280
+#define MIRROR_HEIGHT 720
 
+static void resetUsb(int index){
+    if(index == 0){
+        system("echo peripheral > /sys/devices/platform/soc/e0100000.usb/musb-hdrc.0/mode");
+        usleep(500000);
+        system("echo otg > /sys/devices/platform/soc/e0100000.usb/musb-hdrc.0/mode");
+    }
+    else if(index == 1){
+        system("echo peripheral > /sys/devices/platform/soc/e0400000.usb/musb-hdrc.1/mode");
+        usleep(500000);
+        system("echo otg > /sys/devices/platform/soc/e0400000.usb/musb-hdrc.1/mode");
+    }
+}
 
 CarlifeLink::CarlifeLink()
 {
@@ -15,6 +31,7 @@ CarlifeLink::CarlifeLink()
     m_pCarlifePlayer = new CarlifePlayer();
     mBRecorder = true;
     m_blongpress = false;
+    m_bMusicVoice = false;
 #endif
 }
 
@@ -35,18 +52,33 @@ bool CarlifeLink::init(LinkMode linkMode)
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(m_pCarlifePlayer){
-        m_pCarlifePlayer->SetEapLink(true);
-        m_pCarlifePlayer->SetAoaLink(true);
+        if(mPhoneType == Phone_Android){
+            if(mCarlifeConfig.android_link_mode == 1)
+                m_pCarlifePlayer->SetAoaLink(true);
+            else
+                m_pCarlifePlayer->SetAoaLink(false);
+        }
+        else if(mPhoneType == Phone_IOS){
+            if(mCarlifeConfig.ios_link_mode == 0)
+                m_pCarlifePlayer->SetEapLink(true);
+            else
+            {
+                m_pCarlifePlayer->SetEapLink(false);
+                ArkUsbTetheringCallbacks *callbacks = new ArkUsbTetheringCallbacks();
+                ArkIphoneUsbTethering::instance()->registerCallbacks(callbacks, m_pCarlifePlayer);
+            }
+        }
+        if(linkMode == Wireless)
+            m_pCarlifePlayer->SetUserPhoneOS(WIRELESS);
         m_pCarlifePlayer->SetidVendor(gvid);
-        m_pCarlifePlayer->Initialize();
-        //m_pCarlifePlayer->GetCarScreenSize(mLinkConfig.screen_width,mLinkConfig.screen_height);
-        //printf("mLinkConfig.screen_width:%d,mLinkConfig.screen_height:%d\r\n",mLinkConfig.screen_width, mLinkConfig.screen_height);
+        m_pCarlifePlayer->Initialize();        
         m_pCarlifePlayer->SetLinkstatusCallback(std::bind(&CarlifeLink::status_callback_func,this, std::placeholders::_1,std::placeholders::_2),this);
         m_pCarlifePlayer->SetVideoStartCallback(std::bind(&CarlifeLink::video_start_callback_func,this, std::placeholders::_1,std::placeholders::_2,std::placeholders::_3,std::placeholders::_4),this);
         m_pCarlifePlayer->SetVideoInfoCallback(true, std::bind(&CarlifeLink::video_callback_func,this, std::placeholders::_1,std::placeholders::_2,std::placeholders::_3,std::placeholders::_4,std::placeholders::_5),this);
         m_pCarlifePlayer->SetAudioStartCallback(std::bind(&CarlifeLink::audio_start_callback_func,this,std::placeholders::_1,std::placeholders::_2,std::placeholders::_3,std::placeholders::_4,std::placeholders::_5,std::placeholders::_6),this);
         m_pCarlifePlayer->SetAudioInfoCallback(std::bind(&CarlifeLink::audio_callback_func,this,std::placeholders::_1,std::placeholders::_2,std::placeholders::_3,std::placeholders::_4),this);
         m_pCarlifePlayer->SetCmdPhoneNumberCallback(std::bind(&CarlifeLink::phone_number_callback_func,this,std::placeholders::_1,std::placeholders::_2),this);
+        send_screen_size(MIRROR_WIDTH, MIRROR_HEIGHT);
     }
     return true;
 }
@@ -76,17 +108,26 @@ bool CarlifeLink::release()
 bool CarlifeLink::start()
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    int ret = -1; bool res = true;
     if(m_pCarlifePlayer){
         onSdkConnectStatus(CONNECT_STATUS_CONNECTING, mPhoneType);
-        m_pCarlifePlayer->StartLink(NULL);
+        if((mCarlifeConfig.ios_link_mode == 1) && (mPhoneType == Phone_IOS)){
+            ArkIphoneUsbTethering::instance()->init();
+            ArkIphoneUsbTethering::instance()->start();
+        }
+        ret = m_pCarlifePlayer->StartLink();
+        printf("start ret = %d\r\n",ret);
     }
-    return true;
+    return res;
 }
 
 bool CarlifeLink::stop()
 {
     if(m_pCarlifePlayer){
         m_pCarlifePlayer->ExitProcess();
+        if(mCarlifeConfig.ios_link_mode == 1 && mPhoneType == Phone_IOS){
+            usbmuxd_stop();
+        }
     }
     return true;
 }
@@ -108,13 +149,63 @@ bool CarlifeLink::stop_mirror()
 
 void CarlifeLink::set_mac(string mac)
 {
-    if(m_pCarlifePlayer)
-        m_pCarlifePlayer->SetIPAddress((char*)mac.c_str());
+    if(m_pCarlifePlayer){
+        static char ip[128] = {0};
+        strcpy(ip,mac.c_str());
+        printf("ip = %d\r\n", ip);
+        m_pCarlifePlayer->SetIPAddress(ip);
+    }
 }
 
 bool CarlifeLink::send_key(KeyCode keyCode)
 {
-    m_pCarlifePlayer->Key(keyCode);
+    HardKeyCmd carlifeKey = KEYCODE_Media_Start;
+    if(keyCode == KEY_MUSIC_PLAY){
+        carlifeKey = KEYCODE_Media_Start;
+    }
+    else if(keyCode == KEY_MUSIC_PAUSE
+            || keyCode == KEY_MUSIC_STOP){
+        carlifeKey = KEYCODE_Media_Stop;
+    }
+    else if(keyCode == KEY_MUSIC_NEXT){
+        carlifeKey = KEYCODE_Seek_Add;
+    }
+    else if(keyCode == KEY_MUSIC_PREVIOUS){
+        carlifeKey = KEYCODE_Seek_Sub;
+    }
+    else if(keyCode == KEY_PHONE){
+        carlifeKey = KEYCODE_TEL;
+    }
+    else if(keyCode == KEY_PICKUP_PHONE){
+        carlifeKey = KEYCODE_Phone_Call;
+    }
+    else if(keyCode == KEY_HANGUP_PHONE){
+        carlifeKey == KEYCODE_Phone_End;
+    }
+    else if(keyCode == KEY_NAVIGATION){
+        carlifeKey = KEYCODE_Navi;
+    }
+    else if(keyCode == KEY_MUSIC_PLAY_PAUSE){
+        if(m_bMusicVoice)
+            carlifeKey = KEYCODE_Media_Stop;
+        else
+            carlifeKey = KEYCODE_Media_Start;
+    }
+    else if(keyCode == KEY_VOICE_ASSISTANT){
+        carlifeKey = KEYCODE_VR_Start;
+    }
+    else if(keyCode == KEY_SYSTEM_HOME){
+        carlifeKey = KEYCODE_Home;
+    }
+    else if(keyCode == KEY_CAR_BACK){
+        keyCode == KEYCODE_Back;
+    }
+    else if(keyCode == KEY_CAR_OK){
+        keyCode == KEYCODE_OK;
+    }
+
+    m_pCarlifePlayer->Key(carlifeKey);
+
     return true;
 }
 
@@ -192,14 +283,13 @@ bool CarlifeLink::send_night_mode(bool night)
 
 bool CarlifeLink::set_background()
 {
-    m_pCarlifePlayer->SetPlayForeground(true);
-    //VideoDecoder::instance()->Show(false);
+    m_pCarlifePlayer->SetPlayForeground(false);
     return true;
 }
 
 bool CarlifeLink::set_foreground()
 {
-    m_pCarlifePlayer->SetPlayForeground(false);
+    m_pCarlifePlayer->SetPlayForeground(true);
     return true;
 }
 
@@ -219,6 +309,9 @@ void CarlifeLink::status_callback_func(int status, void* parameter)
     CarlifeLink *pthis = (CarlifeLink*)parameter;
 
     if(CMD_FAILED == status){
+        resetUsb(0);
+        if(mCarlifeConfig.ios_link_mode == 1 && mPhoneType == Phone_IOS)
+            usbmuxd_stop();
         onSdkConnectStatus(CONNECT_STATUS_CONNECT_FAILED, UnKnown);
     }
     else if(CMD_SUCCESS == status){
@@ -226,6 +319,8 @@ void CarlifeLink::status_callback_func(int status, void* parameter)
         onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED,mPhoneType);
     }
     else if(CMD_REMOVED == status){
+        if(mCarlifeConfig.ios_link_mode == 1 && mPhoneType == Phone_IOS)
+            usbmuxd_stop();
         onSdkConnectStatus(CONNECT_STATUS_DISCONNECTED, UnKnown);
     }
     else if(CMD_RECORDER_INIT == status){
@@ -249,6 +344,7 @@ void CarlifeLink::status_callback_func(int status, void* parameter)
         app_status(APP_NOT_RUNNING, nullptr);
     }
     else if(CMD_BACKGROUND == status){
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         app_status(APP_BACKGROUND, nullptr);
     }
     else if(CMD_FOREGROUND == status){
@@ -259,12 +355,36 @@ void CarlifeLink::status_callback_func(int status, void* parameter)
     }
     else if(status == CMD_CALL_PHONE){
         bt_call_action(CALL_TYPE_DAIL, nullptr, pthis->mPhoneNumber.c_str());
-
     }
     else if(status == CMD_CALL_PHONE_EXIT){
-
         bt_call_action(CALL_TYPE_HANG_UP, nullptr, pthis->mPhoneNumber.c_str());
     }
+    else if(status == CMD_CARLIFE_EXITED_INVOKED){
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+        resetUsb(0);
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    }
+    else if(status == CMD_SIRI_START){
+        app_status(APP_VR_STARTED);
+    }
+    else if(status == CMD_SIRI_STOP){
+        app_status(APP_VR_STOPPED);
+    }
+    else if(status == CMD_ASSIST_AUDIO_START){
+        app_status(APP_NAVI_STARTED);
+    }
+    else if(status == CMD_ASSIST_AUDIO_STOP){
+        app_status(APP_NAVI_STOPPED);
+    }
+    else if(status == CMD_MUSIC_START){
+        m_bMusicVoice = true;
+        app_status(APP_MUSIC_STARTED);
+    }
+    else if(status == CMD_MUSIC_STOP){
+        m_bMusicVoice = false;
+        app_status(APP_MUSIC_STOPPED);
+    }
+
 }
 
 void CarlifeLink::bt_call_status(int status)
@@ -272,6 +392,11 @@ void CarlifeLink::bt_call_status(int status)
  //   call_action(status, nullptr, mPhoneNumber);
 }
 
+void CarlifeLink::usbmuxd_stop()
+{
+    ArkIphoneUsbTethering::instance()->uninit();
+    system("usbmuxd -X");
+}
 
 #define DUMP_REC_FILE 0
 #if DUMP_REC_FILE
@@ -291,8 +416,16 @@ void CarlifeLink::record_audio_callback(unsigned char *data, int len)
         printf("rec len:%d\r\n ", len);
     }
 #endif
-    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
-    CCarLifeLib::getInstance()->sendVRRecordData(data, len, 0);
+
+    //printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    if(len > 0){
+        int ret = CCarLifeLib::getInstance()->sendVRRecordData(data, len, 0);
+        if(ret < 0){
+            printf("record audio callback ret = %d\r\n", ret);
+            resetUsb(0);
+        }
+    }
+
     usleep(10000);
     //printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
@@ -317,7 +450,7 @@ bool CarlifeLink::open_page(AppPage appPage)
             m_pCarlifePlayer->Key(KEYCODE_Navi);
         break;
         case APP_PAGE_MAIN:
-            m_pCarlifePlayer->Key(KEYCODE_Home);
+            m_pCarlifePlayer->Key(KEYCODE_MAIN);
         break;
         case APP_PAGE_MUSIC:
             m_pCarlifePlayer->Key(KEYCODE_Media);

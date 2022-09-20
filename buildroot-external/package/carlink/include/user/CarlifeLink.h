@@ -98,6 +98,10 @@ protected:
     virtual void send_input_text(const string& text) {}
     virtual void send_input_selection(const int start, const int stop){}
     virtual void send_input_action(const int acionId, const int keyCode){}
+    virtual void send_bluetooth_cmd(const string& cmd ){}
+    virtual void send_broadcast(bool enable){}
+    virtual void send_delay_record(int millisecond){}
+    virtual void send_wifi_state_changed(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp){}
 private:
     void bt_call_status(int status);
     void status_callback_func(int status, void* parameter);
@@ -106,6 +110,8 @@ private:
     void audio_start_callback_func(bool start, int type, int rate, int bit, int channel,void* parameter);
     void audio_callback_func(int type, unsigned char* data, int length,  void* parameter);
     void phone_number_callback_func(string number, void* parameter);
+
+    void usbmuxd_stop();
 private:
     CarlifePlayer *m_pCarlifePlayer;
     bool mBRecorder;
@@ -116,6 +122,7 @@ private:
     bool m_blongpress;
     string mPhoneNumber;
     PhoneType mPhoneType;
+    bool m_bMusicVoice;
 #endif
 };
 

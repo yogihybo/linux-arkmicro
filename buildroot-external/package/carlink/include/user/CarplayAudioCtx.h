@@ -17,6 +17,7 @@ public:
     }
 
 private:
+
     CarplayAudioRecordCtx*      mRecordHandle;
     CarplayAudioPlayCtx*        mPlayHandle;
     int                         mStreamHandle;

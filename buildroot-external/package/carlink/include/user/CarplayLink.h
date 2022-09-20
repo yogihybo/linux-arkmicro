@@ -1,5 +1,6 @@
 #ifndef CARPLAYLINK_H
 #define CARPLAYLINK_H
+#ifdef __cplusplus
 
 #include "IUserLinkPlayer.h"
 #include "carplayWrapper.h"
@@ -7,7 +8,8 @@
 #include "carplayAudioWrapper.h"
 #include <list>
 #include <mutex>
-
+#define PLAYLOAD 640
+#define AECLEN 160
 
 #ifdef USE_CARPLAY
 class BufferQueue;
@@ -22,6 +24,7 @@ public:
     void carplayVideoStopCB();
     int carplayVideoDataProcCB(const char *buf, int len);
 private:
+//    long  mInterfaceFrame;
     CarplayLink* mHandle;
 };
 
@@ -33,6 +36,7 @@ public:
     void carplayAudioStartCB(int handle, AudioStreamType type, int rate, int bits, int channels);
     void carplayAudioStopCB(int handle, AudioStreamType type);
 private:
+
     CarplayLink*        mHandle;
     Mutex               mLock;
     std::list<CarplayAudioCtx*> mAudioHandlList;
@@ -76,12 +80,18 @@ protected:
     virtual void send_input_text(const string& text) {}
     virtual void send_input_selection(const int start, const int stop){}
     virtual void send_input_action(const int acionId, const int keyCode){}
+    virtual void send_bluetooth_cmd(const string& cmd ){}
+    virtual void send_broadcast(bool enable){}
+    virtual void send_delay_record(int millisecond){}
+    virtual void send_wifi_state_changed(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp){}
 protected:
     LinkConfig getLinkConfig() const {return mLinkConfig;}
+    CarplayConfig getCarPlayConfig() const {return mCarplayConfig;}
     PhoneType getPhoneType() const {return mPhoneType;}
 
     bool sendPlayData(int handle, char type, const char* buf, int len, int frames, long long time_stamp);
     bool receiveRecordData(int handle, int frames);
+    void AudioRecordVoiceDenoisePorcess(char *buf, int len);
 
     void setLocalTime(long long local);
 
@@ -103,11 +113,15 @@ friend class CarplayLinkCbsImpl;
     bool                                    mDefaultWifi;
     bool                                    mDdefaultPhonebtMac;
     void*                                   mAecHandle;
+    void*                                   mDenoiseHandle;
     BufferQueue*                            mAecQueue;
     AudioStreamType                         mAudioStreamType;
-    Semaphore                               mSemaphore;
-    int                                     mHandle1;
+    int                                     mRecHandle;
+    int                                     mRecFrames;
+    int                                     mRecPos;
+    char                                    mRecBuf[PLAYLOAD];
+    long                                    mInterfaceFrame;
 #endif
 };
-
+#endif
 #endif // CARPLAYLINK_H

@@ -7,7 +7,11 @@
 #include "carplayWrapper.h"
 #include "BufferQueue.h"
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
+
 #ifdef USE_CARPLAY
+#define FRAME_MAX 5
 
 typedef enum
 {
@@ -19,12 +23,13 @@ typedef enum
     MEDIA_PREVIOUS
 }MEDIA;
 
+
 int ICarplayVideoCallbacksImpl::carplayVideoStartCB()
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(mHandle){
         mHandle->video_start(0, 0, mHandle->getLinkConfig().screen_width, mHandle->getLinkConfig().screen_height);
-        mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
+        //mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
     }
     return 0;
 }
@@ -32,6 +37,7 @@ int ICarplayVideoCallbacksImpl::carplayVideoStartCB()
 void ICarplayVideoCallbacksImpl::carplayVideoStopCB()
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+ //   mInterfaceFrame = 0;
     if(mHandle)
         mHandle->video_stop();
 }
@@ -39,6 +45,12 @@ void ICarplayVideoCallbacksImpl::carplayVideoStopCB()
 int ICarplayVideoCallbacksImpl::carplayVideoDataProcCB(const char *buf, int len)
 {
     //printf("%s:%s:%d len:%d\r\n",__FILE__,__func__,__LINE__, len);
+
+    if(mHandle->mInterfaceFrame == FRAME_MAX){
+        mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
+    }
+    ++mHandle->mInterfaceFrame;
+
     if(mHandle)
         mHandle->video_play(buf, len);
     return 0;
@@ -58,7 +70,6 @@ void ICarplayAudioCallbacksImpl::carplayAudioStartCB(int handle, AudioStreamType
 
         if(mHandle){
             AudioInfo info = {rate, channels,bits };
-
             mHandle->record_start(info);
 
             if(type == AudioStreamRECOGNITION){
@@ -70,8 +81,10 @@ void ICarplayAudioCallbacksImpl::carplayAudioStartCB(int handle, AudioStreamType
                 mHandle->mAecHandle = WebRtcAecInit();
                 SetWebRtcAecParam(mHandle->mAecHandle ,rate, rate, NULL);
                 printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+                mHandle->mDenoiseHandle = GetInstance();
+                SetFrameParam(mHandle->mDenoiseHandle, rate, 10, 1);
 #endif
-                //mHandle->app_status(APP_PHONE_STARTED);
+
             }
         }
         //sendAudioMsg(mHandle, true, ChannelAudioIn, type, rate, bits, channels);
@@ -107,9 +120,9 @@ void ICarplayAudioCallbacksImpl::carplayAudioStopCB(int handle, AudioStreamType 
             WebRtcAecRelease(mHandle->mAecHandle);
             mHandle->mAecHandle = NULL;
             mHandle->mAecQueue->ClearBufferQueue();
+            ReleaseInstance(mHandle->mDenoiseHandle);
             printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 #endif
-            mHandle->app_status(APP_PHONE_STOPPED);
         }
     }
 
@@ -137,6 +150,8 @@ void ICarplayAudioCallbacksImpl::carplayAudioStopCB(int handle, AudioStreamType 
     mHandle->audio_stop((AudioType)type);
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
+
+
 #endif
 
 CarplayLink::CarplayLink()
@@ -152,6 +167,10 @@ CarplayLink::CarplayLink()
     mAecHandle = NULL;
     mAecQueue = new BufferQueue();
     mAudioStreamType = AudioStreamCall;
+    mRecPos = 0;
+    memset(mRecBuf, 0, sizeof(mRecBuf));
+    mInterfaceFrame = 0;
+    mHandle->init();
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 #endif
 }
@@ -203,11 +222,14 @@ bool CarplayLink::init(LinkMode linkMode)
     mHandle->CarplaySetStringParameter("SERIALNUMBER", "223000ac3987cf");
     mHandle->CarplaySetStringParameter("SW_VER", "sw1.1.0");
     mHandle->CarplaySetStringParameter("HW_VER", "hw1.1.0");
-    mHandle->CarplaySetStringParameter("VEHICLE_NAME", "Ark");
-
+    printf("vehicle name = %s\r\n",mCarplayConfig.vehicle_name.c_str());
+    if(!mCarplayConfig.vehicle_name.empty())
+       mHandle->CarplaySetStringParameter("VEHICLE_NAME", mCarplayConfig.vehicle_name);
     mHandle->CarplaySetIntParameter("OEM_ICON_VISIBLE", 1);
-    mHandle->CarplaySetStringParameter("OEM_ICON_LABEL", "Home");
-    mHandle->CarplaySetStringParameter("OEM_ICON_PATH", "/etc/icon_120x120.png");
+    if(!mCarplayConfig.vehicle_icon_label.empty())
+        mHandle->CarplaySetStringParameter("OEM_ICON_LABEL", mCarplayConfig.vehicle_icon_label);
+    if(!mCarplayConfig.vehicle_icon_path.empty())
+        mHandle->CarplaySetStringParameter("OEM_ICON_PATH", mCarplayConfig.vehicle_icon_path);
 
     mHandle->CarplaySetStringParameter("OSINFO", "linux4.14");
     mHandle->CarplaySetStringParameter("IOSVER_MIN", "11D257");
@@ -239,6 +261,13 @@ bool CarplayLink::init(LinkMode linkMode)
     mHandle->CarplaySetIntParameter("SCREEN_WIDTH", mLinkConfig.screen_width);
     mHandle->CarplaySetIntParameter("SCREEN_HEIGHT", mLinkConfig.screen_height);
     mHandle->CarplaySetIntParameter("USB_INDEX",mLinkConfig.usb_index);
+    if(mCarplayConfig.aec_delay == 0)
+        mHandle->CarplaySetIntParameter("SW_AEC",0);
+    else
+    {
+        mHandle->CarplaySetIntParameter("SW_AEC",1);
+        mHandle->CarplaySetIntParameter("AEC_DELAY",mCarplayConfig.aec_delay);
+    }
     mHandle->CarplaySetIntParameter("AUDIO_HANDLE_BY_PLUGIN",1);
 
 /*
@@ -250,7 +279,7 @@ bool CarplayLink::init(LinkMode linkMode)
 
     static bool flags = false;
     if(!flags){
-        mHandle->init();  
+//        mHandle->init();
         mHandle->registerCallbacks(mCbs);
         mHandle->registerVideoCallbacks(mVideoCbs);
         mHandle->registerAudioCallbacks(mAudioCbs);
@@ -308,7 +337,11 @@ bool CarplayLink::stop_mirror()
 bool CarplayLink::set_background()
 {
     if(mHandle){
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         mHandle->CarplayChangeModes(1, 500, 500, 100, 0, 0, 0, 0, 0, 0, 0);
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+        //mHandle->CarplayChangeModes(3, 500, 0, 1000, 0, 0, 0, 0, 0, 0, 0);  //goto carback
+        //mHandle->CarplayChangeModes(4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);       //exit carback
     }
 }
 
@@ -341,6 +374,9 @@ void CarplayLink::set_inserted(bool inserted, PhoneType phoneType)
 
 void CarplayLink::send_screen_size(int width, int height)
 {
+    printf("request width = %d, height = %d\r\n", width, height);
+    mLinkConfig.screen_width = width;
+    mLinkConfig.screen_height = height;
 
 }
 
@@ -349,21 +385,47 @@ void CarplayLink::send_screen_size(int width, int height)
 static FILE *pfile = NULL;
 #endif
 
-#define DUMP_REC_FILE 0
+#define DUMP_REC_FILE 1
 #if DUMP_REC_FILE
 static FILE *pRecfile = NULL;
 #endif
-#include <sys/time.h>
-#include <unistd.h>
+
+#define AEC_REC_FILE 1
+#if AEC_REC_FILE
+static FILE *pAecRecfile = NULL;
+#endif
+
+
+#define TEST_DELAY 0
+
+void CarplayLink::AudioRecordVoiceDenoisePorcess(char *buf, int len)
+{
+    if(!buf || (len <= 0)) {
+        return;
+    }
+    if(mDenoiseHandle) {
+        int frame_size = 16000 * 10 / 1000.0;
+        int frame_count = len/(frame_size*sizeof(short));
+        short *data = (short *)buf;
+        int i;
+        for(i=0; i<frame_count; i++) {
+#ifdef AEC_DELAY
+            FrameProcess(mDenoiseHandle, data, sizeof(short) * frame_size);
+#endif
+            data += frame_size;
+        }
+    }
+}
+
 void CarplayLink::record_audio_callback(unsigned char *data, int len)
 {
     std::lock_guard<std::mutex> lock(mMutex);
+ //   printf("recrod len = %d\r\n",len);
 
-    //mRecData += string((char*)data, len);
-#if 1	//Only for test.
-        struct timeval test_tv;
-        gettimeofday(&test_tv,NULL);
-        long test = test_tv.tv_sec * 1000 + test_tv.tv_usec / 1000;
+#if TEST_DELAY	//delay test
+        struct timeval tv;
+        gettimeofday(&tv,NULL);
+        long prev = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 #endif
 
 #if DUMP_REC_FILE
@@ -378,48 +440,92 @@ void CarplayLink::record_audio_callback(unsigned char *data, int len)
 #endif
 
 #ifdef AEC_DELAY
-    //printf("mAudioStreamType = %d\n", mAudioStreamType);
-    if(mAudioStreamType == AudioStreamCall){
-        int AecLen = 0;
-        unsigned char * pAecBuf = NULL;
-        int type = 0 ;
-        if(mAecQueue->IsExitedThread(pthread_self()))
-           return ;
 
-        if(mAecQueue->ReadQueue(&type, &pAecBuf, &AecLen) > 0){
-//          printf("Aec len = %d\r\n", AecLen);
+    if(mAudioStreamType == AudioStreamCall && mAecHandle){
 
-          short *farFrame = (short *)pAecBuf;
-          short *nearFrame = (short *)data;
-          short *outFrame = (short *)data;
-          int frameCount = (len/2)/160;
+        len = mRecPos + len;
+        int times = len / PLAYLOAD;
+        int remain = len % PLAYLOAD;
+        mRecPos = 0;
+        static int prev = 0;
+         while(times){
+             memcpy(mRecBuf + prev, data + mRecPos, PLAYLOAD - prev);
+             mRecPos = mRecPos + PLAYLOAD - prev;
+             prev = 0;
+             --times;
 
+            int AecLen = 0;
+            unsigned char * pAecBuf = NULL;
+            int type = 0 ;
+            if(mAecQueue->IsExitedThread(pthread_self())){
+               printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+               return;
+            }
 
-              for(int i=0; i<frameCount; i++) {
-                  if(mAecHandle)
-                      WebRtcAecFrameProcess(mAecHandle, (short*)farFrame, (short*)nearFrame, (short*)outFrame, mCarplayConfig.aec_delay);
+            char out[PLAYLOAD] = {0,};
+            if(mAecQueue->ReadQueue(&type, &pAecBuf, &AecLen) > 0){
+//              printf("Aec len = %d\r\n", AecLen);
+              short *farFrame = (short *)pAecBuf;
+              short *nearFrame = (short *)mRecBuf;
+              short *outFrame = (short *)out;
+              int frameCount = (PLAYLOAD/2)/AECLEN;
 
-                  farFrame += 160;
-                  nearFrame += 160;
-                  outFrame += 160;
-                }
-          }
+              static FILE *pOldFarfile = NULL;
+              if (NULL == pOldFarfile) {
+                  pOldFarfile = fopen("/tmp/rec_old_far.pcm", "w");
+              }
+              if (pOldFarfile) {
+                  fwrite(farFrame, 1, PLAYLOAD, pOldFarfile);
+              }
 
-        free(pAecBuf);
-        pAecBuf = NULL;
+              static FILE *pNearRecfile = NULL;
+              if (NULL == pNearRecfile) {
+                  pNearRecfile = fopen("/tmp/rec_old_near.pcm", "w");
+              }
+              if (pNearRecfile) {
+                  fwrite(mRecBuf, 1, PLAYLOAD, pNearRecfile);
+                  //printf("rec len:%d\r\n ", len);
+              }
 
-        }
+              for(int i=0; i<frameCount; i++)
+              {
+                  WebRtcAecFrameProcess(mAecHandle, (short*)farFrame, (short*)nearFrame, (short*)out, mCarplayConfig.aec_delay);
+                  farFrame += AECLEN;
+                  nearFrame += AECLEN;
+                  outFrame += AECLEN;
+              }
+            }
+            AudioRecordVoiceDenoisePorcess(out, PLAYLOAD);
 
+        #if AEC_REC_FILE
+            if (NULL == pAecRecfile) {
+                pAecRecfile = fopen("/tmp/rec_aec.pcm", "w");
+            }
+            if (pAecRecfile) {
+                fwrite(out, 1, PLAYLOAD, pAecRecfile);
+                //printf("rec len:%d\r\n ", len);
+            }
+        #endif
+            if(mHandle)
+                 mHandle->AudioRecordStream(mRecHandle, out, PLAYLOAD, PLAYLOAD/mRecFrames, 0);
+            free(pAecBuf);
+            pAecBuf = NULL;
+            usleep(10000);
+       }
+         memcpy(mRecBuf, data + mRecPos, remain);
+         mRecPos = remain;
+         prev = remain;
+    }
+    else
 #endif
-    if(mHandle)
-         mHandle->AudioRecordStream(mHandle1, data, len, len / 2, 0);
-   //mRecData.clear();
+        mHandle->AudioRecordStream(mRecHandle, data, len, len/mRecFrames, 0);
+
     //printf("%s:%s:%d record len = %d\r\n",__FILE__,__func__,__LINE__,len);
-#if 1	//Only for test.
-        struct timeval test_tv1;
-        gettimeofday(&test_tv1,NULL);
-        long test1 = test_tv1.tv_sec * 1000 + test_tv1.tv_usec / 1000;
-        printf("echo cancel time:%ldms\n", test1-test);
+#if TEST_DELAY
+        struct timeval tv_now;
+        gettimeofday(&tv_now,NULL);
+        long now = tv_now.tv_sec * 1000 + tv_now.tv_usec / 1000;
+        printf("echo cancel time:%ldms\n", now - prev);
 #endif
 }
 
@@ -440,7 +546,7 @@ void CarplayLink::send_phone_bluetooth(const string& address)
 
 void CarplayLink::send_touch(int x, int y, TouchCode touchCode)
 {
-    printf("carplay x:%d, y:%d, press:%d\r\n",x, y, touchCode);
+   // printf("carplay x:%d, y:%d, press:%d\r\n",x, y, touchCode);
     if(mHandle){        
             mHandle->CarplaySendSingleTouchPoint(x, y, touchCode);
     }
@@ -490,7 +596,7 @@ bool CarplayLink::send_key(KeyCode keyCode)
             mHandle->CarplaySendTelephoneKey(3, true);
             mHandle->CarplaySendTelephoneKey(0, false);
         }
-        else if(keyCode == KYE_HOME){
+        else if(keyCode == KEY_HOME){
             mHandle->CarplayRequestUI("");
         }
         else if(keyCode == KEY_PHONE){
@@ -502,18 +608,20 @@ bool CarplayLink::send_key(KeyCode keyCode)
             mHandle->CarplaysendSiriButton(false);
         }
         else if(keyCode == KEY_LIGHTMODE){
-            //mHandle->CarplaySetIntParameter("NIGHTMODE", 0);
             mHandle->CarplaySendNightMode(0);
         }
         else if(keyCode == KEY_NIGHTMODE){
-            //mHandle->CarplaySetIntParameter("NIGHTMODE", 1);
             mHandle->CarplaySendNightMode(1);
         }
-        else if(keyCode == KEY_CAR_FRONT){
+        else if(keyCode == KEY_CAR_FOREGROUND){
             set_foreground();
         }
-        else if(keyCode == KEY_CAR_BACK){
+        else if(keyCode == KEY_CAR_BACKGROUND){
             set_background();
+        }
+        else if(keyCode == KEY_CAR_BACK){
+            mHandle->CarplaySendKnob(0,  0, 1, 0, 0, 0);
+            mHandle->CarplaySendKnob(0,  0, 0, 0, 0, 0);
         }
     }
     return true;
@@ -521,7 +629,7 @@ bool CarplayLink::send_key(KeyCode keyCode)
 
 bool CarplayLink::send_wheel(WheelCode wheel, bool foucs)
 {
-    if(mHandle){
+    if(mHandle){        
         mHandle->CarplaySendKnob(foucs,  0, 0, 0, 0, wheel);
     }
     return true;
@@ -568,13 +676,14 @@ void CarplayLink::request_status(RequestAppStatus requestAppStatus, void *reserv
 
 bool CarplayLink::sendPlayData(int handle, char type, const char* buf, int len, int frames, long long time_stamp)
 {
-    printf("play hanle :%x type = %d, len = %d, time_stamp = %d\r\n",handle, type, len, time_stamp);
+//    printf("play hanle :%x type = %d, len = %d, time_stamp = %d\r\n",handle, type, len, time_stamp);
 
-#if 0	//Only for test.
-                struct timeval test_tv;
-                gettimeofday(&test_tv,NULL);
-                long test = test_tv.tv_sec * 1000 + test_tv.tv_usec / 1000;
+#if TEST_DELAY	//delay test
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    long prev = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 #endif
+
     if(mHandle){
         mHandle->AudioPlayStream(handle, (void*)buf, len, frames, time_stamp);
 
@@ -582,14 +691,16 @@ bool CarplayLink::sendPlayData(int handle, char type, const char* buf, int len, 
 
 
 #ifdef AEC_DELAY
-    if(mAecQueue && mAecHandle && type == AudioStreamCall){
+    if(mAecQueue && mAecHandle && type == AudioStreamCall){ 
+
         uint8_t *p = (uint8_t*)malloc(len);
         memcpy(p, buf, len);
         mAecQueue->WriteQueue(0,  p, len);
-//        printf("insert p = %d\r\n", len);
+ //       printf("insert p = %d\r\n", len);
     }
 #endif
     usleep(10);
+
 #if DUMP_PLAY_FILE
     if (NULL == pfile) {
         pfile = fopen("/tmp/play_out.pcm", "w");
@@ -603,33 +714,21 @@ bool CarplayLink::sendPlayData(int handle, char type, const char* buf, int len, 
 
     }
 
-#if 0	//Only for test.
-                struct timeval test_tv1;
-                gettimeofday(&test_tv1,NULL);
-                long test1 = test_tv1.tv_sec * 1000 + test_tv1.tv_usec / 1000;
-                printf("play time:%ldms\n", test1-test);
+#if TEST_DELAY
+    struct timeval tv_now;
+    gettimeofday(&tv_now,NULL);
+    long now = tv_now.tv_sec * 1000 + tv_now.tv_usec / 1000;
+    printf("play time:%ldms\n", now - prev);
 #endif
     return true;
 }
 
 bool CarplayLink::receiveRecordData(int handle, int frames)
 {
-    mHandle1 =  handle;
-  //  std::lock_guard<std::mutex> lock(mMutex);
+    mRecHandle =  handle;
+    mRecFrames = frames;
+    usleep(100000);
 
-/*
-    void *tmp = NULL;
-    int len = mRecData.size();
-
-    tmp = (void*)mRecData.c_str();
-
-     printf("rec len = %d\r\n",len);
-     if(mHandle)
-          mHandle->AudioRecordStream(handle, tmp, len, len / frames, 0);
-     //printf("rec len = %d\r\n",len);
-    mRecData.clear();
-*/
-    sleep(1);
     return true;
 }
 

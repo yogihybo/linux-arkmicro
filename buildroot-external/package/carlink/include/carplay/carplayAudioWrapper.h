@@ -1,6 +1,6 @@
 #ifndef _CarplayAudioWrapper_H
 #define _CarplayAudioWrapper_H
-
+#ifdef __cplusplus
 typedef enum
 {
     AudioStreamMedia = 0, // 音乐
@@ -29,5 +29,5 @@ public:
     virtual void carplayAudioStopCB(int handle, AudioStreamType type) = 0;
 };
 
-
+#endif
 #endif

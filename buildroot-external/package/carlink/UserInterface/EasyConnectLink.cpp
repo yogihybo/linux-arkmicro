@@ -18,7 +18,6 @@ bool EasyConnectLink::init(LinkMode linkMode)
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     ECLogConfig logCfg;
-    string openPrint;
     logCfg.logLevel = ECSDKFrameWork::EC_LOG_LEVEL_ALL;
     logCfg.logModule = ECSDKFrameWork::EC_LOG_MODULE_SDK | ECSDKFrameWork::EC_LOG_MODULE_APP;
     logCfg.logType = ECSDKFrameWork::EC_LOG_OUT_STD;
@@ -30,7 +29,6 @@ bool EasyConnectLink::init(LinkMode linkMode)
     ECSDKFrameWork::ECMirrorConfig mirrorCfg;    // ECMirrorConfig has a default constructor and does not require memset
     int width = 1920;
     int height = 720;
-    //util::getFrameBufferFixedSize(width, height, FBPATH);
     mirrorCfg.width = width;
     mirrorCfg.height = height;
     mirrorCfg.type = ECSDKFrameWork::EC_VIDEO_TYPE_H264;
@@ -69,7 +67,7 @@ bool EasyConnectLink::init(LinkMode linkMode)
         ECSDKToolKit::getInstance()->initialize(&toolkitListener);
     }
 
-
+/*
     ECOTAResourceVersion OTARes;
     OTARes.softWareId = "123f071c";
     OTARes.softVersion = 5;
@@ -80,7 +78,7 @@ bool EasyConnectLink::init(LinkMode linkMode)
     OTAConf.otaResourceVersionList.push_back(OTARes);
     ECSDKOTAManager::getInstance()->initialize(&otaListener,OTAConf);
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
-
+*/
 
     // 设置sdk初始化参数
 
@@ -111,6 +109,7 @@ bool EasyConnectLink::init(LinkMode linkMode)
     static const char *p = ver.c_str();
     printf("==============carlink version = %s =============\n", p);
     app_status(APP_VERSION, (void*)p);
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     return true;
 }
 
@@ -149,14 +148,18 @@ bool EasyConnectLink::stop_mirror()
 
 bool EasyConnectLink::set_background()
 {
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     stop_mirror();
     app_status(APP_BACKGROUND);
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
 
 bool EasyConnectLink::set_foreground()
 {
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     start_mirror();
     app_status(APP_FOREGROUND);
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
 
 bool EasyConnectLink::get_audio_focus()
@@ -187,7 +190,7 @@ static FILE *pRecfile = NULL;
 
 void EasyConnectLink::record_audio_callback(unsigned char *data, int len)
 {
-       //printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+       printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 
 
        if(mHasInitRec){
@@ -210,7 +213,7 @@ void EasyConnectLink::record_audio_callback(unsigned char *data, int len)
            //printf("rec len:%d\r\n ", len);
        }
    #endif
-   //    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+       printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
 
 void EasyConnectLink::send_car_bluetooth(const string& name, const string& address, const string& pin)
@@ -296,8 +299,10 @@ void EasyConnectLink::request_status(RequestAppStatus requestAppStatus, void *re
         //app_status(APP_RESERVED, (void*)mQRCode.c_str());
     }
     else if(requestAppStatus == QUERYINPUT){
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         char *ptr = (char*)reserved;
         ECSDKAPPManager::getInstance()->sendInputText(ptr);
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     }
 }
 
@@ -319,6 +324,12 @@ void EasyConnectLink::send_input_selection(const int start, const int stop)
 void EasyConnectLink::send_input_action(const int actionId, const int keyCode)
 {
     ECSDKAPPManager::getInstance()->sendInputAction(actionId, keyCode);
+}
+
+void EasyConnectLink::send_wifi_state_changed(WifiStateAction action, WifiState state, string& phoneIp, string& carIp)
+{
+    ECNetWorkInfo info = {(int32_t)EC_WIFI_STATE_CONNECTED, phoneIp, carIp};
+    ECSDKFramework::getInstance()->notifyWifiStateChanged((ECWifiStateAction)action, info);
 }
 
 void EasyConnectLink::start_video_callback_func(bool start, int width, int height)
@@ -401,6 +412,7 @@ void EasyConnectLink::status_callback_func(int status, int type)
         onSdkConnectStatus(CONNECT_STATUS_DISCONNECTED, UnKnown);
     }
     else if(EC_CONNECT_STATUS_CONNECT_SUCCEED == status){
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, UnKnown);       
         ECSDKAPPManager::getInstance()->sendCarBluetooth(mBlueToothInfo.name,mBlueToothInfo.addr,mBlueToothInfo.pin);
 
@@ -418,6 +430,7 @@ void EasyConnectLink::status_callback_func(int status, int type)
         cmdList.push_back(carCmd5);
         cmdList.push_back(carCmd6);
         ECSDKAPPManager::getInstance()->registerCarCmds(cmdList);
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 
     }
     else if(EC_CONNECT_STATUS_CONNECT_FAILED == status){
@@ -446,7 +459,9 @@ void EasyConnectLink::appstatus_callback_func(ECStatusMessage status)
             printf("app running mode\r\n");
        }
        else if(status == EC_STATUS_MESSAGE_SWITCH_TO_SYSTEM_MAIN_PAGE){
+           printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
             app_status(APP_BACKGROUND);
+            printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
        }
 
        prev_status = status;

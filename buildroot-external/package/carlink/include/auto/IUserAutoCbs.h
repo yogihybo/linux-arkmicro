@@ -1,6 +1,6 @@
 #ifndef IUSERAUTOCBS_H
 #define IUSERAUTOCBS_H
-
+#ifdef __cplusplus
 typedef enum
 {
     LINK_UNSUPPORTED= 0xff,
@@ -84,5 +84,5 @@ public:
     virtual void notifyPhoneBtInfo(const char *phoneBTAddr, int pairMethod) = 0;
     virtual void getLocalBtAddr(char* mac) = 0;
 };
-
+#endif
 #endif // IUSERAUTOCBS_H

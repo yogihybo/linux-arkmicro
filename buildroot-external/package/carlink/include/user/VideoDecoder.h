@@ -11,7 +11,7 @@
 
 #define MAX_STREAM_BUFFER_SIZE	(1024*1024)
 
-
+#ifdef __cplusplus
 
 struct VideoFrame{
     int src_offset_x;
@@ -34,6 +34,7 @@ struct display_info{
     unsigned int disp_height;
     struct ark_reqbuf reqbuf;
 };
+
 
 class VideoDecoder
 {
@@ -89,8 +90,7 @@ private:
     display_info *overlay;
 #endif
 
-
-
 };
+#endif
 
 #endif // VIDEODECODER_H

@@ -2,7 +2,8 @@
 #define AUDIODECODER_H
 
 #include "alsa/asoundlib.h"
-#include "Thread.h"
+#include <mutex>
+#include <atomic>
 //媒体参数
 struct AudioParam
 {
@@ -22,11 +23,12 @@ public:
 
     void release();
     int  playSound(unsigned char *data, uint len);
+
     void stopPlaySound() {
-        mStopAudio = true;
+        mHasInit = false;
     }
     void resumePlaySound() {
-        mStopAudio = false;
+        mHasInit = true;
     }
 
 private:
@@ -35,11 +37,11 @@ private:
     void Uninit();
     int xrunRecover(snd_pcm_t *handle, int err);
 private:
-     char           *mpDevice;
-     snd_pcm_t      *mpHandle;
-     AudioParam      mAudioParam;
-     bool            mStopAudio;
-     Semaphore        mSemaphore;
+     char             *mpDevice;
+     snd_pcm_t        *mpHandle;
+     AudioParam       mAudioParam;
+     std::atomic_bool mHasInit;
+     std::mutex       mMutex;
 
 };
 

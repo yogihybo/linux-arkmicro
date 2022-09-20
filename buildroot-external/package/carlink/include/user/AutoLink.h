@@ -318,7 +318,6 @@ public:
     void notifyStatus(int state);
     void notifyPhoneBtInfo(const char *phoneBTAddr, int pairMethod);
     void getLocalBtAddr(char* mac);
-    ConnectedStatus getConnectStatus() const {return mConnectStatus ;}
 
     AudioType ChangeAudioType(AutoAudioStreamType type);
 private:
@@ -327,7 +326,7 @@ private:
     bool             mRecBufClearFlag;
     int              mStartPos;
     int              mUsedPos;
-    ConnectedStatus  mConnectStatus;
+
 };
 #endif
 
@@ -355,7 +354,7 @@ protected:
     virtual void record_audio_callback(unsigned char *data, int len);
     virtual void send_car_bluetooth(const string& name, const string& address, const string& pin);
     virtual void send_phone_bluetooth(const string& address);
-    virtual void send_car_wifi(WifiInfo& info){}
+    virtual void send_car_wifi(WifiInfo& info);
     virtual void send_touch(int x, int y, TouchCode touchCode);
     virtual void send_multi_touch(int x1, int y1, TouchCode touchCode1, int x2, int y2, TouchCode touchCode2){}
     virtual bool send_key(KeyCode keyCode);
@@ -368,6 +367,10 @@ protected:
     virtual void send_input_text(const string& text) {}
     virtual void send_input_selection(const int start, const int stop){}
     virtual void send_input_action(const int acionId, const int keyCode){}
+    virtual void send_bluetooth_cmd(const string& cmd ){}
+    virtual void send_broadcast(bool enable){}
+    virtual void send_delay_record(int millisecond){}
+    virtual void send_wifi_state_changed(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp){}
     friend class IUserAutoImpl;
 
 protected:
@@ -380,7 +383,7 @@ protected:
     string getCarBtAddress() const {return mbtaddress;}
 
 private:
-
+     bool                                 mDefaultWifi;
      LinkMode                             mLinkMode;
      AndroidAuto*                         mHandle;
      IUserAutoImpl*                       mAutoCbs;
@@ -388,6 +391,7 @@ private:
      string                               mRecData;
      std::mutex                           mMutex;
      string                               mbtaddress;
+     ConnectedStatus                      mConnectStatus;
 #endif
 
 };

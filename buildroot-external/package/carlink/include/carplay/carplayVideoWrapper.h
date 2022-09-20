@@ -1,7 +1,7 @@
 #ifndef _CarplayVideoWrapper_H
 #define _CarplayVideoWrapper_H
 
-
+#ifdef __cplusplus
 class ICarplayVideoCallbacks
 {
 public:
@@ -18,4 +18,5 @@ public:
      * */
     virtual int carplayVideoDataProcCB(const char *buf, int len) = 0;
 };
+#endif
 #endif

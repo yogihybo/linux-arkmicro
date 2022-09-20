@@ -49,8 +49,7 @@ public:
 
     void SetLinkType(int type);
 
-    int StartLink(Timer* pTimer = NULL);
-
+    int StartLink();
     //主动退出解码库
     bool ExitLink();
 
@@ -157,13 +156,13 @@ public:
 
     char *GetIPAddress() const {return m_pAddress;}
 protected:
+    int StartLink(Timer* pTimer);
     //苹果手机切换device时，拔出是无法知道苹果手机时候还连着的.carplay并不知道的，所以创建/tmp/carlife文件来发给carplay
     //carplay点击的时候来判断时候可以进入carplay
     void Exited();
 
     void Linked();
-private:
-
+private:    
     static void usb_callback_func(int online, int type, int vid,void* parameter);
     static void socket_disconnect_callback_func(void* parameter);
     static void mic_disconnect_callback_func(void* parameter);
@@ -175,6 +174,7 @@ private:
     static void video_info_callback_func(int width, int height, unsigned char* data, int length, void*parameter);
     static void audio_info_callback_func(int type, unsigned char* data, int length, void*parameter);
     static void audio_start_callback_func(bool start, int type, int rate, int bit, int channel, void*parameter);
+    static void* StartLinkThread(void *param);
 private:
     bool        m_bExitProcess;
     UsbManager *m_pUsbManger;

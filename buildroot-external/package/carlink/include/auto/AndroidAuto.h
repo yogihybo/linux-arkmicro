@@ -1,6 +1,8 @@
 #ifndef ANDROIDAUTO_H
 #define ANDROIDAUTO_H
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 class AndroidAutoPrivate;
 class IUserAutoCbs;
 class AndroidAuto
@@ -30,5 +32,7 @@ public:
 private:
     AndroidAutoPrivate*     mHandle;
 };
-
+#ifdef __cplusplus
+};
+#endif
 #endif // ANDROIDAUTO_H

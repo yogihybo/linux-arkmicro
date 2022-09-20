@@ -38,6 +38,10 @@ protected:
     virtual void send_input_text(const string& text) {}
     virtual void send_input_selection(const int start, const int stop){}
     virtual void send_input_action(const int acionId, const int keyCode){}
+    virtual void send_bluetooth_cmd(const string& cmd ){}
+    virtual void send_broadcast(bool enable){}
+    virtual void send_delay_record(int millisecond){}
+    virtual void send_wifi_state_changed(WifiStateAction action, WifiState state, const string& phoneIp, const string& carIp){}
 private:
     static void linkstatus_callback_func(int status, void* parameter);
     void onVideoStartCallback(bool start, int width, int height);

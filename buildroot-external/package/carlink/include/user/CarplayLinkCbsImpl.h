@@ -8,8 +8,11 @@ class CarplayLinkCbsImpl : public ICarplayCallbacks
 {
 public:
     CarplayLinkCbsImpl(CarplayLink *handle) : mHandle(handle) {
-        mEntityScreen = 0;
+        mEntityScreen = 2;
         mEntityPhoneCall = -1;
+        mSpeechMode = 0;
+        mEntityAudio = 0;
+        mEntityByTurn = 0;
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     }
     ~CarplayLinkCbsImpl() {
@@ -33,5 +36,8 @@ private:
     CarplayLink* mHandle;
     CarplayEntity mEntityScreen;
     CarplayEntity mEntityPhoneCall;
+    CarplayEntity mSpeechMode;
+    CarplayEntity mEntityAudio;
+    CarplayEntity mEntityByTurn;
 };
 #endif // CARPLAYLINKCBSIMPL_H

@@ -1,6 +1,6 @@
 #ifndef LINKASSIST_H
 #define LINKASSIST_H
-
+#ifdef __cplusplus
 #include "IUserLinkPlayer.h"
 #include <vector>
 using namespace std;
@@ -9,10 +9,12 @@ class UsbHostService;
 class AudioDecoder;
 class CarlifeLink;
 class CarplayLink;
+class HiCarLink;
 class EasyConnectLink;
 class MirrorLink;
+class UsbStateWatcher;
 
-typedef std::function<void (ConnectedStatus, PhoneType)> FUNCUSBCALLBACK;
+typedef function<void (ConnectedStatus, PhoneType)> FUNCUSBCALLBACK;
 
 
 class LinkAssist
@@ -28,7 +30,9 @@ public:
 
     CarplayConfig GetCarplayInfo() {return mCarplayConfig;}
 
-    void onSdkConnectStatus(ConnectedStatus status, PhoneType type);
+    CarlifeConfig GetCarlifeInfo() {return mCarlifeConfig;}
+
+    void onSdkConnectStatus(int status, int type);
 
     IUserLinkPlayer* Initialize(LinkType linkType);
 
@@ -38,6 +42,7 @@ private:
     void ReadConfig();
 private:
     UsbHostService  *m_pUsbHost;
+    UsbStateWatcher *m_pUsbStateWatcher;
 
     vector<IUserLinkPlayer *> mpIULPlayerVector;
     FUNCUSBCALLBACK  mFuncUSBCallback;
@@ -46,5 +51,5 @@ private:
     CarplayConfig    mCarplayConfig = {154, 87, 50, 30};
 
 };
-
+#endif
 #endif // LINKASSIST_H

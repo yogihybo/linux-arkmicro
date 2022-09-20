@@ -2,7 +2,7 @@
 
 #ifndef POSIX_THREAD_H
 #define POSIX_THREAD_H
-
+#ifdef __cplusplus
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
@@ -59,4 +59,6 @@ public:
 private:
     sem_t mSem;
 };
+
+#endif
 #endif

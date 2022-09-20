@@ -4,7 +4,7 @@
 #include <unistd.h>
 #ifdef USE_AUTO
 IUserAutoImpl::IUserAutoImpl(AutoLink* handle) : mHandle(handle)/*, mRecBuf(NULL)*/, mRecStart(false),
-             mUsedPos(0),mConnectStatus(CONNECT_STATUS_DISCONNECTED)
+             mUsedPos(0)
 {
 
 }
@@ -21,7 +21,7 @@ void IUserAutoImpl::videoStart(int width, int height, int offsetX, int offsetY)
         printf("auto video width = %d, height = %d, offsetX = %d, offsetY =%d\r\n", width, height, offsetX, offsetY);
         mHandle->video_start(offsetX, offsetY,width - offsetX * 2, height - offsetY *2);
         mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
-        mConnectStatus = CONNECT_STATUS_CONNECT_SUCCEED;
+        mHandle->mConnectStatus = CONNECT_STATUS_CONNECT_SUCCEED;
     }
 }
 
@@ -93,14 +93,15 @@ void IUserAutoImpl::notifyStatus(int state)
 
     static bool running = false;
 
-    if(state == LINK_REMOVED || state == LINK_DISCONNECTED){
+    if(state == LINK_REMOVED || state == LINK_DISCONNECTED || state == LINK_FAIL){
         running = false;
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         mHandle->record_stop();
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         mHandle->onSdkConnectStatus(CONNECT_STATUS_DISCONNECTED, UnKnown);
-        mConnectStatus = CONNECT_STATUS_DISCONNECTED;
+        mHandle->mConnectStatus = CONNECT_STATUS_DISCONNECTED;
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+
     }
     else if(state == LINK_SUCCESS){
         if(!running){
@@ -108,7 +109,7 @@ void IUserAutoImpl::notifyStatus(int state)
             mHandle->record_start(info);
             mHandle->record_pause(true);
             mHandle->onSdkConnectStatus(CONNECT_STATUS_CONNECT_SUCCEED, mHandle->getPhoneType());
-            mConnectStatus = CONNECT_STATUS_CONNECT_SUCCEED;
+            mHandle->mConnectStatus = CONNECT_STATUS_CONNECT_SUCCEED;
             running = true;
             printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
         }
@@ -135,7 +136,7 @@ void IUserAutoImpl::notifyPhoneBtInfo(const char *phoneBTAddr, int pairMethod)
 
 void IUserAutoImpl::getLocalBtAddr(char* mac)
 {
-    string data = mHandle->getCarBtAddress();;
+    string data = mHandle->getCarBtAddress();
     mac = (char*)data.c_str();
 }
 
@@ -164,6 +165,9 @@ AutoLink::AutoLink()
 #ifdef USE_AUTO
     mHandle = new AndroidAuto();
     mAutoCbs = new IUserAutoImpl(this);
+    mHandle->registerCallbacks(mAutoCbs);
+    mConnectStatus = CONNECT_STATUS_DISCONNECTED;
+    mDefaultWifi = true;
 #endif
 }
 
@@ -182,10 +186,22 @@ bool AutoLink::init(LinkMode linkMode)
     if(mHandle){
         printf("auto w:%d,h%d\r\n",mLinkConfig.screen_width,mLinkConfig.screen_height);
         mLinkMode = linkMode;
-        mHandle->registerCallbacks(mAutoCbs);
+
         mHandle->setConfig("video_width",mLinkConfig.screen_width);
         mHandle->setConfig("video_height",mLinkConfig.screen_height);
         mHandle->setConfig("video_density",160);
+        if(!(mLinkConfig.car_wifi_ssid.empty()| mLinkConfig.car_wifi_passphrase.empty() | mLinkConfig.car_wifi_channel.empty())){
+            printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+            if(mDefaultWifi){
+                printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+                mDefaultWifi = true;
+                mHandle->setConfig("WIFI_SSID", mLinkConfig.car_wifi_ssid.c_str());
+                mHandle->setConfig("WIFI_PASSWD",mLinkConfig.car_wifi_passphrase.c_str());
+                mHandle->setConfig("WIFI_CHANNEL",stoi(mLinkConfig.car_wifi_channel.c_str()));
+                printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+            }
+        }
+
     }
     return true;
 }
@@ -194,11 +210,14 @@ bool AutoLink::start()
 {
     if(mHandle){
         printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+        if(mConnectStatus == CONNECT_STATUS_DISCONNECTED){
         onSdkConnectStatus(CONNECT_STATUS_CONNECTING, mPhoneType);
         if(mLinkMode == Wired)
             mHandle->startSession(false);
         else
             mHandle->startSession(true);
+        }
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     }
     return true;
 }
@@ -237,15 +256,19 @@ bool AutoLink::stop_mirror()
 
 bool AutoLink::set_background()
 {
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(mHandle)
         mHandle->getVideoFocus();
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     return true;
 }
 
 bool AutoLink::set_foreground()
 {
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     if(mHandle)
         mHandle->releaseVideoFocus();
+    printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
     return true;
 }
 
@@ -270,13 +293,15 @@ void AutoLink::set_inserted(bool inserted, PhoneType phoneType)
 
 void AutoLink::send_screen_size(int width, int height)
 {
-
+    mLinkConfig.screen_width = width;
+    mLinkConfig.screen_height = height;
 }
 
 void AutoLink::record_audio_callback(unsigned char *data, int len)
 {
      std::lock_guard<std::mutex> lock(mMutex);
-     mRecData += string((char*)data, len);
+     if(len > 0)
+        mRecData += string((char*)data, len);
 }
 
 void AutoLink::send_car_bluetooth(const string& name, const string& address, const string& pin)
@@ -288,6 +313,20 @@ void AutoLink::send_phone_bluetooth(const string& address)
 {
     printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
 }
+
+
+void AutoLink::send_car_wifi(WifiInfo& info){
+
+    if(mHandle){
+        mDefaultWifi = false;
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+        mHandle->setConfig("WIFI_SSID", info.ssid.c_str());
+        mHandle->setConfig("WIFI_PASSWD",info.passphrase.c_str());
+        mHandle->setConfig("WIFI_CHANNEL",stoi(info.channel_id.c_str()));
+        printf("%s:%s:%d\r\n",__FILE__,__func__,__LINE__);
+    }
+}
+
 
 void AutoLink::send_touch(int x, int y, TouchCode touchCode)
 {
@@ -306,11 +345,14 @@ bool AutoLink::send_key(KeyCode keyCode)
 {
     AutoKeyCode ret;
     switch(keyCode) {
-          case KYE_HOME:
+          case KEY_HOME:
               ret = KEYCODE_HOME;
               break;
           case KEY_SYSTEM_HOME:
               ret = KEYCODE_MENU;
+              break;
+            case KEY_CAR_BACK:
+              ret = KEYCODE_BACK;
               break;
           case KEY_SYSTEM_BACK:
               ret = KEYCODE_BACK;
@@ -359,12 +401,13 @@ bool AutoLink::send_key(KeyCode keyCode)
           default:
               break;
       }
-    if(ret == KEY_CAR_BACK){
+    if(ret == KEY_CAR_BACKGROUND){
         set_background();
     }
-    else if(ret == KEY_CAR_FRONT){
+    else if(ret == KEY_CAR_FOREGROUND){
         set_foreground();
     }
+
     else
     {
         mHandle->sendKeyEvent(ret, true);

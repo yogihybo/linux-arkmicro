@@ -1,5 +1,6 @@
 #ifndef __CARPLAY_INTERFACE_H
 #define __CARPLAY_INTERFACE_H
+#ifdef __cplusplus
 #include <string>
 #include <stdint.h>
 #include "carplayVideoWrapper.h"
@@ -184,5 +185,5 @@ private:
 	ICarplayAudioCallbacks *mAudioCbs;
 	
 };
-
+#endif
 #endif//__DEMO_ECHO_SERVER_H
