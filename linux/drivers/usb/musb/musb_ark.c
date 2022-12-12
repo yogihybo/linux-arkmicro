@@ -374,9 +374,9 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 	void __iomem *sys_softrest_base = (void __iomem *)((unsigned int)glue->sys_base + glue->usb_softrest_reg_offset);
 	u32 regval;
 
-	usb_hcd_resume_root_hub(musb->hcd);
+	/*usb_hcd_resume_root_hub(musb->hcd);
 	musb_root_disconnect(musb);
-	musb_g_reset(musb);
+	musb_g_reset(musb);*/
 
 	switch (mode) {
 		case MUSB_HOST:
