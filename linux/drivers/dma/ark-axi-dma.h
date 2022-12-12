@@ -22,6 +22,14 @@
 #define DMAC_MAX_MASTERS	2
 #define DMAC_MAX_BLK_SIZE	0x200000
 #define DMAX_MAX_BLK_MASK	0x1fffff
+#define DMAC_MAX_NR_REQUESTS	32
+
+/* Bitfields in LLP */
+#define DWC_LLP_LMS(x)		((x) & 1)	/* list master select */
+#define DWC_LLP_LOC(x)		((x) & ~0x3f)	/* next lli */
+
+//#define DMA_GUARD_TIMER
+#define DMA_GUARD_TIMER_PERIOD	500000000 //500 ms
 
 struct dw_axi_dma_hcfg {
 	u32	nr_channels;
@@ -39,6 +47,8 @@ struct axi_dma_chan {
 	void __iomem			*chan_regs;
 	u8				id;
 	u8				hw_handshake_num;
+	u8				m_master;
+	u8				p_master;
 	atomic_t			descs_allocated;
 
 	struct dma_pool			*desc_pool;
@@ -50,6 +60,9 @@ struct axi_dma_chan {
 	bool				cyclic;
 	/* these other elements are all protected by vc.lock */
 	bool				is_paused;
+#ifdef DMA_GUARD_TIMER
+	struct hrtimer	hrt;
+#endif
 };
 
 struct dw_axi_dma {
@@ -188,6 +201,7 @@ static inline struct axi_dma_chan *dchan_to_axi_dma_chan(struct dma_chan *dchan)
 #define DMAC_CHAN_SUSP_WE_SHIFT		24
 
 /* CH_CTL_H */
+#define CH_CTL_H_IOC_BLKTFR_EN	BIT(26)
 #define CH_CTL_H_ARLEN_EN		BIT(6)
 #define CH_CTL_H_ARLEN_POS		7
 #define CH_CTL_H_AWLEN_EN		BIT(15)
@@ -241,6 +255,8 @@ enum {
 
 #define CH_CTL_L_DST_MAST		BIT(2)
 #define CH_CTL_L_SRC_MAST		BIT(0)
+#define DWC_CTLL_DMS(n)			((n)<<2)	/* dst master select */
+#define DWC_CTLL_SMS(n)			((n)<<0)	/* src master select */
 
 /* CH_CFG_H */
 #define CH_CFG_H_PRIORITY_POS		17
