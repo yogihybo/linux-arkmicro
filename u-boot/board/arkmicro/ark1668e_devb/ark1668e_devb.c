@@ -124,7 +124,7 @@ static void usb_controller_reset(void)
 	rSYS_USB1_CFG = 0x3c2e0020;
 }
 
-#define ARK_MMC_CLK     	48000000
+#define ARK_MMC_CLK     	45000000
 struct dwmci_host dwmcihost[2];
 static int ark_dwmci_init(char *name,u32 regbase, int bus_width, int index)
 {
@@ -141,11 +141,11 @@ static int ark_dwmci_init(char *name,u32 regbase, int bus_width, int index)
 	//rSYS_SD1_CLK_CFG &= ~(0x7f << 13);
 	//rSYS_SD1_CLK_CFG |= 52 << 13;
 
-	/* mmc clk axipll(480M) / ((4 + 1) * 2) */
+	/* mmc clk axipll(720M) / ((7 + 1) * 2) */
 	rSYS_SD_CLK_CFG &= ~0xfff;
-	rSYS_SD_CLK_CFG |= (1 << 8) | (1 << 7) | (1 << 5) | 4;
+	rSYS_SD_CLK_CFG |= (1 << 8) | (1 << 7) | (1 << 5) | 7;
 	rSYS_SD1_CLK_CFG &= ~0xfff;
-	rSYS_SD1_CLK_CFG |= (1 << 8) | (1 << 7) | (1 << 5) | 4;
+	rSYS_SD1_CLK_CFG |= (1 << 8) | (1 << 7) | (1 << 5) | 7;
 
     host->name = name;
     host->ioaddr = (void *)regbase;

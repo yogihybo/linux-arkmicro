@@ -110,10 +110,6 @@
 #define DDR_CFG_0   	   *((volatile unsigned int *)(AHB_SYS_BASE + 0x210))
 #define DDR_CFG_1   	   *((volatile unsigned int *)(AHB_SYS_BASE + 0x214))
 
-
-#define  DDR_RATE   1600
-
-
 #define DDR3_1600
 
 #ifdef  DDR3_1600 
@@ -265,26 +261,22 @@ int DDRTraining(void)
 //#if 1
 unsigned int ddr3_sdramc_init(void)
 {
-	unsigned i;
 	int dll_frange=0;
 //softa
 	SYS_SOFT_RST_N_B = 0xfffffffd;
 	udelay (1); //
-	if(DDR_RATE<400)    
-	dll_frange = 0;
-	else if(400<=DDR_RATE<600)
-	dll_frange = 1;
-	else if(600<=DDR_RATE<700)
-	dll_frange = 2;
-	else if(700<=DDR_RATE<800)
-	dll_frange = 3;
-	else if(800<=DDR_RATE<900)  
-	dll_frange = 4;
-	else if(900<=DDR_RATE<1000)
-	dll_frange = 5;
-	else if(1000<=DDR_RATE<1200) 
-	dll_frange = 6;
-	else if(1200<=DDR_RATE)  
+
+	/*
+	dll_frange	ddr data rate(freq*2)
+		0	:	[0-400)
+		1	:	[400-600)
+		2	:	[600-700)
+		3	:	[700-800)
+		4	:	[800-900)
+		5	:	[900-1000)
+		6	:	[1000-1200)
+		7	:	[1200-1600)
+	*/
 	dll_frange = 7;
 	DDR_CFG_0 = 0x06060860|(dll_frange<<28);
 //apb_sys, DDR_CFG_1
@@ -348,13 +340,13 @@ unsigned int ddr3_sdramc_init(void)
     rDDR_PHYCR0  = 1 << 13 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 2<<4 | 2<<0; 	
 
 //0x24
-    rDDR_PHYRDTR   =  7<<28 | 7<<24 | 7<<20 | 7<<16 | 7<<12 | 7<<8 | 7<<4 | 7<<0;	
+    rDDR_PHYRDTR   =  9<<4 | 9<<0;
 	
 //0x130                   
-    rDDR_PHYRDTFR  	 =  7<<28 | 7<<24 | 7<<20 | 7<<16 | 7<<12 | 7<<8 | 7<<4 | 7<<0;	
+    rDDR_PHYRDTFR  	 =  9<<4 | 9<<0;
 	
  //0x78
-    rDDR_WRDLLCR     =  8<<12 | 8<<8 | 8<<4 | 8<<0;
+    rDDR_WRDLLCR     =  10<<4 | 10<<0;
 /*	
 //0x28
     rDDR_COMPBLKCR =   0x1f<<7 | 0x1f<<1 | 1<<0;
@@ -426,6 +418,6 @@ unsigned int ddr3_sdramc_init(void)
  	while(!((rDDR_MCSR>>8)&0x1));
 	udelay (1);
 
-	printf("DDR3 256*16_20220402\n");
+	printf("DDR3 256*16_20221130\n");
     return 0;
 }
