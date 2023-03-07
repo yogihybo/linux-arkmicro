@@ -2818,6 +2818,20 @@ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
 	return 0;
 }
 
+static void hub_port_error_notify(struct usb_device *udev)
+{
+	char port_state[32] = { 0 };
+	char *envp[] = { port_state, NULL };
+
+	if (udev && udev->bus) {
+		snprintf(port_state, ARRAY_SIZE(port_state),
+					 "USB_ERR_PORT_NUM=%d", udev->bus->busnum - 1);
+		printk("hub port error notify name:%s at bus:%d\n", dev_name(&udev->dev), udev->bus->busnum);
+	
+		kobject_uevent_env(&udev->dev.kobj, KOBJ_CHANGE, envp);
+	}
+}
+
 /* Handle port reset and port warm(BH) reset (for USB3 protocol ports) */
 static int hub_port_reset(struct usb_hub *hub, int port1,
 			struct usb_device *udev, unsigned int delay, bool warm)
@@ -2914,7 +2928,8 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
 				warm ? "warm " : "");
 		delay = HUB_LONG_RESET_TIME;
 	}
-
+	
+	hub_port_error_notify(udev);
 	dev_err(&port_dev->dev, "Cannot enable. Maybe the USB cable is bad?\n");
 
 done:
