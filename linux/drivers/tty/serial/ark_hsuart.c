@@ -1395,7 +1395,7 @@ static unsigned int ark_hsuart_tx_empty(struct uart_port *port)
 {
 	struct ark_hsuart_port *uap = (struct ark_hsuart_port *)port;
 	unsigned int status = readw(uap->port.membase + HSUART_UTS);
-	return status & HSUART_UTS_TXFE ? 0 : TIOCSER_TEMT;
+	return status & HSUART_UTS_TXFE ? TIOCSER_TEMT : 0;
 }
 
 static unsigned int ark_hsuart_get_mctrl(struct uart_port *port)

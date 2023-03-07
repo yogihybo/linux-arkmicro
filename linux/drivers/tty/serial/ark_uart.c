@@ -2538,6 +2538,7 @@ static int pl011_tx_data(struct uart_amba_port *uap,
 			while(pl011_read(uap, REG_FR) & UART01x_FR_TXFF);
 			pl011_write(buf[c], uap, REG_DR);
 		}
+		spin_unlock_irqrestore(&uap->port.lock, flags);
 		return 0;
 	}
 
