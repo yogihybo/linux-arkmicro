@@ -1,0 +1,19 @@
+diff -uNr alsa-lib-1.2.4-pre/src/pcm/pcm_softvol.c alsa-lib-1.2.4/src/pcm/pcm_softvol.c
+--- alsa-lib-1.2.4-pre/src/pcm/pcm_softvol.c	2020-10-19 02:45:13.000000000 -0700
++++ alsa-lib-1.2.4/src/pcm/pcm_softvol.c	2022-11-01 00:55:34.868398000 -0700
+@@ -802,6 +802,15 @@
+ 			SNDERR("Cannot add a control");
+ 			return err;
+ 		}
++		if (svol->ctl) {
++			snd_ctl_close(svol->ctl);
++			svol->ctl = NULL;
++		}
++		err = snd_ctl_open(&svol->ctl, tmp_name, 0);
++		if (err < 0) {
++			SNDERR("Cannot open CTL %s", tmp_name);
++			return err;
++		}
+ 	} else {
+ 		if (! (cinfo.access & SNDRV_CTL_ELEM_ACCESS_USER)) {
+ 			/* hardware control exists */
