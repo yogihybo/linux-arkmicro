@@ -1,0 +1,5 @@
+config BR2_PACKAGE_LIBCHECK
+	bool "libcheck"
+	help
+		check library
+

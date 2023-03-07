@@ -12,3 +12,7 @@ include $(BR2_EXTERNAL_ARK_PATH)/package/carlink/carlink.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/DashBoard/DashBoard.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/ark-mplayer/ark-mplayer.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/ark1668eft/ark1668eft.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libusbmuxd/libusbmuxd.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libimobiledevice/libimobiledevice.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/usbmuxd/usbmuxd.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/libcheck/libcheck.mk
