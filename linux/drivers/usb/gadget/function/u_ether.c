@@ -626,6 +626,9 @@ static int eth_open(struct net_device *net)
 	struct gether	*link;
 
 	DBG(dev, "%s\n", __func__);
+	if (!netif_carrier_ok(dev->net)) {
+		netif_carrier_on(dev->net);
+	}
 	if (netif_carrier_ok(dev->net))
 		eth_start(dev, GFP_KERNEL);
 
