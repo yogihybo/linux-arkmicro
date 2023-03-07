@@ -281,10 +281,22 @@ static int ark_musb_init(struct musb *musb)
 
 	glue->musb = musb;
 
-	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-	if (IS_ERR(musb->xceiv)) {
-		printk(KERN_ERR "*** ERROR: Failed to usb_get_phy\n");
-		return PTR_ERR(musb->xceiv);
+	if (NULL == musb->xceiv) {
+		char name[16] = {0};
+		struct device_node *phynode = NULL;
+		sprintf(name, "usb%d-phy", parent->id);
+		phynode = of_find_node_by_name(phynode, name);
+		if (NULL == phynode) {
+			printk(KERN_ERR "*** ERROR: Failed to of_find_node_by_name \n");
+			return PTR_ERR(musb->xceiv);
+		}
+
+		musb->xceiv = devm_usb_get_phy_by_node(&parent->dev, phynode, NULL);
+		of_node_put(phynode);
+		if (IS_ERR(musb->xceiv)) {
+			printk(KERN_ERR "*** ERROR: Failed to usb_get_phy\n");
+			return PTR_ERR(musb->xceiv);
+		}
 	}
 
 	if(is_host_enabled(musb)) {
