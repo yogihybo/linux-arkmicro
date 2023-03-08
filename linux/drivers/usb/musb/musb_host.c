@@ -211,6 +211,12 @@ musb_start_urb(struct musb *musb, int is_in, struct musb_qh *qh)
 	struct musb_hw_ep	*hw_ep = qh->hw_ep;
 	int			epnum = hw_ep->epnum;
 
+	if(epnum >= MUSB_C_NUM_EPS)	//add++
+	{
+		printk(KERN_ERR "ERR: %s, Invalid epnum:%d, exit.\n.", __FUNCTION__, epnum);
+		return;
+	}
+
 	/* initialize software qh state */
 	qh->offset = 0;
 	qh->segsize = 0;
@@ -716,7 +722,7 @@ void musb_dma_channel_release(struct musb *musb)
 
 	dma_controller = musb->dma_controller;
 
-	for(i=0; i<musb->config->num_eps; i++)
+	for(i=0; (i<musb->config->num_eps) && (i<MUSB_C_NUM_EPS); i++)
 	{
 		hw_ep = musb->endpoints + i;
 		if(hw_ep->rx_channel)
@@ -2195,7 +2201,7 @@ static int musb_schedule(
 	best_end = -1;
 
 	for (epnum = 1, hw_ep = musb->endpoints + 1;
-			epnum < musb->nr_endpoints;
+			(epnum < musb->nr_endpoints) && (epnum < MUSB_C_NUM_EPS);
 			epnum++, hw_ep++) {
 		int	diff;
 
