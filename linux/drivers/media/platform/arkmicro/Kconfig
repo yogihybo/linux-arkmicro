@@ -6,3 +6,7 @@ config VIDEO_ARK1668E_VIN
 	select V4L2_FWNODE
 	help
 	   This is the camera driver for arkmicro
+
+config VIDEO_USE_LOCK
+       tristate "set use lock for video"
+       depends on ARK1668E_CARBACK

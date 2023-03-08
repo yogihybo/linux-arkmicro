@@ -509,6 +509,16 @@ int arkapi_n141_scalar_unlock(void);
 #define LIBARKAPI_ARKN141	1
 #define LIBARKAPI_ARK1668E	2
 
+#define ARK_DVR_IOC_MAGIC			'n'
+
+#define VIN_UPDATE_WINDOW		_IOWR(ARK_DVR_IOC_MAGIC, 50, struct vin_screen)
+#define VIN_START				_IO(ARK_DVR_IOC_MAGIC, 51)
+#define VIN_STOP				_IO(ARK_DVR_IOC_MAGIC, 52)
+#define VIN_SWITCH_CHANNEL		_IOWR(ARK_DVR_IOC_MAGIC, 53, int)
+#define VIN_CONFIG				_IOWR(ARK_DVR_IOC_MAGIC, 54, int)
+#define VIN_IOCTL_DOWN_IDLE		_IO(ARK_DVR_IOC_MAGIC, 55)
+#define VIN_IOCTL_UP_IDLE				_IO(ARK_DVR_IOC_MAGIC, 56)
+
 /*----------------------------------------END------------------------------------------*/
 
 #ifdef __cplusplus
