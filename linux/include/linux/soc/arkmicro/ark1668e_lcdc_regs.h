@@ -21,6 +21,7 @@
 #define ARK1668E_LCDC_CONTROL									0x004
 #define ARK1668E_LCDC_OSD1_EN_OFFSET					        7
 #define ARK1668E_LCDC_OSD2_EN_OFFSET					        8
+#define ARK1668E_LCDC_OSD3_EN_OFFSET					        9
 #define ARK1668E_LCDC_TIMING0									0x008
 #define	ARK1668E_LCDC_HFP							            (0x3ffU <<  0)
 #define	ARK1668E_LCDC_HBP_OFFSET						        10

@@ -884,10 +884,34 @@ static int ark1668e_lcdc_dev_init(struct fb_info *info)
 
 	/* set layer1(fb0) vp */
 
+	lcdc_writel(sinfo, ARK1668E_LCDC_BLD_MODE_LCD_REG0, 0x00040301);
+	lcdc_writel(sinfo, ARK1668E_LCDC_BLD_MODE_LCD_REG1, 0x0003f002);
 
-	/* set layer priority and blend mode */
-	lcdc_writel(sinfo, ARK1668E_LCDC_BLD_MODE_LCD_REG0, 0x04030200);
-	lcdc_writel(sinfo, ARK1668E_LCDC_BLD_MODE_LCD_REG1, 0x0003f001);
+	pdata->osd3_buffer_virtaddr= dma_alloc_wc(info->dev, 4,(dma_addr_t *)&pdata->osd3_buffer_phyaddr, GFP_KERNEL);
+	if (!pdata->osd3_buffer_virtaddr){
+		 printk(KERN_ALERT "%s dma_alloc_wc fail\n", __func__);
+	}
+
+
+	//*osd3_buffer_virtaddr = 0x0;
+	*pdata->osd3_buffer_virtaddr = 0x0;
+
+	/* Display osd layer3(fb0) size,pos,format,addr... */
+	ark1668e_lcdfb_pan_display(&info->var, info);
+	value = (1 << ARK1668E_LCDC_HEIGHT_OFFSET) | 1;
+	lcdc_writel(sinfo, ARK1668E_LCDC_OSD3_SIZE, value);
+	lcdc_writel(sinfo, ARK1668E_LCDC_OSD3_SOURCE_SIZE, value);
+	lcdc_writel(sinfo, ARK1668E_LCDC_OSD3_POSITION, 0);
+	lcdc_writel(sinfo, ARK1668E_LCDC_OSD3_WIN_POINT, 0);
+	value = (1 << 17) | (ARK1668E_LCDC_FORMAT_RGBA888 << 12) | 0xff;
+	lcdc_writel(sinfo, ARK1668E_LCDC_OSD3_CTL, value);
+
+	lcdc_writel(sinfo, ARK1668E_LCDC_OSD3_ADDR, pdata->osd3_buffer_phyaddr);
+
+	/* open osd layer3 */
+	value = lcdc_readl(sinfo, ARK1668E_LCDC_CONTROL);
+	value |= (1 << ARK1668E_LCDC_OSD3_EN_OFFSET);
+	lcdc_writel(sinfo, ARK1668E_LCDC_CONTROL, value);
 
 	ark1668e_lcdfb_start(sinfo);
 
@@ -1150,6 +1174,9 @@ static int __exit ark1668e_lcdfb_remove(struct platform_device *pdev)
 	} else {
 		ark1668e_lcdfb_free_video_memory(sinfo);
 	}
+
+	if(pdata->osd3_buffer_virtaddr)
+		dma_free_wc(dev, 4,pdata->osd3_buffer_virtaddr,pdata->osd3_buffer_phyaddr);
 
 	framebuffer_release(info);
 

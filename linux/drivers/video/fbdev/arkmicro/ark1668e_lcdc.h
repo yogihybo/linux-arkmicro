@@ -96,6 +96,8 @@ struct ark1668e_lcdfb_pdata {
     int	backlight_value;
 	int	backlight_delay;
 	int fb_buffer_nums;
+	u32 *osd3_buffer_virtaddr;
+	unsigned int osd3_buffer_phyaddr;
 	void (*ark1668e_lcdfb_power_control)(struct ark1668e_lcdfb_pdata *pdata, int on);
 	struct list_head	pwr_gpios;
 };
