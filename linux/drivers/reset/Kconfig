@@ -170,6 +170,12 @@ config RESET_ZYNQ
 	help
 	  This enables the reset controller driver for Xilinx Zynq SoCs.
 
+config RESET_ARK
+	tristate "ARK Reset Driver"
+	depends on ARCH_ARKMICRO
+	help
+	  This enables the reset controller driver for Arkmicro SoCs.
+
 source "drivers/reset/sti/Kconfig"
 source "drivers/reset/hisilicon/Kconfig"
 source "drivers/reset/tegra/Kconfig"

@@ -531,6 +531,13 @@ config I2C_DESIGNWARE_BAYTRAIL
 	  the platform firmware controlling it. You should say Y if running on
 	  a BayTrail system using the AXP288.
 
+config I2C_ARK
+	tristate "ARK I2C driver"
+	depends on ARCH_ARKMICRO
+	help
+	  Say Y here if you want to use the I2C controller on the Arkmicro
+	  platform.
+
 config I2C_DIGICOLOR
 	tristate "Conexant Digicolor I2C driver"
 	depends on ARCH_DIGICOLOR

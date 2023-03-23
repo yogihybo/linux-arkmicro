@@ -877,12 +877,15 @@
 		i2c0: i2c@e4300000 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "snps,designware-i2c";
+			compatible = "arkmicro,ark-i2c";
 			reg = <0xe4300000 0x1000>;
+			speed-mode = <0>; //0:standard 1:fast 2:high
 			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_i2c0>;
 			clocks = <&xtal24mhz>;
+			resets = <&rst 0x74 15>;
+			reset-names = "i2c0";
 		};
 
 		ecspi: ecspi@e4f00000 {
@@ -1109,6 +1112,12 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 			};
+		};
+
+		rst: reset-controller {
+			compatible = "arkmicro,ark-reset";
+			#reset-cells = <2>;
+			reg = <0xe4900000 0x1000>;
 		};
 	};
 };
