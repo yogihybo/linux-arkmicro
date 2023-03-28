@@ -16,3 +16,4 @@ include $(BR2_EXTERNAL_ARK_PATH)/package/libusbmuxd/libusbmuxd.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/libimobiledevice/libimobiledevice.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/usbmuxd/usbmuxd.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/libcheck/libcheck.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/ark1668eapp/ark1668eapp.mk

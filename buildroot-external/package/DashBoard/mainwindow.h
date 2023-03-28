@@ -8,7 +8,7 @@
 #include "linkwidget.h"
 #include <QLabel>
 #include <QTimer>
-
+#include <QMouseEvent>
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,7 +19,7 @@ public:
 protected:
     void resizeEvent(QResizeEvent *event);
     void paintEvent(QPaintEvent *event);
-
+    void mouseReleaseEvent(QMouseEvent *event);
 private:
     QLabel *m_Background;
     QPixmap pixBackground;

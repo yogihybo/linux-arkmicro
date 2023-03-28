@@ -1,0 +1,22 @@
+#! /bin/sh
+rm -rf ./Package
+rm -rf ./1668eArk-IVI/1668eArk-IVI.pro.*
+rm -rf ./1668eArk-IVI/Makefile
+rm -rf ./ArkApplication/ArkApplication.pro.*
+rm -rf ./ArkApplication/Makefile
+rm -rf ./AudioService/AudioService.pro.*
+rm -rf ./AudioService/Makefile
+rm -rf ./AutoConnect/AutoConnect.pro.*
+rm -rf ./AutoConnect/Makefile
+rm -rf ./DbusService/DbusService.pro.*
+rm -rf ./DbusService/Makefile
+rm -rf ./MultimediaService/MultimediaService.pro.*
+rm -rf ./MultimediaService/Makefile
+rm -rf ./MultimediaService-backqt/MultimediaService.pro.*
+rm -rf ./MultimediaService-backqt/Makefile
+rm -rf ./RunnableThread/RunnableThread.pro.*
+rm -rf ./RunnableThread/Makefile
+rm -rf ./UserInterface/UserInterface.pro.*
+rm -rf ./UserInterface/Makefile
+rm -rf ./Utility/Utility.pro.*
+rm -rf ./Utility/Makefile

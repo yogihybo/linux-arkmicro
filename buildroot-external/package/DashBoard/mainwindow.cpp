@@ -6,7 +6,9 @@
 #include <QDebug>
 #include "BusinessLogic/carback.h"
 #include <QResource>
-
+#include <unistd.h>
+#include <linux/reboot.h>
+#include <sys/reboot.h>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
@@ -62,4 +64,14 @@ void MainWindow::paintEvent(QPaintEvent *event)
     qDebug() << "MainWindow::paintEvent";
 }
 
+void MainWindow::mouseReleaseEvent(QMouseEvent *event){
 
+    if((event->x() >= 960 && event->x() <= 1010) &&
+            (event->y() >= 660 && event->y() <= 710))
+    {
+        qDebug()<<"++++++++mouseReleaseEvent+++++++++";
+        system("echo b > /data/processType");
+        system("sync");
+        reboot(LINUX_REBOOT_CMD_RESTART);
+    }
+}

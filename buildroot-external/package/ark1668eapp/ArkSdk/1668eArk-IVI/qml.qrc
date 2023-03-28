@@ -1,0 +1,73 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>QmlFileResource/MainWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QmlToolBarWidget/ToolWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/HomeWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QmlBtTelMiniWidget/BtTelMiniWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QmlMusicMiniWidget/MusicMiniWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QmlPhoneLinkMiniWidget/PhoneLinkMiniWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QmlVideoMiniWidget/VideoMiniWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/MultiMediaWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlMultiMediaPlayWidget/MultiMediaPlayWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlUsbWidget/UsbNotConnectWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlUsbWidget/UsbScanWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlUsbWidget/UsbListWidget.qml</file>
+        <file>QmlFileResource/QmlVideoMediaWidget/VideoMediaWidget.qml</file>
+        <file>QmlFileResource/QmlVideoMediaWidget/QmlListWidget/ListWidget.qml</file>
+        <file>QmlFileResource/QmlVideoMediaWidget/QmlVideoToolBarWidget/VideoToolBarWidget.qml</file>
+        <file>QmlFileResource/QmlUserWidget/UserSlider.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/SettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/LogoWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/BtSettingWidget/BtSwitchSetting.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/BtSettingWidget/BtConnectWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/BtSettingWidget/BtSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/LightSettingWidget/LightSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/SoundSettingWidget/SoundSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/SoundSettingWidget/SoundValueSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/SoundSettingWidget/SoundBalanceSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/MoreSettingWidget/MoreSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/MoreSettingWidget/MoreSettingPageOneWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/MoreSettingWidget/MoreSettingPageTowWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/AboutSettingWidget/AboutSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/AboutSettingWidget/AboutSettingNativeInfoWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/AboutSettingWidget/AboutSettingResetWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/AboutSettingWidget/AboutSettingRecoveryWidget.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/PhoneLinkWidget.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/PhoneLinkMsgWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/TelephoneWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/TelephoneDialerWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/TelephoneCallLogWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/QmlTelephoneCommingWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/QmlTelephoneOnCallWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/QmlTelephoneAddressBookWidget.qml</file>
+        <file>QmlFileResource/QmlImageWidget/QmlImageListWidget.qml</file>
+        <file>QmlFileResource/QmlImageWidget/QmlImageToolWidget.qml</file>
+        <file>QmlFileResource/QmlImageWidget/QmlImageWidget.qml</file>
+        <file>QmlFileResource/QmlVideoMediaWidget/QmlListWidget/VideoListWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlSdWidget /SdNotConnectWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlSdWidget /SdScanWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlSdWidget /SdListWidget.qml</file>
+        <file>QmlFileResource/QmlVideoMediaWidget/QmlListWidget/SdVideoListWidget.qml</file>
+        <file>QmlFileResource/QmlImageWidget/SDQmlImageWidget.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlBtWidget/BluetoothNotConnect.qml</file>
+        <file>QmlFileResource/QmlMultiMediaWidget/QmlBtWidget/BluetoothMusicListWidget.qml</file>
+        <file>QmlFileResource/QmlTelephoneWidget/QmlTelephoneBtNotConnect.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/CarLifeCarPlayWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QMlSwipeViewHomeWidget/SecondHomeWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QMlSwipeViewHomeWidget/FirstHomeWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QMlSwipeViewHomeWidget/FooterWidget.qml</file>
+        <file>QmlFileResource/QmlHomeWidget/QMlSwipeViewHomeWidget/ThirdHomeWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/MoreSettingWidget/MoreSettingDataTimeWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/MoreSettingWidget/MoreSettingPhoneLinkWidget.qml</file>
+        <file>QmlFileResource/KeyBoardWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/WifiSettingWidget/WifiSettingWidget.qml</file>
+        <file>QmlFileResource/QmlSettingWidget/WifiSettingWidget/WifiSettingPasswordWidget.qml</file>
+        <file>QmlFileResource/QmlAuxWidget/AuxWidget.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/AutoCarplayWidget.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/HiCarWidget.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/EcLinkWidget.qml</file>
+        <file>QmlFileResource/BackWidget.qml</file>
+        <file>QmlFileResource/QmlPhoneLinkWidget/PhoneLinkMsgShowWidget.qml</file>
+    </qresource>
+</RCC>

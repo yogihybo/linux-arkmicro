@@ -1,0 +1,421 @@
+#include "ImagePlayer.h"
+#include "AutoConnect.h"
+#include "Utility.h"
+#include "UserInterfaceUtility.h"
+#include <QList>
+#include <QFileInfo>
+#include <QTimer>
+#include <QMatrix>
+#include <QImage>
+#include <QImageReader>
+#include <QBuffer>
+#include <QDomDocument>
+#include <iostream>
+#include "configUtils.h"
+using namespace std;
+static const string SDMultimedia("/data/MultiMediaFile/SDMultimedia");
+static const string SDImagePathInfo("/data/MultiMediaFile/SDImagePathInfo");
+static const string USBMultimedia("/data/MultiMediaFile/USBMultimedia");
+static const string USBImagePathInfo("/data/MultiMediaFile/USBImagePathInfo");
+class ImagePlayerPrivate
+{
+    Q_DISABLE_COPY(ImagePlayerPrivate)
+public:
+    explicit ImagePlayerPrivate(ImagePlayer* parent);
+    ~ImagePlayerPrivate();
+    void initialize();
+    void connectAllSlots();
+    void createUSBFileNamesXml();
+    void createSDFileNamesXml();
+    void playListViewIndex(const DeviceWatcherType type, const int index);
+    void playPreviousListViewIndex();
+    void playNextListViewIndex();
+    void rotateImage();
+    void zoomInImage();
+    void zoomOutImage();
+    QByteArray& convertByteArray(const QImage &image);
+    QList<QString>& getPathList(const DeviceWatcherType type);
+    void exitImagePlayer();
+    QList<QString> m_USBPathList;
+    QList<QString> m_SDPathList;
+    int m_PlayIndex;
+    DeviceWatcherType m_DiskType;
+    QString m_USBFileNamesXml;
+    QString m_SDFileNamesXml;
+    QString m_CurrentPath;
+    int m_RotateAngle;
+    float m_Scale;
+private:
+    ImagePlayer* m_Parent;
+};
+
+ImagePlayer::ImagePlayer(QObject *parent)
+    : QObject(parent)
+    , m_Private(new ImagePlayerPrivate(this))
+{
+}
+
+ImagePlayer::~ImagePlayer()
+{
+}
+
+void ImagePlayer::imagePlayerRequestFileNames(const DeviceWatcherType type)
+{
+    if (DWT_SDDisk == type) {
+        emit onImagePlayerFileNames(DWT_SDDisk, m_Private->m_SDFileNamesXml);
+    } else if (DWT_USBDisk == type) {
+        emit onImagePlayerFileNames(DWT_USBDisk, m_Private->m_USBFileNamesXml);
+    }
+}
+
+void ImagePlayer::imagePlayerPlayListViewIndex(const DeviceWatcherType type, const int index)
+{
+    m_Private->playListViewIndex(type, index);
+}
+
+void ImagePlayer::imagePlayerPlayPreviousListViewIndex()
+{
+    m_Private->playPreviousListViewIndex();
+}
+
+void ImagePlayer::imagePlayerPlayNextListViewIndex()
+{
+    m_Private->playNextListViewIndex();
+}
+
+void ImagePlayer::imagePlayerRotateImage()
+{
+    m_Private->rotateImage();
+}
+
+void ImagePlayer::imagePlayerZoomInImage()
+{
+    m_Private->zoomInImage();
+}
+
+void ImagePlayer::imagePlayerZoomOutImage()
+{
+    m_Private->zoomOutImage();
+}
+
+void ImagePlayer::onDeviceWatcherStatus(const DeviceWatcherType type, const DeviceWatcherStatus status)
+{
+    if (DWT_SDDisk == type) {
+        switch (status) {
+        case DWS_Empty: {
+            m_Private->m_SDPathList.clear();
+            break;
+        }
+        case DWS_Busy: {
+            m_Private->m_SDPathList.clear();
+            break;
+        }
+        case DWS_Ready: {
+            m_Private->createSDFileNamesXml();
+            imagePlayerRequestFileNames(DWT_SDDisk);
+            break;
+        }
+        case DWS_Remove: {
+            m_Private->m_SDPathList.clear();
+            break;
+        }
+        default : {
+            break;
+        }
+        }
+    } else if (DWT_USBDisk == type) {
+        switch (status) {
+        case DWS_Empty: {
+            m_Private->m_USBPathList.clear();
+            break;
+        }
+        case DWS_Busy: {
+            m_Private->m_USBPathList.clear();
+            break;
+        }
+        case DWS_Ready: {
+            m_Private->createUSBFileNamesXml();
+            imagePlayerRequestFileNames(DWT_USBDisk);
+            break;
+        }
+        case DWS_Remove: {
+            m_Private->m_USBPathList.clear();
+            break;
+        }
+        default : {
+            break;
+        }
+        }
+    }
+}
+
+void ImagePlayer::onImageFilePath(const QString &path, const DeviceWatcherType type)
+{    
+    if (DWT_SDDisk == type) {
+        m_Private->m_SDPathList.append(path);
+    } else if (DWT_USBDisk == type) {
+        m_Private->m_USBPathList.append(path);
+    }
+    //    emit onImagePlayerFilePath(type, path);
+}
+
+ImagePlayerPrivate::ImagePlayerPrivate(ImagePlayer *parent)
+    : m_Parent(parent)
+{
+    m_PlayIndex = 0;
+    m_DiskType = DWT_Undefine;
+    m_RotateAngle = 0;
+    m_Scale = 1.0f;
+    initialize();
+    connectAllSlots();
+}
+
+ImagePlayerPrivate::~ImagePlayerPrivate()
+{
+}
+
+void ImagePlayerPrivate::initialize()
+{
+}
+
+void ImagePlayerPrivate::connectAllSlots()
+{
+    connectSignalAndSlotByNamesake(g_DeviceWatcher, m_Parent, SLOT(onDeviceWatcherStatus(const int, const int)));
+    connectSignalAndSlotByNamesake(g_DeviceWatcher, m_Parent, SLOT(onImageFilePath(const QString &, const int)));
+}
+
+void ImagePlayerPrivate::createUSBFileNamesXml()
+{
+    QDomDocument domDocument;
+    domDocument.clear();
+    domDocument.appendChild(domDocument.createElement(QString("ImagePlayer")));
+    QDomElement root = domDocument.firstChildElement(QString("ImagePlayer"));
+    QDomElement fileNames;
+    QDomElement info;
+    fileNames = domDocument.createElement(QString("USBFileNames"));
+    root.appendChild(fileNames);
+    m_USBFileNamesXml.clear();
+    string pathInfo;
+    LoadConfigString(pathInfo,USBImagePathInfo);
+    QString usbPersistantPathInfo = QString::fromStdString(pathInfo);
+    QStringList stringList = usbPersistantPathInfo.split(QChar('/'));
+    QString usbPersistantPath = usbPersistantPathInfo.left(usbPersistantPathInfo.length() - stringList.last().length() - 1);
+    QString persistantIndex("");
+    QFileInfo fileInfo;
+    int i;
+    for (i = 0; i < m_USBPathList.size(); ++i) {
+        info = domDocument.createElement(QString("Index:" + QString::number(i)));
+        fileNames.appendChild(info);
+        fileInfo.setFile(m_USBPathList.at(i));
+        info.appendChild(domDocument.createTextNode(fileInfo.fileName()));
+        if (persistantIndex.isEmpty()) {
+            if (fileInfo.filePath() == usbPersistantPath) {
+                if (usbPersistantPathInfo == (fileInfo.filePath() + QString("/") + fileInfo.created().toString(QString("yyyyMMddhhmmss")) + fileInfo.lastModified().toString(QString("yyyyMMddhhmmss")) + QString::number(fileInfo.size()))) {
+                    persistantIndex = QString::number(i);
+                }
+            }
+        }
+    }
+    QDomElement persistant = domDocument.createElement(QString("USBPersistant"));
+    root.appendChild(persistant);
+    int mediaType = 0;
+    LoadConfigString(mediaType,USBMultimedia);
+    unsigned char multimediaType = (unsigned char)mediaType;
+    if (persistantIndex.isEmpty()) {
+        if (0 == i) {
+            persistantIndex = QString("-1");
+            multimediaType = MT_Idle;
+            int value = MT_Video;
+            SaveConfigString(value,USBMultimedia);
+            system("sync");
+        } else {
+            if (0 == multimediaType) {
+                multimediaType = MT_Image;
+                SaveConfigString(multimediaType,USBMultimedia);
+                system("sync");
+            }
+            persistantIndex = QString("0");
+        }
+    }
+    persistant.appendChild(domDocument.createTextNode(persistantIndex));
+    QDomElement type = domDocument.createElement(QString("USBType"));
+    root.appendChild(type);
+    type.appendChild(domDocument.createTextNode(QString::number(multimediaType)));
+    m_USBFileNamesXml = domDocument.toString();
+}
+
+void ImagePlayerPrivate::createSDFileNamesXml()
+{
+    QDomDocument domDocument;
+    domDocument.clear();
+    domDocument.appendChild(domDocument.createElement(QString("ImagePlayer")));
+    QDomElement root = domDocument.firstChildElement(QString("ImagePlayer"));
+    QDomElement fileNames;
+    QDomElement info;
+    fileNames = domDocument.createElement(QString("SDFileNames"));
+    root.appendChild(fileNames);
+    m_SDFileNamesXml.clear();
+    string pathInfo;
+    LoadConfigString(pathInfo,SDImagePathInfo);
+    QString sdPersistantPathInfo = QString::fromStdString(pathInfo);
+    QStringList stringList = sdPersistantPathInfo.split(QChar('/'));
+    QString sdPersistantPath = sdPersistantPathInfo.left(sdPersistantPathInfo.length() - stringList.last().length() - 1);
+    QString persistantIndex("");
+    QFileInfo fileInfo;
+    int i;
+    for (i = 0; i < m_SDPathList.size(); ++i) {
+        info = domDocument.createElement(QString("Index:" + QString::number(i)));
+        fileNames.appendChild(info);
+        fileInfo.setFile(m_SDPathList.at(i));
+        info.appendChild(domDocument.createTextNode(fileInfo.fileName()));
+        if (persistantIndex.isEmpty()) {
+            if (fileInfo.filePath() == sdPersistantPath) {
+                if (sdPersistantPathInfo == (fileInfo.filePath() + QString("/") + fileInfo.created().toString(QString("yyyyMMddhhmmss")) + fileInfo.lastModified().toString(QString("yyyyMMddhhmmss")) + QString::number(fileInfo.size()))) {
+                    persistantIndex = QString::number(i);
+                }
+            }
+        }
+    }
+    QDomElement persistant = domDocument.createElement(QString("SDPersistant"));
+    root.appendChild(persistant);
+    int mediaType = 0;
+    LoadConfigString(mediaType,SDMultimedia);
+    unsigned char multimediaType = (unsigned char)mediaType;
+    if (persistantIndex.isEmpty()) {
+        if (0 == i) {
+            persistantIndex = QString("-1");
+            multimediaType = MT_Idle;
+            int value = MT_Video;
+            SaveConfigString(value,SDMultimedia);
+            system("sync");
+        } else {
+            if (0 == multimediaType) {
+                multimediaType = MT_Image;
+                SaveConfigString(multimediaType,SDMultimedia);
+                system("sync");
+            }
+            persistantIndex = QString("0");
+        }
+    }
+    persistant.appendChild(domDocument.createTextNode(persistantIndex));
+    QDomElement type = domDocument.createElement(QString("SDType"));
+    root.appendChild(type);
+    type.appendChild(domDocument.createTextNode(QString::number(multimediaType)));
+    m_SDFileNamesXml = domDocument.toString();
+}
+
+void ImagePlayerPrivate::playListViewIndex(const DeviceWatcherType type, const int index)
+{
+    QList<QString> temp = getPathList(type);
+    if ((temp.size() > index)
+            && (QFile(temp.at(index))).exists()) {
+        m_DiskType = type;
+        m_RotateAngle = 0;
+        m_Scale = 1.0f;
+        m_PlayIndex = index;
+        m_CurrentPath = temp.at(index);
+        int percent = m_Scale * 100;
+        system("echo 3 > /proc/sys/vm/drop_caches");  //dll add change image clear caches
+        emit m_Parent->onImagePlayerChange(m_DiskType, m_CurrentPath, m_PlayIndex, percent, m_RotateAngle);
+        QFileInfo fileInfo(m_CurrentPath);
+        QString filePath = fileInfo.filePath() + QString("/") +
+                fileInfo.created().toString(QString("yyyyMMddhhmmss")) +
+                fileInfo.lastModified().toString(QString("yyyyMMddhhmmss")) +
+                QString::number(fileInfo.size());
+        int value = MT_Image;
+        if(m_DiskType == DWT_USBDisk){
+            SaveConfigString(filePath.toStdString(),USBImagePathInfo);
+            system("sync");
+            SaveConfigString(value,USBMultimedia);
+            system("sync");
+        }
+        else if(m_DiskType == DWT_SDDisk){
+            SaveConfigString(filePath.toStdString(),SDImagePathInfo);
+            system("sync");
+            SaveConfigString(value,SDMultimedia);
+            system("sync");
+        }
+    }
+}
+
+void ImagePlayerPrivate::playPreviousListViewIndex()
+{
+    m_RotateAngle = 0;
+    int lastIndex = m_PlayIndex;
+    QList<QString> temp = getPathList(m_DiskType);
+    if ((lastIndex > 0)
+            && (lastIndex <= temp.size() - 1)) {
+        --lastIndex;
+    } else {
+        lastIndex = temp.size() - 1;
+    }
+    playListViewIndex(m_DiskType, lastIndex);
+}
+
+void ImagePlayerPrivate::playNextListViewIndex()
+{
+    m_RotateAngle = 0;
+    int lastIndex = m_PlayIndex;
+    QList<QString> temp = getPathList(m_DiskType);
+    if (((lastIndex < (temp.size() - 1)))
+            && (lastIndex >= 0)) {
+        ++lastIndex;
+    } else {
+        lastIndex = 0;
+    }
+    playListViewIndex(m_DiskType, lastIndex);
+}
+
+void ImagePlayerPrivate::rotateImage()
+{
+    int step(90);
+    if (((m_RotateAngle + step) < 360)
+            && (m_RotateAngle >= 0)) {
+        m_RotateAngle += step;
+    } else {
+        m_RotateAngle = 0;
+    }
+    int percent = m_Scale * 100;
+    emit m_Parent->onImagePlayerChange(m_DiskType, m_CurrentPath, m_PlayIndex, percent, m_RotateAngle);
+}
+
+void ImagePlayerPrivate::zoomInImage()
+{
+    if (m_Scale > 1.0f) {
+        m_Scale -= 0.25f;
+    }
+    int percent = m_Scale * 100;
+    emit m_Parent->onImagePlayerChange(m_DiskType, m_CurrentPath, m_PlayIndex, percent, m_RotateAngle);
+}
+
+void ImagePlayerPrivate::zoomOutImage()
+{
+    if (m_Scale < 2.5f) {
+        m_Scale += 0.25f;
+    }
+    int percent = m_Scale * 100;
+    emit m_Parent->onImagePlayerChange(m_DiskType, m_CurrentPath, m_PlayIndex, percent, m_RotateAngle);
+}
+
+QByteArray &ImagePlayerPrivate::convertByteArray(const QImage &image)
+{
+    QByteArray byteArray;
+    return  byteArray;
+}
+
+QList<QString> &ImagePlayerPrivate::getPathList(const DeviceWatcherType type)
+{
+    switch (type) {
+    case DWT_SDDisk: {
+        return m_SDPathList;
+    }
+    case DWT_USBDisk:
+    default: {
+        return m_USBPathList;
+    }
+    }
+}
+
+void ImagePlayerPrivate::exitImagePlayer()
+{
+}
