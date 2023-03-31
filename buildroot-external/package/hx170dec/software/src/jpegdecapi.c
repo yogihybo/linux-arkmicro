@@ -1800,9 +1800,9 @@ JpegDecRet JpegDecDecode(JpegDecInst decInst, JpegDecInput * pDecIn,
             return (JPEGDEC_SLICE_MODE_UNSUPPORTED);
         }
 
-        /* check if frame size over 16M */
+        /* check if frame size over maxSupportedPixelAmount */
         if((!pDecIn->sliceMbSet) &&
-           ((JPG_FRM.hwX * JPG_FRM.hwY) > JPEGDEC_MAX_PIXEL_AMOUNT))
+           ((JPG_FRM.hwX * JPG_FRM.hwY) > PTR_JPGC->maxSupportedPixelAmount))
         {
             JPEGDEC_API_TRC
                 ("JpegDecDecode# ERROR: Resolution > 16M ==> use slice mode!");

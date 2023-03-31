@@ -33,9 +33,13 @@ u32 g_JpegYBusAddress = 0;
 u32 g_JpegCbCrBusAddress = 0;
 
 DWLLinearMem_t g_JpegYMemInfo[2] = {0};
+u32 g_JpegMemWidth = 0;
+u32 g_JpegMemHeight = 0;
 u32 g_JpegMemIndex = 0;
 
 static codecSegmentInfo g_SliceInfo[128];
+
+static void JpegReleaseBuffer(void);
 
 static int get_pp_dec_type(int streamType);
 
@@ -43,7 +47,7 @@ static int pp_alloc_buffer(int fdmemalloc, u32 size, DWLLinearMem_t * info);
 
 static void pp_free_buffer(int fdmemalloc, DWLLinearMem_t * info);
 
-static int pp_set_config(MFCHandle *handle, int in_width, int int_height, int in_format, int out_addr);
+static int pp_set_config(MFCHandle *handle, int in_width, int in_height, int in_format, int out_addr);
 
 static int pp_reset_outimg_addr(MFCHandle *handle, u32 addr);
 
@@ -77,8 +81,8 @@ int MFCH264Decode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 		case H264DEC_HDRS_RDY:
 			/* read stream info */
 			infoRet = H264DecGetInfo(handle->decInst, &decInfo);
-			outBuffer->codedWidth = decInfo.picWidth;
-			outBuffer->codedHeight = decInfo.picHeight;
+			outBuffer->codedWidth = decInfo.cropParams.cropOutWidth;
+			outBuffer->codedHeight = decInfo.cropParams.cropOutHeight;
 			if (handle->ppInst) {
 				pp_set_config(handle, decInfo.picWidth, decInfo.picHeight, PP_PIX_FMT_YCBCR_4_2_0_SEMIPLANAR,
 					PP_OUTBUFFER_PHYADDR(handle->ppOutBufferIndex));
@@ -1434,18 +1438,6 @@ int MFCJpegDecode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 
 	g_JpegYBusAddress = 0;
 
-	for (i = 0; i < 2; i++) {
-		if(g_JpegYMemInfo[i].busAddress == 0)
-		{
-			if(DWLMallocLinear(((JpegDecContainer*)handle->decInst)->dwl, MAX_OUTFRAME_WIDTH*MAX_OUTFRAME_HEIGHT*2,
-				 &g_JpegYMemInfo[i]) == DWL_ERROR)
-			{
-				printf("Jpeg DWLMallocLinear y failure.\n");
-				goto end;
-			}
-		}
-	}
-
 	/* Get image information of the JFIF */
     infoRet = JpegDecGetImageInfo(handle->decInst,
                                    &DecIn,
@@ -1456,13 +1448,11 @@ int MFCJpegDecode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 		goto end;
 	}
 
-	DecIn.pictureBufferY.busAddress = g_JpegYMemInfo[g_JpegMemIndex].busAddress;
-	DecIn.pictureBufferY.pVirtualAddress = g_JpegYMemInfo[g_JpegMemIndex].virtualAddress;
-	DecIn.pictureBufferCbCr.busAddress = g_JpegYMemInfo[g_JpegMemIndex].busAddress + DecImgInf.outputWidth * DecImgInf.outputHeight;
-	DecIn.pictureBufferCbCr.pVirtualAddress = (u32*)((u32)g_JpegYMemInfo[g_JpegMemIndex].virtualAddress +
-			DecImgInf.outputWidth * DecImgInf.outputHeight);
-	DecIn.pictureBufferCr.busAddress = 0;
-	DecIn.pictureBufferCr.pVirtualAddress = 0;
+	if (DecImgInf.outputWidth > MAX_JPEG_OUTFRAME_WIDTH || DecImgInf.outputHeight > MAX_JPEG_OUTFRAME_HEIGHT)
+	{
+		printf("%dx%d image is too large to decode", DecImgInf.outputWidth, DecImgInf.outputHeight);
+		goto end;
+	}
 
 	if (handle->ppInst) {
 		if (DecImgInf.outputFormat == JPEGDEC_YCbCr400)
@@ -1479,6 +1469,34 @@ int MFCJpegDecode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 			format = PP_PIX_FMT_YCBCR_4_2_2_SEMIPLANAR;
 		pp_set_config(handle, DecImgInf.displayWidth, DecImgInf.displayHeight, format,
 			PP_OUTBUFFER_PHYADDR(handle->ppOutBufferIndex));
+		DecIn.pictureBufferY.busAddress = 0;
+		DecIn.pictureBufferY.pVirtualAddress = NULL;
+		DecIn.pictureBufferCbCr.busAddress = 0;
+		DecIn.pictureBufferCbCr.pVirtualAddress = NULL;
+		DecIn.pictureBufferCr.busAddress = 0;
+		DecIn.pictureBufferCr.pVirtualAddress = 0;
+	} else {
+		if (g_JpegMemWidth != DecImgInf.outputWidth || g_JpegMemHeight != DecImgInf.outputHeight) {
+			JpegReleaseBuffer();
+
+			for (i = 0; i < 2; i++) {
+				if(DWLMallocLinear(((JpegDecContainer*)handle->decInst)->dwl,
+					DecImgInf.outputWidth*DecImgInf.outputHeight*3, &g_JpegYMemInfo[i]) == DWL_ERROR)
+				{
+					printf("Jpeg DWLMallocLinear y failure.\n");
+					goto end;
+				}
+			}
+			g_JpegMemWidth = DecImgInf.outputWidth;
+			g_JpegMemHeight = DecImgInf.outputHeight;
+		}
+		DecIn.pictureBufferY.busAddress = g_JpegYMemInfo[g_JpegMemIndex].busAddress;
+		DecIn.pictureBufferY.pVirtualAddress = g_JpegYMemInfo[g_JpegMemIndex].virtualAddress;
+		DecIn.pictureBufferCbCr.busAddress = g_JpegYMemInfo[g_JpegMemIndex].busAddress + DecImgInf.outputWidth * DecImgInf.outputHeight;
+		DecIn.pictureBufferCbCr.pVirtualAddress = (u32*)((u32)g_JpegYMemInfo[g_JpegMemIndex].virtualAddress +
+				DecImgInf.outputWidth * DecImgInf.outputHeight);
+		DecIn.pictureBufferCr.busAddress = 0;
+		DecIn.pictureBufferCr.pVirtualAddress = 0;
 	}
 
 	g_JpegMemIndex = !g_JpegMemIndex;
@@ -1536,10 +1554,13 @@ int MFCJpegDecodeEof(MFCHandle *handle, OutFrameBuffer *outBuffer)
 	return 0;
 }
 
-void JpegReleaseBuffer(void)
+static void JpegReleaseBuffer(void)
 {
     int fd_memalloc;
     int i;
+
+	if (!g_JpegYMemInfo[0].busAddress && !g_JpegYMemInfo[1].busAddress)
+		return;
 
 	fd_memalloc = open(MEMALLOC_MODULE_PATH, O_RDWR | O_SYNC);
 
@@ -1553,7 +1574,7 @@ void JpegReleaseBuffer(void)
 		if(g_JpegYMemInfo[i].busAddress != 0)
 			ioctl(fd_memalloc, MEMALLOC_IOCSFREEBUFFER, &g_JpegYMemInfo[i].busAddress);
 
-		if(g_JpegYMemInfo[i].virtualAddress != MAP_FAILED)
+		if(g_JpegYMemInfo[i].virtualAddress != MAP_FAILED && g_JpegYMemInfo[i].virtualAddress != 0)
 			munmap(g_JpegYMemInfo[i].virtualAddress, g_JpegYMemInfo[i].size);
 
 		memset(&g_JpegYMemInfo[i], 0, sizeof(g_JpegYMemInfo[i]));
@@ -1824,6 +1845,9 @@ void mfc_uninit(MFCHandle *handle)
 
 	if (handle->ppInst) {
 		PPRelease(handle->ppInst);
+	}
+
+	if (handle->ppMemalloc > 0) {
 		pp_free_buffer(handle->ppMemalloc, &handle->ppOutBuffer);
 		close(handle->ppMemalloc);
 	}
@@ -1960,6 +1984,8 @@ static int pp_alloc_buffer(int fdmemalloc, u32 size, DWLLinearMem_t * info)
         return -1;
 	}
 
+	close(fd_mem);
+
     return 0;
 }
 
@@ -1973,7 +1999,7 @@ static void pp_free_buffer(int fdmemalloc, DWLLinearMem_t * info)
         munmap(info->virtualAddress, info->size);
 }
 
-static int pp_set_config(MFCHandle *handle, int in_width, int int_height, int in_format, int out_addr)
+static int pp_set_config(MFCHandle *handle, int in_width, int in_height, int in_format, int out_addr)
 {
 	PPResult ppRet;
 	PPConfig pPpConf;
@@ -1990,15 +2016,15 @@ static int pp_set_config(MFCHandle *handle, int in_width, int int_height, int in
 	/* Set input width */
 	pPpConf.ppInImg.width = (in_width + 15) & ~15;
 	/* Set input height */
-	pPpConf.ppInImg.height = (int_height + 15) & ~15;
+	pPpConf.ppInImg.height = (in_height + 15) & ~15;
 	/* set input Crop */
-	if (in_width & 15 || int_height & 15) {
+	if (in_width & 15 || in_height & 15) {
 
 		pPpConf.ppInCrop.enable = 1;
 		pPpConf.ppInCrop.originX = 0;
 		pPpConf.ppInCrop.originY = 0;
-		pPpConf.ppInCrop.width = in_width;
-		pPpConf.ppInCrop.height = int_height;
+		pPpConf.ppInCrop.width = in_width & ~7;
+		pPpConf.ppInCrop.height = in_height & ~7;
 	}
 	/* Set video range to 0 */
 	pPpConf.ppInImg.videoRange = 0;
@@ -2106,7 +2132,7 @@ int mfc_pp_init(MFCHandle *handle, int outWidth, int outHeight, int outFormat)
 		PPRelease(pp);
 		return -1;
 	}
-	printf("DWLMallocLinear 0x%x, 0x%x.\n", handle->ppOutBuffer.busAddress, handle->ppOutBuffer.virtualAddress);
+	//printf("DWLMallocLinear 0x%x, 0x%x.\n", handle->ppOutBuffer.busAddress, handle->ppOutBuffer.virtualAddress);
 
 	/* if (get_pp_dec_type(handle->streamType) != PP_PIPELINED_DEC_TYPE_H264) {
 		PPOutputBuffers ppOutBuf;
@@ -2126,4 +2152,97 @@ int mfc_pp_init(MFCHandle *handle, int outWidth, int outHeight, int outFormat)
 	handle->ppOutFormat = outFormat;
 
 	return 0;
+}
+
+int MFCJpegGetInfo(MFCHandle *handle, DWLLinearMem_t *inBuffer, MFCStreamInfo *info)
+{
+	JpegDecInst  decoder;
+	JpegDecRet  infoRet;
+	JpegDecInput DecIn;
+	JpegDecImageInfo DecImgInf;
+	int ret = 0;
+
+	if (!handle || !inBuffer || !info) {
+		printf("Invalid parameter!\n");
+		return -1;
+	}
+
+	infoRet = JpegDecInit(&decoder);
+	if(infoRet !=JPEGDEC_OK) {
+		printf("JpegDecInit failure %d.\n", infoRet);
+		return -1;
+	}
+	handle->decInst = (void*)decoder;
+
+	DecIn.decImageType = JPEGDEC_IMAGE;
+	DecIn.sliceMbSet = 0;
+	DecIn.bufferSize = 0;
+	DecIn.streamLength = inBuffer->size;
+	DecIn.streamBuffer.busAddress= inBuffer->busAddress;
+	DecIn.streamBuffer.pVirtualAddress = inBuffer->virtualAddress;
+
+	/* Get image information of the JFIF */
+    infoRet = JpegDecGetImageInfo(handle->decInst,
+                                   &DecIn,
+                                   &DecImgInf);
+	if(infoRet !=JPEGDEC_OK)
+	{
+		printf("JpegDecGetImageInfo failure.\n");
+		info->codedWidth = 0;
+		info->codedHeight = 0;
+		info->frameWidth = 0;
+		info->frameHeight = 0;
+		info->format = MFCFORMAT_NONE;
+		ret = -1;
+		goto end;
+	}
+
+	info->codedWidth = DecImgInf.displayWidth;
+	info->codedHeight = DecImgInf.displayHeight;
+	info->frameWidth = DecImgInf.outputWidth;
+	info->frameHeight = DecImgInf.outputHeight;
+	if (DecImgInf.outputFormat == JPEGDEC_YCbCr400)
+		info->format = MFCFORMAT_YCBCR400;
+	else if (DecImgInf.outputFormat == JPEGDEC_YCbCr440)
+		info->format = MFCFORMAT_YCBCR440;
+	else if (DecImgInf.outputFormat == JPEGDEC_YCbCr411_SEMIPLANAR)
+		info->format = MFCFORMAT_YCBCR411_SEMIPLANAR;
+	else if (DecImgInf.outputFormat == JPEGDEC_YCbCr444_SEMIPLANAR)
+		info->format = MFCFORMAT_YCBCR444_SEMIPLANAR;
+	else if (DecImgInf.outputFormat == JPEGDEC_YCbCr420_SEMIPLANAR)
+		info->format = MFCFORMAT_YCBCR420_SEMIPLANAR;
+	else
+		info->format = MFCFORMAT_YCBCR422_SEMIPLANAR;
+
+end:
+	JpegDecRelease((JpegDecInst)handle->decInst);
+
+	return ret;
+}
+
+int mfc_get_stream_info(MFCHandle *handle, DWLLinearMem_t *inBuffer, MFCStreamInfo *info)
+{
+	if (handle == NULL) {
+		printf("Invalid handle.\n");
+		return -1;
+	}
+
+	switch(handle->streamType) {
+	case RAW_STRM_TYPE_JPEG:
+		return MFCJpegGetInfo(handle, inBuffer, info);
+	case RAW_STRM_TYPE_WMV3:
+	case RAW_STRM_TYPE_H264:
+	case RAW_STRM_TYPE_H264_NOREORDER:
+	case RAW_STRM_TYPE_MP2:
+	case RAW_STRM_TYPE_MP4:
+	case RAW_STRM_TYPE_SOR:
+	case RAW_STRM_TYPE_MP4_CUSTOM:
+	case RAW_STRM_TYPE_REAL:
+	case RAW_STRM_TYPE_VC1:
+	case RAW_STRM_TYPE_VP8:
+	case RAW_STRM_TYPE_VP6:
+	default:
+		printf("Not supported yet.\n");
+		return -1;
+	}
 }

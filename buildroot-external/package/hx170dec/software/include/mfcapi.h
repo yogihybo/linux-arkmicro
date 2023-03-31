@@ -27,6 +27,9 @@ extern "C" {
 #define MAX_OUTFRAME_WIDTH	1920
 #define MAX_OUTFRAME_HEIGHT	1088
 
+#define MAX_JPEG_OUTFRAME_WIDTH		8192
+#define MAX_JPEG_OUTFRAME_HEIGHT	8192
+
 typedef struct
 {
 	u32 yBusAddress;
@@ -72,6 +75,26 @@ typedef struct
 	DWLLinearMem_t ppOutBuffer;
 }MFCHandle;
 
+
+typedef enum{
+	MFCFORMAT_NONE = -1,
+	MFCFORMAT_YCBCR400 = 0,
+	MFCFORMAT_YCBCR420_SEMIPLANAR,
+	MFCFORMAT_YCBCR422_SEMIPLANAR,
+	MFCFORMAT_YCBCR440,
+	MFCFORMAT_YCBCR411_SEMIPLANAR,
+	MFCFORMAT_YCBCR444_SEMIPLANAR,
+}MFCFormat;
+
+typedef struct
+{
+	i32 codedWidth;
+	i32 codedHeight;
+	i32 frameWidth;
+	i32 frameHeight;
+	MFCFormat format;
+}MFCStreamInfo;
+
 MFCHandle *mfc_init(int streamType);
 
 int mfc_decode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *outBuffer);
@@ -81,6 +104,8 @@ int mfc_decode_eof(MFCHandle *handle, OutFrameBuffer *outBuffer);
 void mfc_uninit(MFCHandle *handle);
 
 int mfc_pp_init(MFCHandle *handle, int outWidth, int outHeight, int outFormat);
+
+int mfc_get_stream_info(MFCHandle *handle, DWLLinearMem_t *inBuffer, MFCStreamInfo *info);
 
 #ifdef __cplusplus
 }
