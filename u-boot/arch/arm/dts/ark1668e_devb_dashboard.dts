@@ -1,0 +1,258 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+/include/ "skeleton.dtsi"
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "ARM Arkmicro ark1668e SoC";
+	compatible = "arkmicro,ark1668e";
+
+	interrupt-parent = <&gic>;
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk loglevel=8 clk_ignore_unused";
+		stdout-path = "serial0:115200n8";
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		enable-method = "arkmicro,arke-smp";
+
+		cpu0: cpu@0 {
+			compatible = "arm,cortex-a7";
+			device_type = "cpu";
+			reg = <0>;
+			clock-frequency = <24000000>;
+		};
+
+        cpu1: cpu@1 {
+            compatible = "arm,cortex-a7";
+            device_type = "cpu";
+            reg = <1>;
+            clock-frequency = <24000000>;
+        };
+	};
+
+	memory {
+		reg = <0x40000000 0x4000000>;
+	};
+
+
+	timer {
+		compatible = "arm,armv7-timer";
+		arm,cpu-registers-not-fw-configured;
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+		clock-frequency = <12000000>;
+	};
+
+    clocks {
+        //#address-cells = <1>;
+        //#size-cells = <0>;
+
+        /* cpu axi ahb apb */
+        clk24mhz: clk24mhz@24M {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <24000000>;
+        };
+
+        /* ddr */
+        clk20mhz: clk20mhz@20M {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <20000000>;
+        };
+
+        /* lcd */
+        clk15mhz: clk15mhz@15M {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <15000000>;
+        };
+
+        /* peripheral */
+        clk12mhz: clk12mhz@12M {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <12000000>;
+        };
+
+        clk25mhz: clk25mhz@25M {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <25000000>;
+        };
+    };
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		u-boot,dm-pre-reloc;
+
+		gic: interrupt-controller@e0b01000 {
+			compatible = "arm,cortex-a7-gic";
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			reg = <0xe0b01000 0x1000>,
+			      <0xe0b02000 0x2000>,
+			      <0xe0b04000 0x2000>,
+			      <0xe0b06000 0x2000>;
+		};
+
+		gpio0: gpio@e4600000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600000 0x80>;
+
+			gporta: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <0>;
+			};
+		};
+
+		gpio1: gpio@e4600080 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600080 0x80>;
+
+			gportb: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <32>;
+			};
+		};
+
+		gpio2: gpio@e4600100 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600100 0x80>;
+
+			gportc: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <64>;
+			};
+		};
+
+		gpio3: gpio@e4600180 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600180 0x80>;
+
+			gportd: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <96>;
+			};
+		};
+
+		gpio4: gpio@e4600200 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600200 0x80>;
+
+			gporte: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <128>;
+			};
+		};
+
+		gpio5: gpio@e4600280 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,dw-apb-gpio";
+			reg = <0xe4600280 0x80>;
+
+			gportf: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				base = <160>;
+			};
+		};
+
+		ethernet@e0300000 {
+			compatible = "arkmicro,ark1668e-eqos", "snps,dwc-qos-ethernet-4.10";
+			reg = <0xe0300000 0x10000>;
+			clocks = <&clk25mhz>,
+				<&clk25mhz>,
+				<&clk25mhz>,
+				<&clk25mhz>,
+				<&clk25mhz>;
+			clock-names = "slave_bus",
+				"master_bus",
+				"rx",
+				"ptp_ref",
+				"tx";
+			//phy-reset-gpios = <&gportd 15 GPIO_ACTIVE_LOW>;
+			phy-mode = "rgmii";
+		};
+
+		lcdc: lcd@e0500000 {
+			compatible = "arkmicro,ark1668e-lcdc";
+			reg = <0xe0500000 0x1000
+					0x4e200000 0x100000>;
+			interface-type = "DLVDS";
+			lvds-con = <0x4545>;
+			lvds-con2 = <0xfa200141>;
+			bits-per-pixel = <32>;
+			power-control-gpio = <&gportd 0 GPIO_ACTIVE_HIGH>;
+			lcd-wiring-mode = "RGB";
+			backlight-pwm = <0>;
+			backlight-value = <30>;
+			backlight-delay = <200>;
+			//u-boot,dm-pre-reloc;
+
+			display-timings {
+				native-mode = <&timing0>;
+				timing0: timing0 {
+					clock-frequency = <120000000>;
+					hactive = <1920>;
+					vactive = <720>;
+					hback-porch = <300>;
+					hfront-porch = <240>;
+					vback-porch = <80>;
+					vfront-porch = <80>;
+					hsync-len = <36>;
+					vsync-len = <18>;
+					hsync-active = <1>;
+					vsync-active = <1>;
+					de-active = <0>;
+					pixelclk-active = <0>;
+				};
+			};
+		};
+	};
+};

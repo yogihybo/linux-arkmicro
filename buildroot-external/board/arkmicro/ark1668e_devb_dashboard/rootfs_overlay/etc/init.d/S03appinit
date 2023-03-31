@@ -1,0 +1,39 @@
+#!/bin/sh
+
+start() {
+	ubiattach /dev/ubi_ctrl -m 6
+	if  [ ! -d /data ];  then
+	mkdir -p /data
+	fi
+	mount -o sync -t ubifs ubi1_0 /data
+
+	ifconfig lo up
+	mdnsd&
+	if  [ ! -f /data/carplay.ini ];  then
+	cp -rf /etc/carplay.ini /data
+	fi
+	if  [ ! -f /data/auto.ini ];  then
+	cp -rf /etc/auto.ini /data
+	fi
+}
+
+stop() {
+	echo "stop"
+}
+
+restart() {
+	stop
+	sleep 1
+	start
+}
+
+case "$1" in
+	start|stop|restart)
+		"$1";;
+	reload)
+		# Restart, since there is no true "reload" feature.
+		restart;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload}"
+		exit 1
+esac

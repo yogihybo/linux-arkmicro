@@ -1,0 +1,28 @@
+
+export MALI_NOCLEAR=1
+export MALI_MAX_WINDOW_BUFFERS=3
+
+start() {
+	dashboard &
+}
+
+stop() {
+	echo "stop"
+}
+
+restart() {
+	stop
+	sleep 1
+	start
+}
+
+case "$1" in
+	start|stop|restart)
+		"$1";;
+	reload)
+		# Restart, since there is no true "reload" feature.
+		restart;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload}"
+		exit 1
+esac

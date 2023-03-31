@@ -105,6 +105,15 @@ config TARGET_ARKN141S_FPGA
 	select BOARD_LATE_INIT
 	select BOARD_EARLY_INIT_F
 
+config TARGET_ARK1668E_DEVB_DASHBOARD
+	bool "ark1668e_devb_dashboard board"
+	select ARCH_ARKE
+	select ARK1668EFAMILY
+	select CPU_V7A
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_ARK1668E_DEVB
 	bool "ark1668e_devb board"
 	select ARCH_ARKE
@@ -241,6 +250,7 @@ source "board/arkmicro/arkn141-sqwf/Kconfig"
 source "board/arkmicro/arkn141-shoulang/Kconfig"
 source "board/arkmicro/amt630h/Kconfig"
 source "board/arkmicro/arkn141-hjyb/Kconfig"
+source "board/arkmicro/ark1668e_devb_dashboard/Kconfig"
 source "board/arkmicro/ark1668e_devb/Kconfig"
 source "board/arkmicro/ark1668e_devb_emmc/Kconfig"
 source "board/arkmicro/ark1668e_fpga/Kconfig"

@@ -540,6 +540,7 @@ dtb-$(CONFIG_TARGET_STM32MP1) += \
 dtb-$(CONFIG_ARCH_ARKMICRO) += \
     ark1668e_fpga.dtb \
     ark1668e_devb.dtb \
+    ark1668e_devb_dashboard.dtb \
     ark1668e_devb_emmc.dtb \
 
 targets += $(dtb-y)
