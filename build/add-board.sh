@@ -74,8 +74,8 @@ DST_UBOOT_BOARD_PATH=$SDK_DIR/u-boot/board/arkmicro/$DST_BOARD_TYPE
 # add u-boot board config file
 cp -rf ${SDK_DIR}/u-boot/configs/${SRC_UBOOT_CONFIG_FILE} ${SDK_DIR}/u-boot/configs/${DST_BOARD_TYPE}_defconfig
 sed -i s/CONFIG_TARGET_$SRC_UBOOT_TARGET/CONFIG_TARGET_$DST_UBOOT_TARGET/g ${SDK_DIR}/u-boot/configs/${DST_BOARD_TYPE}_defconfig
-sed -i s/$SRC_DTB_FILE_NAME/$DST_DTB_FILE_NAME/g ${SDK_DIR}/u-boot/configs/${DST_BOARD_TYPE}_defconfig
 sed -i s/$SRC_BOARD_TYPE/$DST_BOARD_TYPE/g ${SDK_DIR}/u-boot/configs/${DST_BOARD_TYPE}_defconfig
+sed -i s/$SRC_DTB_FILE_NAME/$DST_DTB_FILE_NAME/g ${SDK_DIR}/u-boot/configs/${DST_BOARD_TYPE}_defconfig
 
 # copy dts file and add in Makefile
 UBOOT_DTS_PATH=${SDK_DIR}/u-boot/arch/arm/dts

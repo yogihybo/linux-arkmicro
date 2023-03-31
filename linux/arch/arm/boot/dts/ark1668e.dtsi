@@ -358,7 +358,7 @@
 				enable-offset = <5 7>;
 			};
 
-			lcdclk: lcdclk {
+			lcdclkdiv: lcdclkdiv {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
 				clocks = <&lcdpll>, <&axipll>, <&tvpll>, <&xtal24mhz>;
@@ -366,6 +366,16 @@
 				index-offset = <7>;
 				index-mask = <0xf>;
 				index-value = <0>;
+				div-offset = <4>;
+				div-mask = <0x7>;
+				div-value = <1>;
+			};
+
+			lcdclk: lcdclk {
+				#clock-cells = <0>;
+				compatible = "arkmiro,ark-clk-sys";
+				clocks = <&lcdclkdiv>;
+				reg = <0x54>;
 				div-offset = <19>;
 				div-mask = <0xf>;
 				div-value = <4>;
