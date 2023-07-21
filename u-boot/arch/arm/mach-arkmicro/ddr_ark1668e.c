@@ -392,7 +392,7 @@ unsigned int ddr3_sdramc_init(void)
     rDDR_CHARBRB    =  0x20<<24 | 3<<16 |  1<<0 ;
 
 //0xc8
-    rDDR_CHGNTRC    =  0x5<<24 | 0x5<<16 | 0x5<<8 |0x5<<0 ;    
+    rDDR_CHGNTRC    =  0x5<<24 | 0x5<<16 | 0x1f<<8 |0x5<<0 ;
 
 //0x134
  //  rDDR_PHYMISCR2   =   5<<28 | 5<<24 |7<<20 | 3<<16 | 4<<12 | 4<<8 | 4<<4 | 4<<0 ;

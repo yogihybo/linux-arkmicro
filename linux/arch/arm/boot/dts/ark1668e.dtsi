@@ -320,7 +320,7 @@
 				index-value = <1>;
 				div-offset = <0>;
 				div-mask = <0x1f>;
-				div-value = <16>;
+				div-value = <10>;
 				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
 				enable-reg = <0x58 0x58>;
 				enable-offset = <5 7>;
@@ -336,7 +336,7 @@
 				index-value = <1>;
 				div-offset = <0>;
 				div-mask = <0x1f>;
-				div-value = <16>;
+				div-value = <10>;
 				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
 				enable-reg = <0x5c 0x5c>;
 				enable-offset = <5 7>;
@@ -352,7 +352,7 @@
 				index-value = <1>;
 				div-offset = <0>;
 				div-mask = <0x1f>;
-				div-value = <16>;
+				div-value = <10>;
 				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
 				enable-reg = <0x7c 0x7c>;
 				enable-offset = <5 7>;
@@ -421,7 +421,7 @@
 				index-value = <1>;
 				div-offset = <24>;
 				div-mask = <0xf>;
-				div-value = <3>;
+				div-value = <2>;
 				div-mode = <ARK_CLK_DIVMODE_NOZERO>;
 				//enable-reg = <0x44 0x4c 0x50 0x50>;
 				//enable-offset = <21 15 25 14>;
