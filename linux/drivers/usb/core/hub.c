@@ -2929,7 +2929,13 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
 		delay = HUB_LONG_RESET_TIME;
 	}
 	
-	hub_port_error_notify(udev);
+	{
+		struct usb_hcd *hcd = bus_to_hcd(udev->bus);
+		if (hcd->driver->reset_usb_controller)
+			hcd->driver->reset_usb_controller(hcd, 0);
+		else
+			hub_port_error_notify(udev);
+	}
 	dev_err(&port_dev->dev, "Cannot enable. Maybe the USB cable is bad?\n");
 
 done:

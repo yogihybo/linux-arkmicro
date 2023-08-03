@@ -281,6 +281,8 @@ struct musb {
 	struct delayed_work	deassert_reset_work;
 	struct delayed_work	finish_resume_work;
 	struct delayed_work	gadget_work;
+	struct work_struct recovery_usb_work;
+	struct timer_list musb_reset_timer;
 	u16			hwvers;
 
 	u16			intrrxe;

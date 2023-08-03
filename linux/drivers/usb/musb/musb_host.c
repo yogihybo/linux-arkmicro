@@ -2869,6 +2869,27 @@ static void musb_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
 }
 #endif /* !CONFIG_MUSB_PIO_ONLY */
 
+static int musb_reset_usb_controller(struct usb_hcd *hcd, int mode)
+{
+	struct musb	*musb = NULL;
+	int ret = -1;
+
+	(void)mode;
+	if (NULL == hcd)
+		return ret;
+
+	musb = hcd_to_musb(hcd);
+	if (NULL == musb) {
+		return ret;
+	}
+
+	//printk("\n######### %s start at line:%d musb:%x\n\n", __func__, __LINE__, (int)musb);
+
+	mod_timer(&musb->musb_reset_timer, jiffies + msecs_to_jiffies(3000));
+
+	return 0;
+}
+
 static const struct hc_driver musb_hc_driver = {
 	.description		= "musb-hcd",
 	.product_desc		= "MUSB HDRC host driver",
@@ -2897,6 +2918,7 @@ static const struct hc_driver musb_hc_driver = {
 	.hub_control		= musb_hub_control,
 	.bus_suspend		= musb_bus_suspend,
 	.bus_resume		= musb_bus_resume,
+	.reset_usb_controller  = musb_reset_usb_controller
 	/* .start_port_reset	= NULL, */
 	/* .hub_irq_enable	= NULL, */
 };

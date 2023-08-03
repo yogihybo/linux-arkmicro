@@ -2313,8 +2313,11 @@ static void musb_irq_work(struct work_struct *data)
 			musb_platform_try_idle(musb, jiffies
 				+ msecs_to_jiffies(musb->a_wait_bcon));
 
-		if (musb->ops->set_mode)
+		if (musb->ops->set_mode) {
+			musb->ops->set_mode(musb, MUSB_PERIPHERAL);
+			msleep(1000);
 			musb->ops->set_mode(musb, MUSB_OTG);
+		}
 	}
 
 	error = pm_runtime_get_sync(musb->controller);
@@ -2543,6 +2546,38 @@ static void musb_deassert_reset(struct work_struct *work)
 	spin_unlock_irqrestore(&musb->lock, flags);
 }
 
+static void musb_recovery_usb_proc(struct work_struct *work)
+{
+	struct musb *musb = NULL;
+
+	if (NULL == work)
+		return;
+
+	musb = container_of(work, struct musb, recovery_usb_work);
+	if (NULL == musb)
+		return;
+
+	if (musb->ops->set_mode)
+		musb->ops->set_mode(musb, MUSB_PERIPHERAL);
+	msleep(1000);
+	if (musb->ops->set_mode)
+		musb->ops->set_mode(musb, MUSB_OTG);
+}
+
+static void musb_reset_timer_handler(struct timer_list *t)
+{
+	struct musb *musb = NULL;
+
+	if (NULL == t)
+		return;
+
+	musb = container_of(t, struct musb, musb_reset_timer);
+	if (NULL == musb)
+		return;
+
+	schedule_work(&musb->recovery_usb_work);
+}
+
 /*
  * Perform generic per-controller initialization.
  *
@@ -2721,6 +2756,9 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 	INIT_DELAYED_WORK(&musb->irq_work, musb_irq_work);
 	INIT_DELAYED_WORK(&musb->deassert_reset_work, musb_deassert_reset);
 	INIT_DELAYED_WORK(&musb->finish_resume_work, musb_host_finish_resume);
+	INIT_WORK(&musb->recovery_usb_work, musb_recovery_usb_proc);
+
+	timer_setup(&musb->musb_reset_timer, musb_reset_timer_handler, 0);
 
 	/* setup musb parts of the core (especially endpoints) */
 	status = musb_core_init(plat->config->multipoint

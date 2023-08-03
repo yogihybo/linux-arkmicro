@@ -407,6 +407,7 @@ struct hc_driver {
 	/* Call for power on/off the port if necessary */
 	int	(*port_power)(struct usb_hcd *hcd, int portnum, bool enable);
 
+	int (*reset_usb_controller)(struct usb_hcd *hcd, int mode);
 };
 
 static inline int hcd_giveback_urb_in_bh(struct usb_hcd *hcd)

@@ -50,6 +50,8 @@
 #undef BBB_COMDAT_TRACE
 #undef BBB_XPORT_TRACE
 
+#define ARK_USB_MAX_XFER_BLK	1024
+
 #include <scsi.h>
 /* direction table -- this indicates the direction of the data
  * transfer for each command code -- a 1 indicates input
@@ -954,7 +956,11 @@ static void usb_stor_set_max_xfer_blk(struct usb_device *udev,
 	 */
 	blk = USHRT_MAX;
 #else
+#ifdef ARK_USB_MAX_XFER_BLK
+	blk = ARK_USB_MAX_XFER_BLK;
+#else
 	blk = 20;
+#endif
 #endif
 #else
 	ret = usb_get_max_xfer_size(udev, (size_t *)&size);
