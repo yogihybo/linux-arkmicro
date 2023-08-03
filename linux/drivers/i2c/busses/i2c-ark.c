@@ -695,7 +695,7 @@ static int ark_i2c_xfer(
 	I2C_DBG(&adap->dev, "slave address is %x\n", pmsg->addr);
 
 
-	if (i2c->status != STATUS_IDLE) {
+	if (i2c->status != STATUS_IDLE && i2c->status != STATUS_XFER_ABORT) {
 		dev_err(&adap->dev, "Adapter %d in transfer/standby\n", adap->nr);
 		mutex_unlock(&i2c->lock);
 #ifdef  CONFIG_PM_RUNTIME
@@ -746,6 +746,8 @@ static int ark_i2c_xfer(
 	writel(0x0000, i2c->base + IC_INTR_MASK);
 	/* Clear all interrupts */
 	readl(i2c->base + IC_CLR_INTR);
+
+	udelay(100);
 
 	i2c->status = STATUS_IDLE;
 	mutex_unlock(&i2c->lock);

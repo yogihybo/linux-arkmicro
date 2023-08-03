@@ -67,8 +67,25 @@ const struct dev_pm_ops dw_mci_pltfm_pmops = {
 };
 EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
 
+#ifdef CONFIG_SOC_ARK1668E
+static unsigned long ark_dwmmc_caps[3] = {
+	MMC_CAP_CMD23,
+	MMC_CAP_CMD23,
+	MMC_CAP_CMD23,
+};
+
+static const struct dw_mci_drv_data ark_drv_data = {
+	.caps			= ark_dwmmc_caps,
+	.num_caps		= ARRAY_SIZE(ark_dwmmc_caps),
+};
+#endif
+
 static const struct of_device_id dw_mci_pltfm_match[] = {
+#ifdef CONFIG_SOC_ARK1668E
+	{ .compatible = "snps,dw-mshc", .data = &ark_drv_data},
+#else
 	{ .compatible = "snps,dw-mshc", },
+#endif
 	{ .compatible = "altr,socfpga-dw-mshc", },
 	{ .compatible = "img,pistachio-dw-mshc", },
 	{},
