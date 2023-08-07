@@ -639,28 +639,31 @@ int board_late_init(void)
 			else
 			    env_set("updata_from_part", "A");
 			printf("++++++++++++++%s++++++++++\n",curr_partition);
+			goto update_done;
 		} else {
 			printf("Wrong update magic, do not update from usb.\n");
 		}
 #endif
 	}
-	else if(!strcmp(update_from_ota, "yes")){
-			do_update = 0;
-			curr_partition  = env_get("updata_from_part");
-			printf("++updata_from_part %s++\n", curr_partition);
-			run_command("env default -f -a", 0);
-			mdelay(500);
-			if(!strcmp(curr_partition, "A"))
-				env_set("updata_from_part", "A");
-			else if(!strcmp(curr_partition, "B"))
-				env_set("updata_from_part", "B");
-			else
-				env_set("updata_from_part", "A");
-			printf("++++++++++++++%s++++++++++\n",curr_partition);
-			sprintf(cmd, "update_from_emmc_ota");
-			printf("cmd=%s\n", cmd);
-			run_command(cmd, 0);
+
+	if(!strcmp(update_from_ota, "yes")){
+		do_update = 0;
+		curr_partition  = env_get("updata_from_part");
+		printf("++updata_from_part %s++\n", curr_partition);
+		run_command("env default -f -a", 0);
+		mdelay(500);
+		if(!strcmp(curr_partition, "A"))
+			env_set("updata_from_part", "A");
+		else if(!strcmp(curr_partition, "B"))
+			env_set("updata_from_part", "B");
+		else
+			env_set("updata_from_part", "A");
+		printf("++++++++++++++%s++++++++++\n",curr_partition);
+		sprintf(cmd, "update_from_emmc_ota");
+		printf("cmd=%s\n", cmd);
+		run_command(cmd, 0);
 	}
+
 update_done:
 	if (do_update) {
 		run_command("emmc erase.part userdata", 0);

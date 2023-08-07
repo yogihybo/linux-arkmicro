@@ -292,12 +292,14 @@ int board_late_init(void)
 		if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {
 			do_update = 1;
 			update_from_mmc = 0;
+			goto update_done;
 		} else {
 			printf("Wrong update magic, do not update from usb.\n");
 		}
 #endif
 	}
-	else if (!strcmp(update_flash, "yes")){
+
+	if (!strcmp(update_flash, "yes")){
 
 	    sprintf(cmd, "run updatefromflash");
 		printf("cmd=%s\n", cmd);
