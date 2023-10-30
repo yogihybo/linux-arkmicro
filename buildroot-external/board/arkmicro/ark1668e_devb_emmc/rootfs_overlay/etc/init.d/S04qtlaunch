@@ -33,11 +33,8 @@ start() {
 	fi
 
 	if [ "$type" == "b" ]; then
-		chmod 777 /usr/bin/carlink
 		carlink &
-		chmod 777 /usr/bin/Launcher
 		Launcher &
-		chmod 777 /usr/bin/blueware
 		blueware /etc/bluetooth/blueware.properties > /dev/null &
 	fi
 }

@@ -103,10 +103,9 @@
 		"${mtdparts} " \
 		"root=${nandroot} " \
 		"rootfstype=${nandrootfstype}\0" \
-		"root=/dev/mmcblk0p2 rw rootfstype=ext2 rootwait \0" \
-	"nandroot=ubi0:rootfs rw ubi.mtd=rootfs ubi.fm_autoconvert=1\0" \
-	"nandrootfstype=ubifs rootwait\0" \
-	"nandboot=echo Booting from nand ...; " \
+		"nandroot=ubi0:rootfs ro ubi.mtd=rootfs ubi.fm_autoconvert=1\0" \
+		"nandrootfstype=ubifs rootwait\0" \
+		"nandboot=echo Booting from nand ...; " \
 		"run nandargs; " \
 		"nand read ${fdtaddr} fdt ${fdtsize}; " \
 		"nand read ${kerneladdr} kernel ${kernelsize}; " \

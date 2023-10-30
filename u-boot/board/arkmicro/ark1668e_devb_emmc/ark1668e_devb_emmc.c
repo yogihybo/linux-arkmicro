@@ -10,6 +10,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define ARK1668_UPDATE_MAGIC	"ada7f0c6-7c86-11e9-8f9e-2a86e4085a59"
 
+#define rSYS_BOOT_SAMPLE		*((volatile unsigned int *)(0xe4900000))
 #define rSYS_SD_CLK_CFG			*((volatile unsigned int *)(0xe4900058))
 #define rSYS_SD1_CLK_CFG		*((volatile unsigned int *)(0xe490005c))
 #define rSYS_SOFT_RSTNA			*((volatile unsigned int *)(0xe4900074))
@@ -512,7 +513,7 @@ static int do_update_from_media(void)
 		env_set("updata_from_part", "A");
 		env_set("kernel_part", "kernel");
 		env_set("fdt_part", "fdt");
-		env_set("emmcroot", "/dev/mmcblk0p10 rw");
+		env_set("emmcroot", "/dev/mmcblk0p10 ro");
 
 		sprintf(cmd, "setenv fdtsize %s",env_get("fdtsize_a"));
 		run_command(cmd, 0);
@@ -533,7 +534,7 @@ static int do_update_from_media(void)
 			env_set("updata_from_part", "B");
 			env_set("kernel_part", "kernel_b");
 			env_set("fdt_part", "fdt_b");
-			env_set("emmcroot", "/dev/mmcblk0p14 rw");
+			env_set("emmcroot", "/dev/mmcblk0p14 ro");
 
 			sprintf(cmd, "setenv fdtsize %s",env_get("fdtsize_b"));
 			run_command(cmd, 0);
@@ -552,7 +553,7 @@ static int do_update_from_media(void)
 			env_set("updata_from_part", "A");
 			env_set("kernel_part", "kernel");
 			env_set("fdt_part", "fdt");
-			env_set("emmcroot", "/dev/mmcblk0p10 rw");
+			env_set("emmcroot", "/dev/mmcblk0p10 ro");
 
 			sprintf(cmd, "setenv fdtsize %s",env_get("fdtsize_a"));
 			run_command(cmd, 0);
@@ -597,7 +598,7 @@ int board_late_init(void)
 	unsigned int loadaddr;
 	int do_update = 0, update_from_mmc = 1;
 	char *curr_partition = NULL;
-
+	int update_detect = 0; //0:no update 1:need_update env 2:usb update boot 3:sd update boot
 
 #ifdef CONFIG_USB_MUSB_HOST
 	usb_controller_reset();
@@ -607,41 +608,55 @@ int board_late_init(void)
 	update_from_ota = env_get("update_from_ota");	
     printf("update_from_ota %s\n",update_from_ota);
  	need_update = env_get("need_update");
-	if (!strcmp(need_update, "yes")) {
+
+	if (!strcmp(need_update, "yes"))
+		update_detect = 1;
+	else if (((rSYS_BOOT_SAMPLE >> 2) & 3) == 1)
+		update_detect = 2;
+	else if (((rSYS_BOOT_SAMPLE >> 2) & 3) == 2)
+		update_detect = 3;
+
+	printf("update_detect=%d.\n", update_detect);
+	if (update_detect) {
 		loadaddr = env_get_hex("loadaddr", 0);
 		if (loadaddr)
 			memset((void*)loadaddr, 0, strlen(ARK1668_UPDATE_MAGIC));
-		sprintf(cmd, "fatload %s %s %s update-magic", "mmc", env_get("sd_dev_part"), env_get("loadaddr"));
-		printf("cmd %s\n",cmd);
-		run_command(cmd, 0);
-		if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {
-			do_update = 1;
-			goto update_done;
-		} else {
-			printf("Wrong update magic, do not update from mmc.\n");
+
+		if (update_detect == 1 || update_detect == 3) {
+			sprintf(cmd, "fatload %s %s %s update-magic", "mmc", env_get("sd_dev_part"), env_get("loadaddr"));
+			run_command(cmd, 0);
+			if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {
+				do_update = 1;
+				run_command("env default -f -a", 0);
+				goto update_done;
+			} else {
+				printf("Wrong update magic, do not update from mmc.\n");
+			}
 		}
 
 #ifdef CONFIG_USB_MUSB_HOST
-		run_command("usb start", 0);
-		sprintf(cmd, "fatload %s %s %s update-magic", "usb", "0", env_get("loadaddr"));
-		run_command(cmd, 0);
-		if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {
-			do_update = 1;
-			update_from_mmc = 0;
-			curr_partition  = env_get("updata_from_part");
-			printf("++updata_from_part %s++\n", curr_partition);
-			run_command("env default -f -a", 0);
-			mdelay(500);
-			if(!strcmp(curr_partition, "A"))
-			    env_set("updata_from_part", "A");
-			else if(!strcmp(curr_partition, "B"))
-			    env_set("updata_from_part", "B");
-			else
-			    env_set("updata_from_part", "A");
-			printf("++++++++++++++%s++++++++++\n",curr_partition);
-			goto update_done;
-		} else {
-			printf("Wrong update magic, do not update from usb.\n");
+		if (update_detect == 1 || update_detect == 2) {
+			run_command("usb start", 0);
+			sprintf(cmd, "fatload %s %s %s update-magic", "usb", "0", env_get("loadaddr"));
+			run_command(cmd, 0);
+			if (loadaddr && !memcmp((void *)loadaddr, ARK1668_UPDATE_MAGIC, strlen(ARK1668_UPDATE_MAGIC))) {
+				do_update = 1;
+				update_from_mmc = 0;
+				curr_partition  = env_get("updata_from_part");
+				printf("++updata_from_part %s++\n", curr_partition);
+				run_command("env default -f -a", 0);
+				mdelay(500);
+				if(!strcmp(curr_partition, "A"))
+					env_set("updata_from_part", "A");
+				else if(!strcmp(curr_partition, "B"))
+					env_set("updata_from_part", "B");
+				else
+					env_set("updata_from_part", "A");
+				printf("++++++++++++++%s++++++++++\n",curr_partition);
+				goto update_done;
+			} else {
+				printf("Wrong update magic, do not update from usb.\n");
+			}
 		}
 #endif
 	}

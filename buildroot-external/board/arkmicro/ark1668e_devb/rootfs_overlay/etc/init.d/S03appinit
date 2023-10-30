@@ -1,11 +1,30 @@
 #!/bin/sh
 
 start() {
-	ubiattach /dev/ubi_ctrl -m 6
+	ubiattach /dev/ubi_ctrl -d 1 -m 9
 	if  [ ! -d /data ];  then
 	mkdir -p /data
 	fi
 	mount -o sync -t ubifs ubi1_0 /data
+	if [ $? -eq 0 ]
+	then
+		echo "mount successfully!"
+	else
+		sync
+		sleep 1
+		mount -o sync -t ubifs ubi1_0 /data
+		if [ $? -ne 0 ]
+		then
+			echo "mount failed! then reformat the volume!"
+			ubidetach /dev/ubi_ctrl -m 9
+			ubiformat /dev/mtd9
+			ubiattach  /dev/ubi_ctrl -d 1 -m 9
+			ubimkvol /dev/ubi1 -N data -m
+			sleep 1
+			mount -o sync -t ubifs ubi1_0 /data
+			sync
+		fi
+	fi
 
 	ifconfig lo up
 	mdnsd&

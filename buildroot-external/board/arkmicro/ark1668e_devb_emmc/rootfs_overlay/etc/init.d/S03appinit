@@ -5,6 +5,7 @@ start() {
 	mkdir -p /data
 	fi
 
+	fsck.ext4 -f -y /dev/mmcblk0p7
 	mount /dev/mmcblk0p7 /data
 	if [ $? -eq 0 ]
 	then
@@ -12,11 +13,12 @@ start() {
 	else
 		sync
 		sleep 1
+		fsck.ext4 -f -y /dev/mmcblk0p7
 		mount /dev/mmcblk0p7 /data
 		if [ $? -ne 0 ]
 		then
 			echo "mount failed! then reformat the volume!"
-			mke2fs /dev/mmcblk0p7
+			mkfs.ext4 -O ^64bit -O ^has_journal /dev/mmcblk0p7
 			sleep 1
 			mount /dev/mmcblk0p7 /data
 			sync
