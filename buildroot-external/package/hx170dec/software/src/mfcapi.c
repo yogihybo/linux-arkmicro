@@ -1400,7 +1400,7 @@ int MFCJpegDecode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 	JpegDecImageInfo DecImgInf;
 	JpegDecOutput DecOut;
 	PPResult ppRet;
-	int ret = 0;
+	int ret = -1;
 	int i;
 	int format;
 
@@ -1467,8 +1467,10 @@ int MFCJpegDecode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 			format = PP_PIX_FMT_YCBCR_4_2_0_SEMIPLANAR;
 		else
 			format = PP_PIX_FMT_YCBCR_4_2_2_SEMIPLANAR;
-		pp_set_config(handle, DecImgInf.displayWidth, DecImgInf.displayHeight, format,
-			PP_OUTBUFFER_PHYADDR(handle->ppOutBufferIndex));
+		if (pp_set_config(handle, DecImgInf.displayWidth, DecImgInf.displayHeight, format,
+			PP_OUTBUFFER_PHYADDR(handle->ppOutBufferIndex)) < 0) {
+			goto end;
+		}
 		DecIn.pictureBufferY.busAddress = 0;
 		DecIn.pictureBufferY.pVirtualAddress = NULL;
 		DecIn.pictureBufferCbCr.busAddress = 0;
@@ -1690,6 +1692,8 @@ MFCHandle* mfc_init(int streamType)
 	}
 
     case RAW_STRM_TYPE_JPEG:
+		g_JpegMemWidth = 0;
+		g_JpegMemHeight = 0;
 		break;
 
     case RAW_STRM_TYPE_VP8: {
