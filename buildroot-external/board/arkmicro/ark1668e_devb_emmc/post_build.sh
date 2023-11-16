@@ -22,7 +22,8 @@ make INSTALL_MOD_PATH=${TARGET_DIR} modules_install
 cp -f ${UBOOT_OUTPUT_DIR}/tools/env/fw_printenv ${TARGET_DIR}/usr/bin/
 cp ${UBOOT_DIR}/tools/env/fw_env.config ${TARGET_DIR}/etc
 cd ${TARGET_DIR}/usr/bin/ && \
-   ln -sf fw_printenv fw_setenv
+ln -sf fw_printenv fw_setenv
 
+mkdir -p ${TARGET_DIR}/data
 
 #sed -i '/# GENERIC_SERIAL$/s~^.*#~::respawn:-/bin/sh #~' ${TARGET_DIR}/etc/inittab
