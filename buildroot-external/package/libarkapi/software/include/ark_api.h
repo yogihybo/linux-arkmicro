@@ -515,7 +515,7 @@ int arkapi_n141_scalar_unlock(void);
 #define VIN_START				_IO(ARK_DVR_IOC_MAGIC, 51)
 #define VIN_STOP				_IO(ARK_DVR_IOC_MAGIC, 52)
 #define VIN_SWITCH_CHANNEL		_IOWR(ARK_DVR_IOC_MAGIC, 53, int)
-#define VIN_CONFIG				_IOWR(ARK_DVR_IOC_MAGIC, 54, int)
+#define VIN_CONFIG				_IOWR(ARK_DVR_IOC_MAGIC, 54, struct vin_para)
 #define VIN_IOCTL_DOWN_IDLE		_IO(ARK_DVR_IOC_MAGIC, 55)
 #define VIN_IOCTL_UP_IDLE				_IO(ARK_DVR_IOC_MAGIC, 56)
 
