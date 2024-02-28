@@ -99,9 +99,6 @@ MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
 
 
-static volatile u8 g_usb_abnormal = 0;
-
-
 /*-------------------------------------------------------------------------*/
 
 static inline struct musb *dev_to_musb(struct device *dev)
@@ -1357,19 +1354,19 @@ b_host:
 #endif
 	if((int_usb&MUSB_INTR_VBUSERROR)&&(musb->xceiv->otg->state == OTG_STATE_A_HOST))
 	{
-		g_usb_abnormal = 1;
+		musb->reset_mode = MUSB_OTG;
 		printk("\r\n ...............MUSB_INTR_VBUSERROR................. \r\n");
 	}
 
 	if((int_usb&MUSB_INTR_BABBLE)&&(musb->xceiv->otg->state == OTG_STATE_A_HOST))
 	{
-		g_usb_abnormal = 1;
+		musb->reset_mode = MUSB_OTG;
 		printk("\r\n ...............MUSB_INTR_BABBLE................. \r\n");
 	}
 
 	if((devctl == 0x98) && (musb->xceiv->otg->state != OTG_STATE_B_PERIPHERAL))
 	{
-		g_usb_abnormal = 1;
+		musb->reset_mode = MUSB_OTG;
 		printk("\r\n ...............DEVCTL_ERROR................. \r\n");
 	}
 	//schedule_delayed_work(&musb->irq_work, 0);
@@ -2302,10 +2299,10 @@ static void musb_pm_runtime_check_session(struct musb *musb)
 static void musb_irq_work(struct work_struct *data)
 {
 	struct musb *musb = container_of(data, struct musb, irq_work.work);
+	unsigned long flags;
 	int error;
 
-	if(g_usb_abnormal) {
-		g_usb_abnormal = 0;
+	if(musb->reset_mode == MUSB_OTG) {
 		musb->xceiv->otg->state = OTG_STATE_A_SUSPEND;
 		usb_hcd_resume_root_hub(musb_to_hcd(musb));
 		musb_root_disconnect(musb);
@@ -2313,11 +2310,15 @@ static void musb_irq_work(struct work_struct *data)
 			musb_platform_try_idle(musb, jiffies
 				+ msecs_to_jiffies(musb->a_wait_bcon));
 
-		if (musb->ops->set_mode) {
-			musb->ops->set_mode(musb, MUSB_PERIPHERAL);
-			msleep(1000);
-			musb->ops->set_mode(musb, MUSB_OTG);
-		}
+		printk(KERN_ALERT "### %s reset otg.\n", __func__);
+		spin_lock_irqsave(&musb->lock, flags);
+		musb_platform_set_mode(musb, MUSB_PERIPHERAL);
+		spin_unlock_irqrestore(&musb->lock, flags);
+		msleep(1000);
+		spin_lock_irqsave(&musb->lock, flags);
+		musb_platform_set_mode(musb, MUSB_OTG);
+		musb->reset_mode = MUSB_UNDEFINED;
+		spin_unlock_irqrestore(&musb->lock, flags);
 	}
 
 	error = pm_runtime_get_sync(musb->controller);
@@ -2549,6 +2550,7 @@ static void musb_deassert_reset(struct work_struct *work)
 static void musb_recovery_usb_proc(struct work_struct *work)
 {
 	struct musb *musb = NULL;
+	unsigned long flags;
 
 	if (NULL == work)
 		return;
@@ -2557,11 +2559,14 @@ static void musb_recovery_usb_proc(struct work_struct *work)
 	if (NULL == musb)
 		return;
 
-	if (musb->ops->set_mode)
-		musb->ops->set_mode(musb, MUSB_PERIPHERAL);
+	printk(KERN_ALERT "### %s reset otg.\n", __func__);
+	spin_lock_irqsave(&musb->lock, flags);
+	musb_platform_set_mode(musb, MUSB_PERIPHERAL);
+	spin_unlock_irqrestore(&musb->lock, flags);
 	msleep(1000);
-	if (musb->ops->set_mode)
-		musb->ops->set_mode(musb, MUSB_OTG);
+	spin_lock_irqsave(&musb->lock, flags);
+	musb_platform_set_mode(musb, MUSB_OTG);
+	spin_unlock_irqrestore(&musb->lock, flags);
 }
 
 static void musb_reset_timer_handler(struct timer_list *t)
@@ -2575,6 +2580,7 @@ static void musb_reset_timer_handler(struct timer_list *t)
 	if (NULL == musb)
 		return;
 
+	printk(KERN_ALERT "### %s\n", __func__);
 	schedule_work(&musb->recovery_usb_work);
 }
 

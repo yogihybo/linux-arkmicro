@@ -410,6 +410,7 @@ struct musb {
 #ifdef CONFIG_DEBUG_FS
 	struct dentry		*debugfs_root;
 #endif
+	enum musb_mode		reset_mode;
 };
 
 /* This must be included after struct musb is defined */

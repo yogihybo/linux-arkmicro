@@ -517,6 +517,12 @@ static int xfer_read(struct i2c_adapter *adap, unsigned char *buf, int length)
 			return 0;
 		}
 	} else {
+		if (i2c->status == STATUS_XFER_ABORT) {
+			//printk(KERN_INFO "i2c tx abort.\n");
+			ark_i2c_reset(i2c);
+			ark_i2c_hwinit(i2c);
+			return -EAGAIN;
+		}
 		return -EIO;
 	}
 }
@@ -559,6 +565,7 @@ static int xfer_write(struct i2c_adapter *adap, unsigned char *buf, int length)
 				printk(KERN_INFO "i2c tx abort 1.\n");
 				ark_i2c_reset(i2c);
 				ark_i2c_hwinit(i2c);
+				return -EAGAIN;
 			}
 			return -EIO;
 		}

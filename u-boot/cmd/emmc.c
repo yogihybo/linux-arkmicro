@@ -417,7 +417,7 @@ static int do_emmc_read(cmd_tbl_t *cmdtp, int flag,
 	emmc_arg_off_size(argc - 2, argv + 2, &off, &size, mmc->capacity);
 
 	struct blk_desc *blkdesc = mmc_get_blk_desc(mmc);
-	if (off & blkdesc->blksz) {
+	if (off % blkdesc->blksz) {
 		printf("off(0x%llx) is not align to blksz(%lu).\n", off, blkdesc->blksz);
 		return CMD_RET_FAILURE;
 	}
@@ -456,7 +456,7 @@ static int do_emmc_write(cmd_tbl_t *cmdtp, int flag,
 	emmc_arg_off_size(argc - 2, argv + 2, &off, &size, mmc->capacity);
 
 	struct blk_desc *blkdesc = mmc_get_blk_desc(mmc);
-	if (off & blkdesc->blksz) {
+	if (off % blkdesc->blksz) {
 		printf("off(0x%llx) is not align to blksz(%lu).\n", off, blkdesc->blksz);
 		return CMD_RET_FAILURE;
 	}
@@ -506,7 +506,7 @@ static int do_emmc_erase(cmd_tbl_t *cmdtp, int flag,
 	emmc_arg_off_size(args, argv + 1, &off, &size, mmc->capacity);
 
 	struct blk_desc *blkdesc = mmc_get_blk_desc(mmc);
-	if (off & blkdesc->blksz) {
+	if (off % blkdesc->blksz) {
 		printf("off(0x%llx) is not align to blksz(%lu).\n", off, blkdesc->blksz);
 		return CMD_RET_FAILURE;
 	}

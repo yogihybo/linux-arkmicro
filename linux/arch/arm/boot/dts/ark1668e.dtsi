@@ -494,6 +494,16 @@
 				clocks = <&apbclk>;
 				reg = <0>;
 			};
+
+			gpio_debnc_clk: gpio_debnc_clk {
+				#clock-cells = <0>;
+				compatible = "arkmiro,ark-clk-sys";
+				clocks = <&rtc_clk>, <&xtal24mhz>;
+				reg = <0x60>;
+				index-offset = <31>;
+				index-mask = <0x1>;
+				index-value = <1>;
+			};
 		};
 	};
 
