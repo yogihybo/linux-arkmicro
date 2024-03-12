@@ -590,6 +590,8 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
 	if (part == PART_UNSPECIFIED)
 		part = 1;
 
+		part = PART_AUTO;
+
 	/*
 	 * If user didn't specify a partition number, or did specify something
 	 * other than "auto", use that partition number directly.

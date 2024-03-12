@@ -70,7 +70,6 @@ int usb_init(void)
 		memset(&usb_dev[i], 0, sizeof(struct usb_device));
 		usb_dev[i].devnum = -1;
 	}
-
 	/* init low_level USB */
 	for (i = 0; i < CONFIG_USB_MAX_CONTROLLER_COUNT; i++) {
 		/* init low_level USB */

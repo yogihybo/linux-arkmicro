@@ -4,7 +4,6 @@
 #include <linux/errno.h>
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
-
 #include <usb.h>
 #include "linux-compat.h"
 #include "usb-compat.h"
@@ -12,13 +11,11 @@
 #include "musb_host.h"
 #include "musb_gadget.h"
 #include "musb_uboot.h"
-
 #ifdef CONFIG_USB_MUSB_HOST
 struct int_queue {
 	struct usb_host_endpoint hep;
 	struct urb urb;
 };
-
 #ifndef CONFIG_DM_USB
 struct musb_host_data musb_host;
 #endif
@@ -155,7 +152,7 @@ static struct int_queue *_musb_create_int_queue(struct musb_host_data *host,
 static int _musb_destroy_int_queue(struct musb_host_data *host,
 	struct usb_device *dev, struct int_queue *queue)
 {
-	int index = usb_pipein(queue->urb.pipe) * 16 + 
+	int index = usb_pipein(queue->urb.pipe) * 16 +
 		    usb_pipeendpoint(queue->urb.pipe);
 
 	if (queue->urb.status == -EINPROGRESS)
@@ -209,19 +206,20 @@ static int _musb_reset_root_port(struct musb_host_data *host,
 
 	return 0;
 }
-
+extern void ark_usb_controller_reset(void);
 int musb_lowlevel_init(struct musb_host_data *host)
 {
 	void *mbase;
+	unsigned int timedelay = 2000;
 	/* USB spec says it may take up to 1 second for a device to connect */
-	unsigned long timeout = get_timer(0) + 1000;
+	unsigned long timeout = get_timer(0) + /*1000*/timedelay;
 	int ret;
 
 	if (!host->host) {
 		printf("MUSB host is not registered\n");
 		return -ENODEV;
 	}
-
+	ark_usb_controller_reset();
 	ret = musb_start(host->host);
 	if (ret)
 		return ret;
@@ -233,16 +231,15 @@ int musb_lowlevel_init(struct musb_host_data *host)
 	} while (get_timer(0) < timeout);
 	if (get_timer(0) >= timeout) {
 		musb_stop(host->host);
+		printf(">>>>>>>timeout delay = %d\n",timedelay);
 		return -ENODEV;
 	}
-
 	_musb_reset_root_port(host, NULL);
 	host->host->is_active = 1;
 	host->hcd.hcd_priv = host->host;
 
 	return 0;
 }
-
 #ifndef CONFIG_DM_USB
 int usb_lowlevel_stop(int index)
 {
