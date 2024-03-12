@@ -78,7 +78,7 @@
 		"then setenv bootloadersize ${filesize}; " \
 		"nand erase.part bootloader; " \
 		"nand write ${loadaddr} bootloader ${filesize}; fi\0" \
-/*	"bootloaderupdate=Updatebootloader ${update_dev_type} ${update_dev_part}; \0" \ 
+/*	"bootloaderupdate=Updatebootloader ${update_dev_type} ${update_dev_part}; \0" \
 */	"updatefromflash=UpdateFlash 0 0; \0" \
 	"rootfsupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} rootfs.ubi; " \
 		"then setenv rootfssize ${filesize}; " \
@@ -306,6 +306,7 @@
 	"update_dev_part=1\0" \
 	"sd_dev_part="CONFIG_SD_DEV_PART"\0" \
 	"loadaddr=0x44000000\0" \
+	"cmploadaddr=0x46000000\0" \
 	"fdtaddr=0x42000000\0" \
 	"kerneladdr=0x42100000\0" \
 	"bootanimationaddr=0x5e000000\0" \
@@ -313,9 +314,10 @@
 	"reversingtrackaddr=0x5ea00000\0" \
 	"reversingtracksize=0\0" \
 	"ipaddr=192.168.5.66\0" \
-	"nandfdt="CONFIG_DEFAULT_FDT_FILE"\0" \
+	"ubootreset=0\0" \
+	"boardfdt="CONFIG_DEFAULT_FDT_FILE"\0" \
 	NANDARGS
-
+#if 0
 #define CONFIG_BOOTCOMMAND	\
 	"if test ${do_update} = yes; then " \
 		"echo display update progess ...; " \
@@ -355,7 +357,13 @@
 	"else " \
 		"run nandboot; " \
 	"fi"
-	
+#else
+#define CONFIG_BOOTCOMMAND	\
+		 "run nandboot; " \
+
+#endif
+
+
 #endif
 
 #endif

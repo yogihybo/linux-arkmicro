@@ -78,7 +78,7 @@
 		"then setenv bootloadersize ${filesize}; " \
 		"nand erase.part bootloader; " \
 		"nand write ${loadaddr} bootloader ${filesize}; fi\0" \
-/*	"bootloaderupdate=Updatebootloader ${update_dev_type} ${update_dev_part}; \0" \ 
+/*	"bootloaderupdate=Updatebootloader ${update_dev_type} ${update_dev_part}; \0" \
 */	"updatefromflash=UpdateFlash 0 0; \0" \
 	"rootfsupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} rootfs.ubi; " \
 		"then setenv rootfssize ${filesize}; " \
@@ -99,13 +99,13 @@
 		"nand erase.part bootloader_bak; " \
 		"nand write ${loadaddr} bootloader_bak ${filesize}; fi\0" \
 	"nandargs=setenv bootargs console=ttyS0,115200 " \
-		"earlyprintk  loglevel=8 clk_ignore_unused lpj=2285568 enable_console " \
+		"earlyprintk  loglevel=3 clk_ignore_unused lpj=2285568 enable_console " \
 		"${mtdparts} " \
 		"root=${nandroot} " \
 		"rootfstype=${nandrootfstype}\0" \
 		"nandroot=ubi0:rootfs ro ubi.mtd=rootfs ubi.fm_autoconvert=1\0" \
 		"nandrootfstype=ubifs rootwait\0" \
-		"nandboot=echo Booting from nand ...; " \
+	"nandboot=echo Booting from nand ...; " \
 		"run nandargs; " \
 		"nand read ${fdtaddr} fdt ${fdtsize}; " \
 		"nand read ${kerneladdr} kernel ${kernelsize}; " \
@@ -306,6 +306,7 @@
 	"update_dev_part=1\0" \
 	"sd_dev_part="CONFIG_SD_DEV_PART"\0" \
 	"loadaddr=0x44000000\0" \
+	"cmploadaddr=0x46000000\0" \
 	"fdtaddr=0x42000000\0" \
 	"kerneladdr=0x42100000\0" \
 	"bootanimationaddr=0x5e000000\0" \
@@ -313,9 +314,10 @@
 	"reversingtrackaddr=0x5ea00000\0" \
 	"reversingtracksize=0\0" \
 	"ipaddr=192.168.5.66\0" \
-	"nandfdt="CONFIG_DEFAULT_FDT_FILE"\0" \
+	"ubootreset=0\0" \
+	"boardfdt="CONFIG_DEFAULT_FDT_FILE"\0" \
 	NANDARGS
-
+#if 0
 #define CONFIG_BOOTCOMMAND	\
 	"if test ${do_update} = yes; then " \
 		"echo display update progess ...; " \
@@ -355,7 +357,13 @@
 	"else " \
 		"run nandboot; " \
 	"fi"
-	
+#else
+#define CONFIG_BOOTCOMMAND	\
+		 "run nandboot; " \
+
+#endif
+
+
 #endif
 
 #endif

@@ -78,7 +78,7 @@
 		"then setenv bootloadersize ${filesize}; " \
 		"nand erase.part bootloader; " \
 		"nand write ${loadaddr} bootloader ${filesize}; fi\0" \
-/*	"bootloaderupdate=Updatebootloader ${update_dev_type} ${update_dev_part}; \0" \ 
+/*	"bootloaderupdate=Updatebootloader ${update_dev_type} ${update_dev_part}; \0" \
 */	"updatefromflash=UpdateFlash 0 0; \0" \
 	"rootfsupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} rootfs.ubi; " \
 		"then setenv rootfssize ${filesize}; " \
@@ -171,7 +171,6 @@
 #define CONFIG_SYS_MMC_ENV_DEV	1
 #define EMMCARGS \
 	"emmcparts=blkdevparts=" CONFIG_EMMCPARTS_DEFAULT "\0" \
-	"emmcfdt=" CONFIG_DEFAULT_FDT_FILE "\0" \
 	"bootstrapupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} ubootspl.bin; " \
 		"then emmc erase.part bootstrap; " \
 		"emmc write ${loadaddr} bootstrap ${filesize}; fi\0" \
@@ -181,18 +180,17 @@
 		"emmc write ${loadaddr} bootloader ${filesize}; fi\0" \
 	"fdtupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} "CONFIG_DEFAULT_FDT_FILE"; " \
 		"then setenv fdtsize ${filesize}; " \
-		"emmc erase.part fdt; " \
-		"emmc write ${loadaddr} fdt ${filesize}; fi\0" \
+		"emmc erase.part ${fdt_part}; " \
+		"emmc write ${loadaddr} ${fdt_part} ${filesize}; fi\0" \
 	"kernelupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} zImage; " \
 		"then setenv kernelsize ${filesize}; " \
-		"emmc erase.part kernel; " \
-		"emmc write ${loadaddr} kernel ${filesize}; fi\0" \
+		"emmc erase.part ${kernel_part}; " \
+		"emmc write ${loadaddr} ${kernel_part} ${filesize}; fi\0" \
 	"kernel_b_update=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} zImage; " \
 		"then setenv kernelsize ${filesize}; " \
 		"emmc erase.part kernel_b; " \
 		"emmc write ${loadaddr} kernel_b ${filesize}; fi\0" \
-	"rootfsupdate=updaterootfs rootfs\0" \
-	"rootfs_b_update=updaterootfs rootfs_b\0" \
+	"rootfsupdate=updaterootfs ${rootfs_part}\0" \
 	"bootanimationupdate=if fatload ${update_dev_type} ${update_dev_part} ${loadaddr} bootanimation; " \
 		"then setenv bootanimationsize ${filesize}; " \
 		"emmc erase.part bootanimation; " \
@@ -250,7 +248,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"need_update=yes\0" \
 	"update_dev_type=mmc\0" \
-	"update_dev_part=1\0" \
+	"update_dev_part=0\0" \
 	"sd_dev_part="CONFIG_SD_DEV_PART"\0" \
 	"emmc_dev_part="CONFIG_EMMC_DEV_PART"\0" \
 	"loadaddr=0x44000000\0" \
@@ -267,9 +265,12 @@
 	"updata_status=none\0" \
 	"kernel_part=kernel\0" \
 	"fdt_part=fdt\0" \
+	"rootfs_part=rootfs\0" \
 	"fdtsize=0x8000\0" \
 	"kernelsize=0x400000\0" \
 	"bootanimationsize=0x200000\0" \
+	"ubootreset=0\0" \
+	"boardfdt="CONFIG_DEFAULT_FDT_FILE"\0" \
 	EMMCARGS
 #if 0
 #define CONFIG_BOOTCOMMAND	\
@@ -363,7 +364,7 @@
 	"else " \
 		"run nandboot; " \
 	"fi"
-	
+
 #endif
 
 #endif
