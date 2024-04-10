@@ -32,10 +32,10 @@
 #include <linux/usb/functionfs.h>
 #include "u_f.h"
 
-#define ADB_BULK_BUFFER_SIZE           4096
+#define ADB_BULK_BUFFER_SIZE           16384
 
 /* number of tx requests to allocate */
-#define TX_REQ_MAX 2
+#define TX_REQ_MAX 4
 #define DRIVER_NAME "adb"
 
 static const char adb_shortname[] = "android_adb";
@@ -56,10 +56,14 @@ struct adb_dev {
 	atomic_t open_excl;
 
 	struct list_head tx_idle;
+	struct list_head rx_idle;
+	struct list_head rx_used;
+
 	wait_queue_head_t read_wq;
 	wait_queue_head_t write_wq;
 	struct usb_request *rx_req;
 	int rx_done;
+	int cur_read_pos;
 };
 
 static struct usb_interface_descriptor adb_interface_desc = {
@@ -227,8 +231,23 @@ static void adb_complete_out(struct usb_ep *ep, struct usb_request *req)
 	struct adb_dev *dev = _adb_dev;
 
 	dev->rx_done = 1;
+	#if 0
 	if (req->status != 0 && req->status != -ECONNRESET)
 		dev->error = 1;
+	#else
+	if (req) {
+		if (req->status != 0){//printk("+++%s:%d+++req->status=%d\n", __func__, __LINE__, req->status);
+			adb_req_put(dev, &dev->rx_idle, req);
+			dev->error = 1;
+		} else {
+			if (req->actual > 0)
+				adb_req_put(dev, &dev->rx_used, req);
+			else {//printk("+++%s:%d+++ zero len \n", __func__, __LINE__);
+				adb_req_put(dev, &dev->rx_idle, req);
+			}
+		}
+	}
+	#endif
 
 	wake_up(&dev->read_wq);
 }
@@ -261,13 +280,22 @@ static int adb_create_bulk_endpoints(struct adb_dev *dev,
 	DBG(cdev, "usb_ep_autoconfig for adb ep_out got %s\n", ep->name);
 	ep->driver_data = dev;		/* claim the endpoint */
 	dev->ep_out = ep;
-
+#if 0
 	/* now allocate requests for our endpoints */
 	req = adb_request_new(dev->ep_out, ADB_BULK_BUFFER_SIZE);
 	if (!req)
 		goto fail;
 	req->complete = adb_complete_out;
 	dev->rx_req = req;
+#else
+	for (i = 0; i < TX_REQ_MAX; i++) {
+		req = adb_request_new(dev->ep_out, ADB_BULK_BUFFER_SIZE);
+		if (!req)
+			goto fail;
+		req->complete = adb_complete_out;
+		adb_req_put(dev, &dev->rx_idle, req);
+	}
+#endif
 
 	for (i = 0; i < TX_REQ_MAX; i++) {
 		req = adb_request_new(dev->ep_in, ADB_BULK_BUFFER_SIZE);
@@ -284,6 +312,109 @@ fail:
 	return -1;
 }
 
+static int adb_rx_submit(struct adb_dev *dev, struct usb_request *req)
+{
+	int ret, r;
+
+	dev->rx_done = 0;
+	ret = usb_ep_queue(dev->ep_out, req, GFP_ATOMIC);
+	if (ret < 0) {
+		pr_debug("adb_read: failed to queue req %p (%d)\n", req, ret);
+		r = -EIO;
+		dev->error = 1;
+		goto done;
+	} else {
+		pr_debug("rx %p queue\n", req);
+	}
+done:
+	pr_debug("adb_read returning %d\n", r);
+	return r;
+}
+
+#if 1
+static ssize_t adb_read(struct file *fp, char __user *buf,
+				size_t count, loff_t *pos)
+{
+	struct adb_dev *dev = fp->private_data;
+	struct usb_request *req = NULL;
+	int r = 0, xfer, cur_actual = 0;
+	int ret;
+	//static int cur_pos = 0;
+	unsigned long flags;
+
+	pr_debug("adb_read(%d) \n", count);
+	if (!dev)
+		return -ENODEV;
+
+	if (count <= 0)
+		return 0;
+
+	if (adb_lock(&dev->read_excl))
+		return -EBUSY;
+
+	while (!(dev->online || dev->error)) {
+		pr_debug("adb_read: waiting for online state\n");
+		ret = wait_event_interruptible(dev->read_wq,
+				(dev->online || dev->error));
+		if (ret < 0) {
+			adb_unlock(&dev->read_excl);
+			return ret;
+		}
+	}
+	if (dev->error) {
+		r = -EIO;
+		goto done;
+	}
+
+	req = NULL;
+	ret = wait_event_interruptible(dev->read_wq, (req = adb_req_get(dev, &dev->rx_used)) != NULL);
+	if (ret < 0) {
+		r = ret;
+		if (req)
+			usb_ep_dequeue(dev->ep_out, req);
+		goto done;
+	}
+
+	if (!dev->error && req) {
+		if (req->actual > dev->cur_read_pos) {
+			cur_actual = req->actual - dev->cur_read_pos;
+			xfer = (cur_actual <= count) ? cur_actual : count;
+			r = xfer;
+			if (copy_to_user(buf, (req->buf + dev->cur_read_pos), xfer))
+				r = -EFAULT;
+
+		}
+		if (count >= cur_actual) {
+			adb_rx_submit(dev, req);//the req is read completely, return to the usb core
+			dev->cur_read_pos = 0;
+			while ((req = adb_req_get(dev, &dev->rx_idle))) {
+				req->length = ADB_BULK_BUFFER_SIZE;
+				adb_rx_submit(dev, req);
+			}
+		} else {
+			dev->cur_read_pos += count;
+			spin_lock_irqsave(&dev->lock, flags);//the request buffer isn't completely read ,return the req to the head of the list of rx_used
+			list_add(&req->list, &dev->rx_used);
+			spin_unlock_irqrestore(&dev->lock, flags);
+		}
+	} else {// IO error
+		if (dev->error)
+			r = -EIO;
+		if (dev->online == 0)
+			r = -ENODEV;
+		if (req) {
+			spin_lock_irqsave(&dev->lock, flags);
+			list_add(&req->list, &dev->rx_used);
+			spin_unlock_irqrestore(&dev->lock, flags);
+		}
+	}
+
+done:
+	adb_unlock(&dev->read_excl);
+	pr_debug("adb_read returning %d\n", r);
+	return r;
+}
+#else
 static ssize_t adb_read(struct file *fp, char __user *buf,
 				size_t count, loff_t *pos)
 {
@@ -292,7 +423,7 @@ static ssize_t adb_read(struct file *fp, char __user *buf,
 	int r = count, xfer;
 	int ret;
 
-	pr_debug("adb_read(%d)\n", count);
+	printk("adb_read(%d)\n", count);
 	if (!_adb_dev)
 		return -ENODEV;
 
@@ -304,7 +435,7 @@ static ssize_t adb_read(struct file *fp, char __user *buf,
 
 	/* we will block until we're online */
 	while (!(dev->online || dev->error)) {
-		pr_debug("adb_read: waiting for online state\n");
+		printk("adb_read: waiting for online state\n");
 		ret = wait_event_interruptible(dev->read_wq,
 				(dev->online || dev->error));
 		if (ret < 0) {
@@ -324,12 +455,12 @@ requeue_req:
 	dev->rx_done = 0;
 	ret = usb_ep_queue(dev->ep_out, req, GFP_ATOMIC);
 	if (ret < 0) {
-		pr_debug("adb_read: failed to queue req %p (%d)\n", req, ret);
+		printk("adb_read: failed to queue req %p (%d)\n", req, ret);
 		r = -EIO;
 		dev->error = 1;
 		goto done;
 	} else {
-		pr_debug("rx %p queue\n", req);
+		printk("rx %p queue\n", req);
 	}
 
 	/* wait for a request to complete */
@@ -346,7 +477,7 @@ requeue_req:
 		if (req->actual == 0)
 			goto requeue_req;
 
-		pr_debug("rx %p %d\n", req, req->actual);
+		printk("rx %p %d\n", req, req->actual);
 		xfer = (req->actual < count) ? req->actual : count;
 		if (copy_to_user(buf, req->buf, xfer))
 			r = -EFAULT;
@@ -356,9 +487,10 @@ requeue_req:
 
 done:
 	adb_unlock(&dev->read_excl);
-	pr_debug("adb_read returning %d\n", r);
+	printk("adb_read returning %d\n", r);
 	return r;
 }
+#endif
 
 static ssize_t adb_write(struct file *fp, const char __user *buf,
 				 size_t count, loff_t *pos)
@@ -522,8 +654,17 @@ adb_function_unbind(struct usb_configuration *c, struct usb_function *f)
 	dev->error = 1;
 
 	wake_up(&dev->read_wq);
-
+#if 0
 	adb_request_free(dev->rx_req, dev->ep_out);
+#else
+	while ((req = adb_req_get(dev, &dev->rx_idle)))
+		adb_request_free(req, dev->ep_out);
+	req = NULL;
+	while ((req = adb_req_get(dev, &dev->rx_used)))
+		adb_request_free(req, dev->ep_out);
+#endif
+	req = NULL;
+
 	while ((req = adb_req_get(dev, &dev->tx_idle)))
 		adb_request_free(req, dev->ep_in);
 }
@@ -534,8 +675,9 @@ static int adb_function_set_alt(struct usb_function *f,
 	struct adb_dev	*dev = func_to_adb(f);
 	struct usb_composite_dev *cdev = f->config->cdev;
 	int ret;
+	struct usb_request *req = NULL;
 
-	DBG(cdev, "adb_function_set_alt intf: %d alt: %d\n", intf, alt);
+	DBG(cdev, "adb_function_set_alt intf: %d alt: %d\n", intf, alt);printk("adb_function_set_alt intf: %d alt: %d\n", intf, alt);
 
 	ret = config_ep_by_speed(cdev->gadget, f, dev->ep_in);
 	if (ret)
@@ -556,18 +698,26 @@ static int adb_function_set_alt(struct usb_function *f,
 	}
 	dev->online = 1;
 
+	while ((req = adb_req_get(dev, &dev->rx_used))) {
+		adb_req_put(dev, &dev->rx_idle, req);
+	}
+	while ((req = adb_req_get(dev, &dev->rx_idle))) {
+		req->length = ADB_BULK_BUFFER_SIZE;
+		adb_rx_submit(dev, req);
+	}
+
 	/* readers may be blocked waiting for us to go online */
 	wake_up(&dev->read_wq);
 
 	return 0;
 }
 
-static void adb_function_disable(struct usb_function *f)
+static void adb_function_suspend(struct usb_function *f)
 {
 	struct adb_dev	*dev = func_to_adb(f);
 	struct usb_composite_dev	*cdev = dev->cdev;
 
-	DBG(cdev, "adb_function_disable cdev %p\n", cdev);
+	printk("adb_function_suspend cdev %p\n", cdev);
 	dev->online = 0;
 	dev->error = 1;
 	usb_ep_disable(dev->ep_in);
@@ -576,7 +726,24 @@ static void adb_function_disable(struct usb_function *f)
 	/* readers may be blocked waiting for us to go online */
 	wake_up(&dev->read_wq);
 
-	VDBG(cdev, "%s disabled\n", dev->function.name);
+	printk("%s suspend\n", dev->function.name);
+}
+
+static void adb_function_disable(struct usb_function *f)
+{
+	struct adb_dev	*dev = func_to_adb(f);
+	struct usb_composite_dev	*cdev = dev->cdev;
+
+	DBG(cdev, "adb_function_disable cdev %p\n", cdev);printk("adb_function_disable cdev %p\n", cdev);
+	dev->online = 0;
+	dev->error = 1;
+	usb_ep_disable(dev->ep_in);
+	usb_ep_disable(dev->ep_out);
+
+	/* readers may be blocked waiting for us to go online */
+	wake_up(&dev->read_wq);
+
+	VDBG(cdev, "%s disabled\n", dev->function.name);printk("%s disabled\n", dev->function.name);
 }
 #if 0
 static int adb_bind_config(struct usb_configuration *c)
@@ -612,6 +779,8 @@ static int adb_setup(struct adb_dev *dev)
 	atomic_set(&dev->write_excl, 0);
 
 	INIT_LIST_HEAD(&dev->tx_idle);
+	INIT_LIST_HEAD(&dev->rx_idle);
+	INIT_LIST_HEAD(&dev->rx_used);
 
 	ret = misc_register(&adb_device);
 	if (ret)
@@ -728,6 +897,7 @@ struct usb_function *adb_alloc(struct usb_function_instance *fi)
 	dev->function.unbind = adb_function_unbind;
 	dev->function.set_alt = adb_function_set_alt;
 	dev->function.disable = adb_function_disable;
+	dev->function.suspend = adb_function_suspend;
 	dev->function.free_func = adb_free;
 
 	return &dev->function;
