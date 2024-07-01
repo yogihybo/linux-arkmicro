@@ -44,10 +44,11 @@
 	spi {
         pinctrl_ecspi: ecspi {
             ark,pins =
-                <ARK_PBANK_3 2 ARK_PVAL_2		/* clk */
-                    ARK_PBANK_3 3 ARK_PVAL_2	/* rxd */
-                    ARK_PBANK_3 4 ARK_PVAL_2>;	/* txd */
-                    //ARK_PBANK_3 5 ARK_PVAL_2>;	/* cs */
+                <ARK_PBANK_4 30 ARK_PVAL_1		/* rxd */
+                    ARK_PBANK_4 31 ARK_PVAL_1	/* clk */
+                    ARK_PBANK_5 0 ARK_PVAL_1>;	/* txd */
+                    //ARK_PBANK_5 1 ARK_PVAL_1>;	/* cs */
+			group-mux = <0x204 19 1 1>;
         };
 
         pinctrl_dwssi: dwssi {

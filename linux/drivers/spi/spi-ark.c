@@ -232,7 +232,7 @@ static bool spi_ark_can_dma(struct spi_master *master, struct spi_device *spi,
 
 #define ARK_ECSPI_DMA      0x14
 #define ARK_ECSPI_DMA_TX_WML(wml)	((wml) & 0x3f)
-#define ARK_ECSPI_DMA_RX_WML(wml)	(((wml) & 0x3f) << 16)
+#define ARK_ECSPI_DMA_RX_WML(wml)	((((wml) & 0x3f) - 1) << 16)
 #define ARK_ECSPI_DMA_RXT_WML(wml)	(((wml) & 0x3f) << 24)
 
 #define ARK_ECSPI_DMA_TEDEN		(1 << 7)

@@ -294,7 +294,7 @@
 				enable-offset = <6>;
 			};
 
-			spi_clk: spi-clk {
+			ssi_clk: ssi-clk {
 				#clock-cells = <0>;
 				compatible = "arkmiro,ark-clk-sys";
 				clocks = <&ahbpll>, <&axipll>, <&apbpll>, <&xtal24mhz>;
@@ -308,6 +308,22 @@
 				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
 				enable-reg = <0x48 0x50>;
 				enable-offset = <4 13>;
+			};
+
+			spi_clk: spi-clk {
+				#clock-cells = <0>;
+				compatible = "arkmiro,ark-clk-sys";
+				clocks = <&ahbpll>, <&axipll>, <&apbpll>, <&xtal24mhz>;
+				reg = <0x228>;
+				index-offset = <4>;
+				index-mask = <0xf>;
+				index-value = <1>;
+				div-offset = <0>;
+				div-mask = <0xf>;
+				div-value = <6>;
+				div-mode = <ARK_CLK_DIVMODE_PONEDOUBLE>;
+				enable-reg = <0x48>;
+				enable-offset = <24>;
 			};
 
 			mmc0clk: mmc0clk {
@@ -644,8 +660,8 @@
 			clocks = <&hsuart0clk>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_hsuart0>;
-			//dmas = <&dmac 14 1 0>, <&dmac 15 0 1>;//14 , 15
-			//dma-names = "rx", "tx";
+			dmas = <&dmac 14 1 0>;//, <&dmac 15 0 1>;//14 , 15
+			dma-names = "rx";//, "tx";
 		};
 
 		hsuart1: hsuart@e8100000 {
@@ -914,23 +930,23 @@
 			compatible = "arkmicro,arke-ecspi";
 			reg = <0xe4f00000 0x1000>;
 			num-chipselect = <1>;
-			chipselects = <101>;
+			chipselects = <161>;
 			interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
-			//dmas = <&dmac 8 1 0>; //<&dmac 9 0 1>
-			//dma-names = "rx"; //"tx"
+			//dmas = <&dmac 27 1 0>, <&dmac 28 0 1>;
+			//dma-names = "rx", "tx";
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_ecspi>;
 			clocks = <&spi_clk>, <&spi_clk>;
 			clock-names = "ipg", "per";
-            status = "disabled";
+			status = "disabled";
 
 			m25p80@0 {
-                #address-cells = <1>;
-                #size-cells = <1>;
-                compatible = "w25q256";
-                reg = <0>; /* Chip select 0 */
-                spi-max-frequency = <3000000>;
-                status = "disabled";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "w25q128";
+				reg = <0>; /* Chip select 0 */
+				spi-max-frequency = <3000000>;
+				status = "disabled";
 			};
 
 			gd5f@0 {
@@ -939,7 +955,7 @@
 				compatible = "gd5f";
 				reg = <0>; /* Chip select 0 */
 				spi-max-frequency = <3000000>;
-                status = "disabled";
+				status = "disabled";
 			};
 		};
 
@@ -956,8 +972,8 @@
 			//rx-dma-channel = <&pdma 17>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_dwssi>;
-			clocks = <&spi_clk>;
-            status = "disabled";
+			clocks = <&ssi_clk>;
+			status = "disabled";
 
 			m25p80@0 {
 				#address-cells = <1>;
@@ -967,7 +983,7 @@
 				spi-max-frequency = <3000000>;
 				//spi-tx-bus-width = <1>;
 				//spi-rx-bus-width = <4>;
-                status = "disabled";
+				status = "disabled";
 			};
 
 			gd5f@0 {
@@ -976,7 +992,7 @@
 				compatible = "gd5f";
 				reg = <0>; /* Chip select 0 */
 				spi-max-frequency = <3000000>;
-                status = "disabled";
+				status = "disabled";
 			};
 		};
 
