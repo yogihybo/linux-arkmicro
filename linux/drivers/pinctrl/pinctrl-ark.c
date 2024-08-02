@@ -30,6 +30,8 @@
 #define PIN_REG_OFFSET(x)	(((x) / PAD_NUMS_PER_REG) * 4)
 #define PIN_BIT_OFFSET(x)	(((x) % PAD_NUMS_PER_REG) * BITS_PER_PAD)
 
+#define ARKE_PAD_CTL2A		0xa8
+
 struct ark_pad_ctrl {
 	int reg;
 	int offset;
@@ -655,6 +657,12 @@ static int ark_gpio_request_enable(struct pinctrl_dev *pctldev, struct pinctrl_g
 			val = readl_relaxed(info->regbase + info->pad_reg_offset + PIN_REG_OFFSET(offset));
 			val &= ~(PAD_BITS_MASK << PIN_BIT_OFFSET(offset));
 			writel_relaxed(val, info->regbase + info->pad_reg_offset + PIN_REG_OFFSET(offset));
+		} else {
+			if (offset >= 174 && offset <= 181) {
+				val = readl_relaxed(info->regbase + ARKE_PAD_CTL2A);
+				val &= ~(0x3 << 30);
+				writel_relaxed(val, info->regbase + ARKE_PAD_CTL2A);
+			}
 		}
 	} else {
 		pctrl = &info->pctrl[offset];
