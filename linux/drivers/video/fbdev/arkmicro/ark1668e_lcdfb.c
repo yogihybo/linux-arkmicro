@@ -476,6 +476,9 @@ static irqreturn_t ark1668e_lcdfb_interrupt(int irq, void *dev_id)
 			}
 		}
 
+		if(sinfo->atomic_flag)
+			ark1668e_lcdc_display_update_atomic(sinfo);
+
 		sinfo->vsync_flag = 1;
 		wake_up_interruptible(&sinfo->vsync_waitq);
 		schedule_work(&sinfo->task);

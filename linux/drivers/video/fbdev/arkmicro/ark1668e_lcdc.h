@@ -134,5 +134,6 @@ int ark1668e_lcdc_wait_for_vsync(void);
 int ark1668e_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg);
 int ark1668e_lcdc_set_osd_addr(int layer, int addr);
 int ark1668e_lcdc_set_video_addr(int layer,  unsigned int yaddr,unsigned int cbaddr, unsigned int craddr);
+void ark1668e_lcdc_display_update_atomic(struct ark1668e_lcdfb_info* sinfo);
 
 #endif /* __ARK1668E_LCDC_H__ */

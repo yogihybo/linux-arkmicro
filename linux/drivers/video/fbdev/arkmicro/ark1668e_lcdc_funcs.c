@@ -1129,7 +1129,7 @@ static int ark1668e_lcdc_set_osd_addr_group1(int layer, int addr)
  *		Ioctl interface.
  *
  **************************************************************************************************/
-static void ark1668e_lcdc_display_update_atomic(struct ark1668e_lcdfb_info* sinfo)
+void ark1668e_lcdc_display_update_atomic(struct ark1668e_lcdfb_info* sinfo)
 {
 	unsigned int format, yuv_order, rgb_order, i, layer;
 	struct ark_disp_atomic *p = NULL;
@@ -1224,8 +1224,6 @@ int ark1668e_lcdc_wait_for_vsync(void)
 		return ret;
 	if (ret == 0)
 		return -ETIMEDOUT;
-	if(sinfo->atomic_flag)
-		ark1668e_lcdc_display_update_atomic(sinfo);
 	return 0;
 }
 EXPORT_SYMBOL(ark1668e_lcdc_wait_for_vsync);
@@ -1559,7 +1557,6 @@ int ark1668e_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long a
 			printk(KERN_DEBUG "%s===>layer=%d, atomic_stat=0x%0x.\n ",__func__, layer, atomic.atomic_stat);
 			sinfo->atomic_flag |= (1 << layer);
 			memcpy(&sinfo->patomic[layer], &atomic, sizeof(struct ark_disp_atomic));
-			error += ark1668e_lcdc_wait_for_vsync();
 			break;
 		}
 		case ARKFB_GET_WINDOW_ADDR: {
