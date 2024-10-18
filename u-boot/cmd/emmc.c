@@ -695,20 +695,41 @@ static int do_update_rootfs_from_ota(char *partition_name, char *file_name)
 		return 1;
 	return 0;
 }
+
 static int get_data_from_ota(char *file_name)
 {
 	int ret = -1;
+	unsigned int file_size,crc_src;
 	char cmd[128] = { 0 };
+	unsigned int *srcdata = (unsigned int *)(env_get_hex("loadaddr", 0));
 	sprintf(cmd, "fatload emmc ota %s %s",env_get("loadaddr"), file_name);
 	printf("cmd=%s\n", cmd);
 	ret = run_command(cmd, 0);
-	return ret;
+	if(ret)
+	{
+		printf("Load %s from ota error!!\n",file_name);
+		return 1;
+	}
+	file_size = env_get_ulong("filesize", 16, 0x2000);
+	crc_src = crc32(0, (const unsigned char *)srcdata, file_size);
+	ret = ark_check_data_from_devide(file_name,crc_src);
+	if(ret)
+	{
+		printf("check data %s from ota crc error!!\n",file_name);
+		return 1;
+	}
+	printf("check ota partition crc ok!!\n");
+	return 0;
 }
+
 static int burn_data_2_emmc_partition(char *partition_name)
 {
 	char cmd[128] = { 0 };
 	int ret = -1;
 	int file_size = 0;
+	unsigned int crc_des = 0;
+	unsigned int *srcdata = (unsigned int *)(env_get_hex("loadaddr", 0));
+	unsigned int *dstdata = (unsigned int *)(env_get_hex("cmploadaddr", 0));
 	sprintf(cmd, "emmc erase.part %s", partition_name);
 	printf("cmd=%s\n", cmd);
 	ret = run_command(cmd, 0);
@@ -718,7 +739,25 @@ static int burn_data_2_emmc_partition(char *partition_name)
 	sprintf(cmd, "emmc write %s %s 0x%x", env_get("loadaddr"), partition_name, file_size);
 	printf("cmd=%s\n", cmd);
 	ret = run_command(cmd, 0);
-	return ret;
+	if(ret)
+	{
+		printf("emmc write data error!!!\n");
+		return 1;
+	}
+	sprintf(cmd, "emmc read %s %s 0x%x",env_get("cmploadaddr"),partition_name, file_size);
+	printf("cmd=%s\n", cmd);
+	ret = run_command(cmd, 0);
+	if(ret)
+	{
+		printf("emmc write data error!!!\n");
+		return 1;
+	}
+	crc_des = crc32(0, (const unsigned char *)dstdata, file_size);
+	ret  = ark_check_data_from_partition(partition_name,crc_des);
+	if(ret)
+		return 1;
+	printf("crc %s data OK!!!\n",partition_name);
+	return 0;
 }
 static int ark_update_emmc_partition(char *partition_name, char *file_name)
 {
@@ -726,7 +765,7 @@ static int ark_update_emmc_partition(char *partition_name, char *file_name)
 	printf("\r\n****** update %s from ota:%s .....\r\n",partition_name,file_name);
 	ret = get_data_from_ota(file_name);
 	if (!ret) {
-		burn_data_2_emmc_partition(partition_name);
+		return burn_data_2_emmc_partition(partition_name);
 	}
 	return ret;
 }
@@ -738,21 +777,32 @@ static int ark_update_emmc_rootfs_from_ota(char *partition_name, char *file_name
 	ret = do_update_rootfs_from_ota(partition_name,file_name);
 	return ret;
 }
+
 static int get_crc_data_from_ota(char *file_name)
 {
-	int ret;
-	ret = get_data_from_ota(file_name);
-	if (!ret) {
-		unsigned int *srcdata = (unsigned int *)(env_get_hex("loadaddr", 0));
-		unsigned int file_size = 0;
-		memset(&sys_info, 0, sizeof(struct SYS_INFO));
-		printf("file_name=%s\n", file_name);
-		file_size = env_get_ulong("filesize", 16, 0x2000);
-		memcpy(&sys_info, srcdata, file_size);
-		return 0;
-	}
-	return 1;
+	int ret = -1;
+	unsigned int file_size;
+	char cmd[128] = { 0 };
+	unsigned int *srcdata = (unsigned int *)(env_get_hex("loadaddr", 0));
+	memset(&sys_info, 0, sizeof(sys_info));
+	printf("file_name=%s\n", file_name);
+	sprintf(cmd, "fatload emmc ota %s %s",env_get("loadaddr"), file_name);
+	printf("cmd=%s\n", cmd);
+	ret = run_command(cmd, 0);
+	if(ret)
+		return 1;
+	file_size = env_get_ulong("filesize", 16, 0x2000);
+	memcpy(&sys_info, srcdata, file_size);
+//	printf("uboot_crc 		  = 0x%x\n",sys_info.uboot_crc);
+//	printf("fdt_crc			  = 0x%x\n",sys_info.fdt_crc);
+//	printf("zImage_crc 		  = 0x%x\n",sys_info.zImage_crc);
+//	printf("rootfs_crc		  = 0x%x\n",sys_info.rootfs_crc);
+//	printf("ubootspl_crc	  = 0x%x\n",sys_info.ubootspl_crc);
+//	printf("bootanimation_crc = 0x%x\n",sys_info.bootanimation_crc);
+//	printf("bootlogo_crc	  = 0x%x\n",sys_info.bootlogo_crc);
+	return 0;
 }
+
 #define ARK1668_UPDATE_MAGIC	"ada7f0c6-7c86-11e9-8f9e-2a86e4085a59"
 int do_update_from_ota(cmd_tbl_t * cmdtp, int flag, int argc, char *const argv[])
 {
@@ -931,11 +981,11 @@ int do_update_from_ota(cmd_tbl_t * cmdtp, int flag, int argc, char *const argv[]
 	}
 	else
 	{
+		dis_pos_y = dis_pos_y + 20;
 		if (flag_partiton == 0)
 			 sprintf((char *)cmd,"disstring %d %d %s %d",dis_pos_x,dis_pos_y,"fdt",1);
 		else
 			 sprintf((char *)cmd,"disstring %d %d %s %d",dis_pos_x,dis_pos_y,"fdt_b",1);
-		dis_pos_y = dis_pos_y + 20;
 		printf("cmd=%s\n", cmd);
 		run_command(cmd, 0);
 		goto bootoldsys;

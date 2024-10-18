@@ -33,9 +33,9 @@ int ark_check_data_from_devide(char *file_name,unsigned int crc_data)
 {
 		char *update_fdt = NULL;
 		unsigned int size;
-		update_fdt = env_get("nandfdt");
+		update_fdt = env_get("boardfdt");
 		size = strlen(update_fdt);
-//		printf("update_fdt:%s,size %d\n", update_fdt,size);
+		printf("update_fdt:%s,size %d,file_name %s\n", update_fdt,size,file_name);
 		if(!strncmp(file_name, "u-boot.img", 10)){
 			if(sys_info.uboot_crc != 0){
 					if(crc_data != sys_info.uboot_crc)
@@ -77,7 +77,7 @@ int ark_check_data_from_devide(char *file_name,unsigned int crc_data)
 					if(crc_data != sys_info.fdt_crc)
 						return 1;
 			}else
-				sys_info.bootlogo_crc = crc_data;
+				sys_info.fdt_crc = crc_data;
 		}
 		else if(!strncmp(file_name, "ubootspl.bin", 12)){
 			if(sys_info.ubootspl_crc != 0){
