@@ -111,11 +111,21 @@ static int ark_lcdc_set_clk(struct udevice *dev)
 	unsigned int srcclk = ark_get_lcdpll_clock(); 
 	unsigned int val;
 	int div;
+	int prediv = 1;
 
 	val = lcdc_readl_sys(priv, SYS_LCD_CLK_CFG);
 	/* select lcdpll src */
 	val &= ~(0x7f << 4) | (0xf << 19);
-	div = DIV_ROUND_UP(srcclk, priv->timing.pixelclock.typ) & 0xf;
+	div = DIV_ROUND_UP(srcclk, priv->timing.pixelclock.typ);
+	while (div > 0xf) {
+		prediv++;
+		div = DIV_ROUND_UP(srcclk / prediv, priv->timing.pixelclock.typ);
+	}
+	if (prediv > 7) {
+		printf("lcd clk %dHz is too low!\n", priv->timing.pixelclock.typ);
+		return -1;
+	}
+	val |= prediv << 4;
 	val |= div << 19;
 	lcdc_writel_sys(priv, SYS_LCD_CLK_CFG, val);
 

@@ -1336,8 +1336,9 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 	qh->segsize = length;
 
 	musb_ep_select(mbase, epnum);
+	tx_csr = musb_readw(epio, MUSB_TXCSR);
 	musb_writew(epio, MUSB_TXCSR,
-			MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
+			tx_csr | MUSB_TXCSR_H_WZC_BITS | MUSB_TXCSR_TXPKTRDY);
 }
 
 
