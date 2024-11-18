@@ -33,11 +33,14 @@ u32 g_JpegYBusAddress = 0;
 u32 g_JpegCbCrBusAddress = 0;
 
 DWLLinearMem_t g_JpegYMemInfo[2] = {0};
+int g_JpegMemallocFd = -1;
 u32 g_JpegMemWidth = 0;
 u32 g_JpegMemHeight = 0;
 u32 g_JpegMemIndex = 0;
 
 static codecSegmentInfo g_SliceInfo[128];
+
+static int JpegAllocBuffer(u32 size);
 
 static void JpegReleaseBuffer(void);
 
@@ -1480,14 +1483,9 @@ int MFCJpegDecode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 	} else {
 		if (g_JpegMemWidth != DecImgInf.outputWidth || g_JpegMemHeight != DecImgInf.outputHeight) {
 			JpegReleaseBuffer();
-
-			for (i = 0; i < 2; i++) {
-				if(DWLMallocLinear(((JpegDecContainer*)handle->decInst)->dwl,
-					DecImgInf.outputWidth*DecImgInf.outputHeight*3, &g_JpegYMemInfo[i]) == DWL_ERROR)
-				{
-					printf("Jpeg DWLMallocLinear y failure.\n");
-					goto end;
-				}
+			if (JpegAllocBuffer(DecImgInf.outputWidth * DecImgInf.outputHeight * 3) < 0) {
+				printf("JpegAllocBuffer failure.\n");
+				goto end;
 			}
 			g_JpegMemWidth = DecImgInf.outputWidth;
 			g_JpegMemHeight = DecImgInf.outputHeight;
@@ -1556,33 +1554,74 @@ int MFCJpegDecodeEof(MFCHandle *handle, OutFrameBuffer *outBuffer)
 	return 0;
 }
 
+static int JpegAllocBuffer(u32 size)
+{
+	u32 pgsize = getpagesize();
+	MemallocParams params;
+	int fdmem;
+	void *pvirt;
+
+	fdmem = open("/dev/mem", O_RDWR | O_SYNC);
+	if (fdmem < 0) {
+		printf("JpegAllocBuffer failed to open memdev\n");
+		return -1;
+	}
+
+	if (g_JpegMemallocFd < 0) {
+		g_JpegMemallocFd = open(MEMALLOC_MODULE_PATH, O_RDWR | O_SYNC);
+		if (g_JpegMemallocFd < 0) {
+			printf("JpegAllocBuffer failed to open: %s\n", MEMALLOC_MODULE_PATH);
+			close(fdmem);
+			return -1;
+		}
+	}
+
+	size = (size + (pgsize - 1)) & (~(pgsize - 1));
+	params.size = size * 2;
+
+    /* get memory linear memory buffers */
+    ioctl(g_JpegMemallocFd, MEMALLOC_IOCXGETBUFFER, &params);
+    if(params.busAddress == 0) {
+        printf("JpegAllocBuffer no linear buffer available\n");
+		close(fdmem);
+		return -1;
+    }
+
+    /* Map the bus address to virtual address */
+    pvirt = mmap(0, params.size, PROT_READ | PROT_WRITE, MAP_SHARED, fdmem, params.busAddress);
+    if(pvirt == MAP_FAILED) {
+		ioctl(g_JpegMemallocFd, MEMALLOC_IOCSFREEBUFFER, &params.busAddress);
+		close(fdmem);
+        return -1;
+	}
+
+	g_JpegYMemInfo[0].size = size;
+	g_JpegYMemInfo[0].virtualAddress = pvirt;
+	g_JpegYMemInfo[0].busAddress = params.busAddress;
+	g_JpegYMemInfo[1].size = size;
+	g_JpegYMemInfo[1].virtualAddress = (void*)((u32)pvirt + size);
+	g_JpegYMemInfo[1].busAddress = params.busAddress + size;
+
+	close(fdmem);
+
+	return 0;
+}
+
 static void JpegReleaseBuffer(void)
 {
-    int fd_memalloc;
-    int i;
-
-	if (!g_JpegYMemInfo[0].busAddress && !g_JpegYMemInfo[1].busAddress)
+	if (!g_JpegYMemInfo[0].busAddress)
 		return;
 
-	fd_memalloc = open(MEMALLOC_MODULE_PATH, O_RDWR | O_SYNC);
-
-    if(fd_memalloc == -1)
-    {
-        printf("Failed to open: %s\n", MEMALLOC_MODULE_PATH);
+    if(g_JpegMemallocFd < 0)
         return;
-    }
 
-    for(i = 0; i < 2; i++) {
-		if(g_JpegYMemInfo[i].busAddress != 0)
-			ioctl(fd_memalloc, MEMALLOC_IOCSFREEBUFFER, &g_JpegYMemInfo[i].busAddress);
-
-		if(g_JpegYMemInfo[i].virtualAddress != MAP_FAILED && g_JpegYMemInfo[i].virtualAddress != 0)
-			munmap(g_JpegYMemInfo[i].virtualAddress, g_JpegYMemInfo[i].size);
-
-		memset(&g_JpegYMemInfo[i], 0, sizeof(g_JpegYMemInfo[i]));
-    }
-
-	close(fd_memalloc);
+	ioctl(g_JpegMemallocFd, MEMALLOC_IOCSFREEBUFFER, &g_JpegYMemInfo[0].busAddress);
+	if (g_JpegYMemInfo[0].virtualAddress && g_JpegYMemInfo[0].virtualAddress != MAP_FAILED)
+		munmap(g_JpegYMemInfo[0].virtualAddress, g_JpegYMemInfo[0].size * 2);
+	memset(&g_JpegYMemInfo[0], 0, sizeof(g_JpegYMemInfo[0]));
+	memset(&g_JpegYMemInfo[1], 0, sizeof(g_JpegYMemInfo[1]));
+	close(g_JpegMemallocFd);
+	g_JpegMemallocFd = -1;
 }
 
 MFCHandle* mfc_init(int streamType)
