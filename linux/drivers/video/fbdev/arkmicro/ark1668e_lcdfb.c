@@ -206,7 +206,7 @@ static int ark1668e_lcdfb_alloc_video_memory(struct ark1668e_lcdfb_info *sinfo)
 		    * ((var->bits_per_pixel + 7) / 8));
 	info->fix.smem_len = max(smem_len, sinfo->smem_len);
 
-	info->screen_base = dma_alloc_wc(info->device, info->fix.smem_len,
+	info->screen_base = dma_alloc_wc(info->device, info->fix.smem_len + 64,
 					 (dma_addr_t *)&info->fix.smem_start,
 					 GFP_KERNEL);
 
@@ -379,9 +379,16 @@ static int ark1668e_lcdfb_pan_display(struct fb_var_screeninfo *var,
 	struct ark1668e_lcdfb_info *sinfo = info->par;
 	struct fb_fix_screeninfo *fix = &info->fix;
 	unsigned long addr;
+	u32 bytes_per_pixel = (var->bits_per_pixel + 7) / 8;
 
 	addr = fix->smem_start + var->yoffset * fix->line_length
-		+ var->xoffset * info->var.bits_per_pixel / 8;
+		+ var->xoffset * bytes_per_pixel;
+
+	if (addr == fix->smem_start + (var->yres_virtual - var->yres) * fix->line_length
+		+ var->xoffset * bytes_per_pixel) {
+		*(volatile u32*)(info->screen_base + var->yres_virtual * fix->line_length) =
+			*(volatile u32*)(info->screen_base + var->yres_virtual * fix->line_length - bytes_per_pixel);
+	}
 
 	sinfo->render_addr[ARK1668E_LCDC_LAYER_OSD2].yaddr = addr;
 
