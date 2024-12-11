@@ -45,6 +45,9 @@ static int ark1668e_i2s_startup(
 	struct ark1668e_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 	unsigned int sacr0 = 0;
 
+	if(readl(i2s->base + I2S_SACR0) & SACR0_ENB)
+		return 0;
+
 	/* reset */
 	writel(SACR0_RST, i2s->base + I2S_SACR0);
 	udelay(1);
@@ -59,17 +62,14 @@ static int ark1668e_i2s_startup(
 		else
 			sacr0 &= ~(SACR0_BCKD | SACR0_SYNCD);//ark1668e-i2s:slave mode
 		writel(sacr0, i2s->base + I2S_SACR0);
-		//if(i2s->full_duplex_en)
-		//	writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
-		//writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
+
 		writel(0x7f, i2s->base + I2S_SAICR);
 		writel(0, i2s->base + I2S_SAICR);
+
 	}else{
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			/*i2s_regs_init*/
 			sacr0 = SACR0_TLFIRST | SACR0_CH_LOCK | SACR0_TFTH(15) | SACR0_TDMAEN;
-			if(i2s->full_duplex_en)
-				sacr0 |= SACR0_RLFIRST | SACR0_CH_LOCK | SACR0_RFTH(16) | SACR0_RDMAEN;
 			if (i2s->master)
 				sacr0 |=  SACR0_BCKD | SACR0_SYNCD;//ark1668e-i2s:Master mode
 			else
@@ -77,23 +77,20 @@ static int ark1668e_i2s_startup(
 			writel(sacr0, i2s->base + I2S_SACR0);
 
 			//writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
-			//if(i2s->full_duplex_en)
-			//	writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
+
 			writel(0x7f, i2s->base + I2S_SAICR);
 			writel(0, i2s->base + I2S_SAICR);
 		} else if(substream->stream == SNDRV_PCM_STREAM_CAPTURE){
 			/*i2s_regs_init*/
-			if(i2s->full_duplex_en)
-				sacr0 = SACR0_TLFIRST | SACR0_CH_LOCK | SACR0_TFTH(15) | SACR0_TDMAEN;
 			sacr0 |= SACR0_RLFIRST | SACR0_CH_LOCK | SACR0_RFTH(16) | SACR0_RDMAEN;
 			if (i2s->master)
 				sacr0 |= SACR0_BCKD | SACR0_SYNCD;//ark1668e-i2s:Master mode
 			else
 				sacr0 &= ~(SACR0_BCKD | SACR0_SYNCD);//ark1668e-i2s:slave mode
 			writel(sacr0, i2s->base + I2S_SACR0);
-			//if(i2s->full_duplex_en)
-			//	writel(SAIMR_TUR, i2s->base + I2S_SAIMR);
+
 			//writel(SAIMR_ROR, i2s->base + I2S_SAIMR);
+
 			writel(0x7f, i2s->base + I2S_SAICR);
 			writel(0, i2s->base + I2S_SAICR);
 		}

@@ -67,7 +67,7 @@
 			};
 		};
 #endif
-	
+
 		rn6752: da380@4e {
 			compatible = "arkmicro,ark1668e_rn6752";
 			//reset-gpio = <&gpio3 11 0>;
@@ -81,26 +81,15 @@
 			};
 		};
 
-		mclk: mclk@12K {
-			#clock-cells = <0>;
-			compatible = "fixed-clock";
-			clock-frequency = <12288000>;
-		};
-
 		es8316_codec: es8316@10 {
 			compatible = "arkmicro,es8316";
 			reg = <0x10>;
-			clocks = <&mclk>;
-			clock-names = "mclk";
 			#sound-dai-cells = <0>;
 		};
 
 		es7210_codec: es7210@40 {
 			compatible = "arkmicro,es7210";
 			reg = <0x40>;/* i2c address(7 bits) */
-			clocks = <&mclk>;
-			clock-names = "mclk";
-			pinctrl-names = "default";
 			#sound-dai-cells = <0>;
 		};
 	};
@@ -108,16 +97,12 @@
 	cs4334_codec: ark1668e_cs4334_codec {
 		status = "okay";
 		compatible = "arkmicro,ark1668e_cs4334_codec";
-		clock-names = "cs4334_mclk";
-		clocks = <&mclk>;
 		#sound-dai-cells = <0>;
 	};
 
 	cs5343_codec: ark1668e_cs5343_codec {
 		status = "okay";
 		compatible = "arkmicro,ark1668e_cs5343_codec";
-		clock-names = "cs5343_mclk";
-		clocks = <&mclk>;
 		#sound-dai-cells = <0>;
 	};
 
