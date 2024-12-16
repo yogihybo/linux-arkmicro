@@ -12,7 +12,7 @@
 #define APBPLL_CLK	480
 #define DDRPLL_CLK  360
 #define MACPLL_CLK	1000
-#define AUDPLL_CLK	720
+#define AUDPLL_CLK	480
 enum sscg_clk_id {
 	SSCG_CPU,
 	SSCG_LCD,
