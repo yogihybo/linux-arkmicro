@@ -374,6 +374,7 @@ static void axi_chan_block_xfer_start(struct axi_dma_chan *chan,
 	}
 
 	axi_dma_enable(chan->chip);
+	axi_dma_irq_enable(chan->chip);
 
 	reg = (DWAXIDMAC_MBLK_TYPE_LL << CH_CFG_L_DST_MULTBLK_TYPE_POS |
 	       DWAXIDMAC_MBLK_TYPE_LL << CH_CFG_L_SRC_MULTBLK_TYPE_POS);
