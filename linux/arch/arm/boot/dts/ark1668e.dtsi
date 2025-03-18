@@ -333,7 +333,7 @@
 				reg = <0x58>;
 				index-offset = <8>;
 				index-mask = <0xf>;
-				index-value = <1>;
+				index-value = <0>;
 				div-offset = <0>;
 				div-mask = <0x1f>;
 				div-value = <10>;
@@ -349,7 +349,7 @@
 				reg = <0x5c>;
 				index-offset = <8>;
 				index-mask = <0xf>;
-				index-value = <1>;
+				index-value = <0>;
 				div-offset = <0>;
 				div-mask = <0x1f>;
 				div-value = <10>;
@@ -365,7 +365,7 @@
 				reg = <0x7c>;
 				index-offset = <8>;
 				index-mask = <0xf>;
-				index-value = <1>;
+				index-value = <0>;
 				div-offset = <0>;
 				div-mask = <0x1f>;
 				div-value = <10>;

@@ -123,11 +123,11 @@ static int ark_dwmci_init(char *name,u32 regbase, int bus_width, int index)
 	//rSYS_SD_CLK_CFG |= 52 << 13;
 	//rSYS_SD1_CLK_CFG &= ~(0x7f << 13);
 	//rSYS_SD1_CLK_CFG |= 52 << 13;
-	/* mmc clk axipll(480M) / ((4 + 1) * 2) */
+	/* mmc clk apbpll(480M) / ((4 + 1) * 2) */
 	rSYS_SD_CLK_CFG &= ~0xfff;
-	rSYS_SD_CLK_CFG |= (1 << 8) | (1 << 7) | (1 << 5) | 4;
+	rSYS_SD_CLK_CFG |= (0 << 8) | (1 << 7) | (1 << 5) | 4;
 	rSYS_SD1_CLK_CFG &= ~0xfff;
-	rSYS_SD1_CLK_CFG |= (1 << 8) | (1 << 7) | (1 << 5) | 4;
+	rSYS_SD1_CLK_CFG |= (0 << 8) | (1 << 7) | (1 << 5) | 4;
 	host->name = name;
 	host->ioaddr = (void *)regbase;
 	host->buswidth = bus_width;

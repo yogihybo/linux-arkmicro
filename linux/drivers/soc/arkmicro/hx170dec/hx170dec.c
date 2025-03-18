@@ -68,6 +68,8 @@ EXPORT_SYMBOL(get_bootanimation_status);
 
 static inline void vdec_writel(const struct vdec_device *p, unsigned offset, u32 val)
 {
+	volatile u32 tmp = readl(p->mmio_base + offset);
+	(void)tmp;
 	writel(val, p->mmio_base + offset);
 }
 

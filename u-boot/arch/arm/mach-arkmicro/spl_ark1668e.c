@@ -7,7 +7,7 @@
 #include <asm-generic/gpio.h>
 #define CPUPLL_CLK  800
 #define LCDPLL_CLK	480
-#define AXIPLL_CLK	480
+#define AXIPLL_CLK	432
 #define AHBPLL_CLK	336
 #define APBPLL_CLK	480
 #define DDRPLL_CLK  360
@@ -210,7 +210,7 @@ static void switch_to_main_crystal_osc(void)
 	/* the mfc clk can't reconfig at other place */
 	regval = read_sys_reg(SYS_DEVICE_CLK_CFG1);
 	regval &= ~(0x7 << 16);
-	regval |= (1 << 16);
+	regval |= (2 << 16);
 	write_sys_reg(regval, SYS_DEVICE_CLK_CFG1);
 	udelay(50);
 	regval = read_sys_reg(SYS_DEVICE_CLK_CFG1);

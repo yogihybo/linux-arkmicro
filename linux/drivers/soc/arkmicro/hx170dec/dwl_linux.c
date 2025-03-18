@@ -689,8 +689,11 @@ void DWLEnableHW(const void *instance, /*i32 coreID,*/ u32 offset, u32 value)
     regs += isPP ? 60 : 0;
     size = isPP ? 41 : 60;
 
-	for (i = size - 1; i >= 1; i--)
+	for (i = size - 1; i >= 1; i--) {
+		volatile u32 tmp = *(volatile u32*)(&io[(isPP ? 60 : 0) + i]);
+		(void)tmp;
 		io[(isPP ? 60 : 0) + i] =   regs[i];
+	}
 }
 
 /*------------------------------------------------------------------------------
@@ -725,8 +728,11 @@ void DWLDisableHW(const void *instance, /*i32 coreID,*/ u32 offset, u32 value)
     regs += isPP ? 60 : 0;
     size = isPP ? 41 : 60;
 
-	for (i = size - 1; i >= 1; i--)
+	for (i = size - 1; i >= 1; i--) {
+		volatile u32 tmp = *(volatile u32*)(&io[(isPP ? 60 : 0) + i]);
+		(void)tmp;
 		io[(isPP ? 60 : 0) + i] =   regs[i];
+	}
 }
 
 /*------------------------------------------------------------------------------
