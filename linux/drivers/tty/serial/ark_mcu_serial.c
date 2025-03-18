@@ -123,6 +123,8 @@ static int ark_mcu_serial_probe(struct platform_device *pdev)
 	msinfo = info;
 	info->carback_ready = 0;
 
+	spin_lock_init(&info->lock);
+
 	INIT_WORK(&info->rx_task, mcu_serial_rx_task);
 
 	mcu_serial_register_rev_handler(mcu_serial_get_ch, &info->rx_task);

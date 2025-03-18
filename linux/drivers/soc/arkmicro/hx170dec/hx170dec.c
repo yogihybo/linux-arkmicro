@@ -228,7 +228,6 @@ static void animation_dec_work(struct work_struct *work)
 		}
 		iounmap((void*)context->animation_data_virtaddr);
 		p->context.anmation_stats = 0;
-		destroy_workqueue(context->animation_queue);
 		return;
 	}
 

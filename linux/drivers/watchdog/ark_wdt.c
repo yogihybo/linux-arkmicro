@@ -71,9 +71,7 @@ static int ark_wdt_keepalive(struct watchdog_device *wdd)
 {
 	struct ark_wdt *wdt = watchdog_get_drvdata(wdd);
 
-	spin_lock(&wdt->lock);
 	writel(wdt->count, wdt->reg_base + ARK_WTCNT);
-	spin_unlock(&wdt->lock);
 
 	return 0;
 }
