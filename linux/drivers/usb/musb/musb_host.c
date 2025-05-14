@@ -455,6 +455,9 @@ musb_host_packet_rx(struct musb *musb, struct urb *urb, u8 epnum, u8 iso_err)
 	musb_dbg(musb, "RX%d count %d, buffer %p len %d/%d", epnum, rx_count,
 			urb->transfer_buffer, qh->offset,
 			urb->transfer_buffer_length);
+	if (rx_count > 512) {
+		printk(KERN_ALERT "ERR: %s rx_count = %d\n", __FUNCTION__, rx_count);
+	}
 
 	/* unload FIFO */
 	if (usb_pipeisoc(pipe)) {
@@ -1226,7 +1229,10 @@ irqreturn_t musb_h_ep0_irq(struct musb *musb)
 			musb_h_ep0_flush_fifo(hw_ep);
 		}
 
-		musb_writeb(epio, MUSB_NAKLIMIT0, qh->intv_reg);
+		if (qh)
+			musb_writeb(epio, MUSB_NAKLIMIT0, qh->intv_reg);
+		else
+			musb_writeb(epio, MUSB_NAKLIMIT0, 0);
 
 		/* clear it */
 		musb_writew(epio, MUSB_CSR0, 0);
@@ -1751,6 +1757,10 @@ static int musb_rx_dma_in_inventra_cppi41(struct dma_controller *dma,
 
 	rx_count = musb_readw(epio, MUSB_RXCOUNT);
 	pipe = urb->pipe;
+
+	if (rx_count > 512) {
+		printk(KERN_ALERT "ERR: %s rx_count = %d\n", __FUNCTION__, rx_count);
+	}
 
 	if (usb_pipeisoc(pipe)) {
 		int d_status = 0;
