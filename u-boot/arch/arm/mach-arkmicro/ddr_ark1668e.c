@@ -1,6 +1,7 @@
 #include <common.h>
 #define DDR_256MX16   1
 #define DDR_128MX16   0
+//#define DDR_WINBOND
 #define DDR3_REG_BASE  0xE9100000
 #define AHB_SYS_BASE   0xE4900000
 #define rDDR_MCCR   	    *((volatile unsigned int *)(DDR3_REG_BASE + 0x00))
@@ -334,11 +335,19 @@ unsigned int ddr3_sdramc_init(void)
 //    rDDR_PHYCR0  = 1 << 13 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 4<<4 | 4<<0;
     rDDR_PHYCR0  = 1 << 13 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 2<<4 | 2<<0;
 
+#ifdef DDR_WINBOND
+//0x24
+    rDDR_PHYRDTR   =  8<<4 | 8<<0;
+
+//0x130
+    rDDR_PHYRDTFR  	 =  8<<4 | 8<<0;
+#else
 //0x24
     rDDR_PHYRDTR   =  9<<4 | 9<<0;
 
 //0x130
     rDDR_PHYRDTFR  	 =  9<<4 | 9<<0;
+#endif
 
  //0x78
     rDDR_WRDLLCR     =  10<<4 | 10<<0;

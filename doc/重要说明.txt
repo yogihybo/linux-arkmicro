@@ -1,0 +1,1 @@
+1. ARK1668E项目如果使用WINBOND DDR，需要修改u-boot/arch/arm/mach-arkmicro/ddr_ark1668e.c文件，将DDR_WINBOND宏定义注释放开。
