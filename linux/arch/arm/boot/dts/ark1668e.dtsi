@@ -671,8 +671,8 @@
 			clocks = <&hsuart1clk>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_hsuart1>;
-			dmas = <&dmac 16 1 0>, <&dmac 17 0 1>;//16 , 17
-			dma-names = "rx", "tx";
+			dmas = <&dmac 16 1 0>;//, <&dmac 17 0 1>;//16 , 17
+			dma-names = "rx";//, "tx";
 		};
 
 		can0: can0@e4400000 {
