@@ -422,6 +422,12 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 			
 			regval = musb_readb(musb->mregs, MUSB_INTRUSBE); 
 			musb_writeb(musb->mregs, MUSB_INTRUSBE, regval | MUSB_INTR_SUSPEND);
+			if (musb->is_runtime_suspended) {
+				printk("%s:%d suspend save\n", __func__, __LINE__);
+				musb->context.power = musb_readb(musb->mregs, MUSB_POWER);
+				musb->context.intrusbe = musb_readb(musb->mregs, MUSB_INTRUSBE);
+				musb->context.devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
+			}
 			break;
 		case MUSB_OTG:
 			dev_info(musb->controller, "+++Switch OTG %d  %d===+++ \n", gpio_id, gpio_pwr);
@@ -450,6 +456,13 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 				gpio_set_value(gpio_pwr, 0);
 				mdelay(10);
 				gpio_set_value(gpio_pwr, 1);
+			}
+
+			if (musb->is_runtime_suspended) {
+				printk("%s:%d suspend save\n", __func__, __LINE__);
+				musb->context.power = musb_readb(musb->mregs, MUSB_POWER);
+				musb->context.intrusbe = musb_readb(musb->mregs, MUSB_INTRUSBE);
+				musb->context.devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 			}
 			break;
 		default:
