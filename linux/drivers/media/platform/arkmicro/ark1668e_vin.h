@@ -124,6 +124,7 @@ struct vin_para{
         int bottom_blank;
         int progressive;
         int itu601en;
+        int itu1120en;
 };
 
 struct ark_itu656in_context {
@@ -165,7 +166,7 @@ struct dvr_dev{
 	int *scale_out_yaddr;
 	int scale_out_yphyaddr;
 	int scale_in_yphyaddr;
-	
+
 	int carback_signal;
 	int layer_status;
 	int signal_flag;
@@ -187,7 +188,7 @@ struct dvr_dev{
 	struct vin_para itu656in_back;
 	struct timer_list timer;
 	struct timer_list signal_timer;
-	
+
 	unsigned int framebuf_phyaddr[ITU656_FRAME_NUM_MAX];
 	unsigned int framebuf_status[ITU656_FRAME_NUM_MAX];
 	unsigned int scalebuf_phyaddr[ITU656_SCALE_FRAME_NUM];
@@ -263,6 +264,7 @@ struct vin_screen {
 #ifdef CONFIG_VIDEO_USE_LOCK
 #define VIN_IOCTL_DOWN_IDLE            _IO(ARK_DVR_IOC_MAGIC, 55)
 #define VIN_IOCTL_UP_IDLE                              _IO(ARK_DVR_IOC_MAGIC, 56)
+#define VIN_IOCTL_DOWN_TIMEOUT            _IO(ARK_DVR_IOC_MAGIC, 57)
 #endif
 
 #endif

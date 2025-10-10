@@ -107,6 +107,8 @@ int mfc_pp_init(MFCHandle *handle, int outWidth, int outHeight, int outFormat);
 
 int mfc_get_stream_info(MFCHandle *handle, DWLLinearMem_t *inBuffer, MFCStreamInfo *info);
 
+int MFC_Get_Interlaced(void);
+
 #ifdef __cplusplus
 }
 #endif

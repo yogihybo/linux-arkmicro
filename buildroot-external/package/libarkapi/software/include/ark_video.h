@@ -20,6 +20,7 @@ struct display_data {
 	int init;
 	int kernel_used;
 	int avin_used;
+	int softdec_used;
 	int display_mode;
 	int active_pid;
 	video_handle *active_handle;

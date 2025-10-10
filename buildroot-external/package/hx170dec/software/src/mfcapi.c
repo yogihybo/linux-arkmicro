@@ -59,6 +59,13 @@ static int pp_reset_outimg_addr(MFCHandle *handle, u32 addr);
 #define PP_OUTBUFFER_VIRADDR(index)	((u32)handle->ppOutBuffer.virtualAddress + \
 	handle->ppOutWidth * handle->ppOutHeight * 4 * (index))
 
+static int ark_interlaced = 0;
+
+int MFC_Get_Interlaced(void)
+{
+	return ark_interlaced;
+}
+
 int MFCH264Decode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *outBuffer)
 {
 	H264DecRet ret;
@@ -101,6 +108,8 @@ int MFCH264Decode(MFCHandle *handle, DWLLinearMem_t *inBuffer, OutFrameBuffer *o
 			g_picDecodeNumber++;
 
 			if (H264DecNextPicture(handle->decInst, &decPic, 0) == H264DEC_PIC_RDY) {
+				ark_interlaced = decPic.interlaced;
+
 				if(outBuffer->num >= MAX_OUTFRAME_NUM)
 					return 0;
 
@@ -1629,6 +1638,8 @@ MFCHandle* mfc_init(int streamType)
 	MFCHandle *handle = NULL;
 	void *decInst = NULL;
 	int delayInit = 0;
+
+	ark_interlaced = 0;
 
 	switch(streamType) {
     case RAW_STRM_TYPE_WMV3:

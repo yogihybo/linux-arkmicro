@@ -499,6 +499,17 @@ static long vin_ioctl_default(struct file *file, void *priv,
 			break;
 		}
 
+		case VIN_IOCTL_DOWN_TIMEOUT:
+		{
+			//printk(KERN_ALERT "++++++VIN_IOCTL_DOWN_TIMEOUT++++++\n");
+			if (down_timeout(&dvr_dev->vin_sem,  msecs_to_jiffies(2000)) != 0) {
+				error = -EINVAL;
+				printk(KERN_ALERT "+++down vin_sem timeout\n");
+				goto end;
+			}
+			break;
+		}
+
 		case VIN_IOCTL_UP_IDLE:
 		{
 			//printk(KERN_ALERT "++++++VIN_IOCTL_DOWN_IDLE++++++\n");

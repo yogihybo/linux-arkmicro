@@ -243,6 +243,7 @@ typedef struct{
 	u32 disp_height;
 	u32 direction;
 	i32 keep_aspect_ratio;
+	int (*video_callback_func)(void);
 }video_cfg;
 
 typedef struct{
@@ -325,6 +326,7 @@ struct vin_para{
         int bottom_blank;
         int progressive;
         int itu601en;
+        int itu1120en;
 };
 
 struct vin_screen {
@@ -347,12 +349,17 @@ video_handle *arkapi_video_init(int stream_type);
 int arkapi_video_set_config(video_handle *handle, video_cfg *cfg_vid);
 int arkapi_video_get_config(video_handle *handle, video_cfg *cfg_vid);
 int arkapi_video_play(video_handle *handle, const void *src_addr, int len, int fps);
+int arkapi_video_try_play(video_handle *handle, const void *src_addr, int len, int fps);
+int arkapi_video_play_add_seekstatus(video_handle *handle, const void *src_addr, int len, int fps, int seek_status);
 int arkapi_video_play_eof(video_handle *handle, int fps);
 int arkapi_video_show(video_handle *handle, int enable);// 1: show  0: hide
 int arkapi_video_show_mode(video_handle *handle, int mode, int enable);
 void arkapi_video_release(video_handle *handle);
 int arkapi_enter_carback(void);
 int arkapi_exit_carback(void);
+video_handle *arkapi_softdec_init(void);
+void arkapi_softdec_release(video_handle *handle);
+int arkapi_softdec_play(video_handle *handle, const void *src_addr);
 
 /*-----------------------------ARK API BASE:  DISPLAY------------------------------*/
 disp_handle *arkapi_display_open_layer(enum ark_disp_layer layer);
@@ -508,6 +515,17 @@ int arkapi_n141_scalar_unlock(void);
 #define LIBARKAPI_ARK1668	0
 #define LIBARKAPI_ARKN141	1
 #define LIBARKAPI_ARK1668E	2
+
+#define ARK_DVR_IOC_MAGIC			'n'
+
+#define VIN_UPDATE_WINDOW		_IOWR(ARK_DVR_IOC_MAGIC, 50, struct vin_screen)
+#define VIN_START				_IO(ARK_DVR_IOC_MAGIC, 51)
+#define VIN_STOP				_IO(ARK_DVR_IOC_MAGIC, 52)
+#define VIN_SWITCH_CHANNEL		_IOWR(ARK_DVR_IOC_MAGIC, 53, int)
+#define VIN_CONFIG				_IOWR(ARK_DVR_IOC_MAGIC, 54, struct vin_para)
+#define VIN_IOCTL_DOWN_IDLE		_IO(ARK_DVR_IOC_MAGIC, 55)
+#define VIN_IOCTL_UP_IDLE				_IO(ARK_DVR_IOC_MAGIC, 56)
+#define VIN_IOCTL_DOWN_TIMEOUT            _IO(ARK_DVR_IOC_MAGIC, 57)
 
 /*----------------------------------------END------------------------------------------*/
 
