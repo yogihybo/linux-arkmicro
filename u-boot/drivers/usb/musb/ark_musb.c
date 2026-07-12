@@ -72,28 +72,58 @@ static void reset_usb_phy(int index)
 }
 
 /*
+ * Port-specific GPIO numbers. usb0 (index 0) uses the Kconfig-configured
+ * values (CONFIG_USB_GPIO_*, currently PWR=126/ID=76/SW=-1) since that's
+ * the port originally wired up here. usb1 (index 1) uses PWR=117/ID=1,
+ * confirmed against the Linux kernel device tree (ark1668.dtsi: usb1's
+ * gpio-pwr/gpio-id) — this is the port the WiFi module is actually on,
+ * per the kernel boot log ("usb 2-1: ..." on musb-hdrc.1 == index 1).
+ * No corresponding "SW" GPIO documented for usb1 in the DTS, so it's
+ * left unconfigured (matching how usb0's SW is disabled by default too).
+ */
+#define USB1_GPIO_PWR	117
+#define USB1_GPIO_ID	1
+
+/*
+ * Configure and reset one MUSB port (0 or 1): selects its register base
+ * in musb_cfg, drives its power/id GPIOs, and resets its PHY. Callable
+ * for either port — used both for the normal (index 0) bring-up and for
+ * the index-1 retry in usb_lowlevel_init() (musb_hcd.c) when index 0
+ * finds nothing attached.
+ */
+int musb_ark_configure_port(int index)
+{
+	if (index == 1) {
+		musb_cfg.regs = (struct musb_regs *)MUSB_ARK_USB1_BASE;
+		gpio_direction_output(USB1_GPIO_PWR, 1);
+		gpio_direction_output(USB1_GPIO_ID, 0);
+	} else if (index == 0) {
+		musb_cfg.regs = (struct musb_regs *)MUSB_ARK_USB_BASE;
+		if (CONFIG_USB_GPIO_SW >= 0)
+			gpio_direction_output(CONFIG_USB_GPIO_SW, 0);
+		if (CONFIG_USB_GPIO_PWR >= 0)
+			gpio_direction_output(CONFIG_USB_GPIO_PWR, 1);
+		if (CONFIG_USB_GPIO_ID >= 0)
+			gpio_direction_output(CONFIG_USB_GPIO_ID, 0);
+	} else {
+		return -1;
+	}
+	udelay(20000);
+
+	reset_usb_phy(index);
+	return 0;
+}
+
+/*
  * CPU and board-specific MUSB initializations.  Aliased function
  * signals caller to move on.
  */
 static void musb_ark_init(void)
 {
 	char *ch = CONFIG_USB_DEV_PART;
-	int index = 0;
+	int index = ch ? (*ch - '0') : 0;
 
-	index = ch ? (*ch - '0') : 0;
-
-	if(index == 1)
-		musb_cfg.regs = (struct musb_regs *)MUSB_ARK_USB1_BASE;
-
-	if(CONFIG_USB_GPIO_SW >= 0)
-		gpio_direction_output(CONFIG_USB_GPIO_SW, 0);
-	if(CONFIG_USB_GPIO_PWR >= 0)
-		gpio_direction_output(CONFIG_USB_GPIO_PWR, 1);
-	if(CONFIG_USB_GPIO_ID >= 0)
-		gpio_direction_output(CONFIG_USB_GPIO_ID, 0);
-	udelay(20000);
-
-	reset_usb_phy(index);
+	musb_ark_configure_port(index);
 }
 
 void board_musb_init(void) __attribute__((weak, alias("musb_ark_init")));

@@ -48,15 +48,30 @@ static struct nand_ecclayout nand_hw_eccoob_16 = { /* small page 512 byte with 1
 	.eccpos = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
     .oobfree = {}
 };
+#endif
 
-static struct nand_ecclayout nand_hw_eccoob_64 = { /* large page 2k with 64 byte oob */
+/* Was dead-coded out (see the disabled #if 0 block above, where this used
+ * to live under the name nand_hw_eccoob_64 alongside a small-page variant
+ * that no longer applies to any board here) and superseded by a different
+ * nand_hw_eccoob_64 below (23 bytes/segment, offset 18, 1024-byte step) —
+ * but that replacement layout does NOT match what's actually on this
+ * chip's kernel/rootfs/bootloader partitions. Diagnosed live on real
+ * hardware (see docs/HANDOFF_touch_and_bootargs_fix.md "Fix C" follow-up):
+ * `nandoobcheck`/`nand dump.oob` on both the U-boot partition (known-good,
+ * chainloadable) and the kernel partition (failing with "err more than 8
+ * bit" on every page under both of the other two layouts) show real
+ * ECC/data bytes ONLY at OOB offset 3-28 (26 bytes = 2 segments x 13
+ * bytes), with everything from offset 29 onward left erased (0xFF) — i.e.
+ * exactly this original layout: a 1024-byte step (2 segments/page) but
+ * with 13-byte/7-bit BCH strength and eccpos starting at offset 3, not
+ * the 23-byte/offset-18 combination the other nand_hw_eccoob_64 assumes. */
+static struct nand_ecclayout nand_hw_eccoob_64_2seg13b = { /* large page 2k with 64 byte oob */
     .eccbytes = BIT_7_ECC_BYTE,
     .eccpos = { 3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
 	   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
 	},
     .oobfree = { {32, 32} }
 };
-#endif
 
 static struct nand_ecclayout nand_hw_eccoob_bootstrap = { /* large page 2k with 64 byte oob */
     .eccbytes = BIT_7_ECC_BYTE,
@@ -1015,17 +1030,17 @@ static int ark_hwecc_nand_init_param(struct nand_chip *chip, struct mtd_info *mt
 	chip->ecc.write_page = ark_nand_write_page_syndrome;
 	chip->ecc.write_page_raw = ark_nand_write_page_raw_syndrome;
 	chip->ecc.write_oob = ark_nand_write_oob_syndrome;
-	chip->ecc.size = 1024;
+	chip->ecc.size = 512;
 
 	if (mtd->oobsize == 64) {
-		chip->ecc.bytes = BIT_13_ECC_BYTE; // should be 13 bytes but the ECC encoder register is in 32 bit word
-		chip->ecc.strength = 13;
-		chip->ecc.layout = &nand_hw_eccoob_64;
-		chip->ecc.prepad = nand_hw_eccoob_64.eccpos[0];
-		chip->ecc.postpad = nand_hw_eccoob_64.oobfree[0].offset;
+		chip->ecc.bytes = BIT_7_ECC_BYTE;
+		chip->ecc.strength = 7;
+		chip->ecc.layout = &nand_hw_eccoob_bootstrap;
+		chip->ecc.prepad = nand_hw_eccoob_bootstrap.eccpos[0];
+		chip->ecc.postpad = nand_hw_eccoob_bootstrap.oobfree[0].offset;
 		val = readl(rBCH_CR);
-		val &= ~(0x7 << 4);
-		val |= (1 << 8) | (1 << 7) | (1 << 4) | (1 << 0);
+		val &= ~((1 << 7) | (0x7 << 4));
+		val |= (1 << 8) | (1 << 0);
 		writel(val, rBCH_CR);
 	} else if(mtd->oobsize >= 128 && mtd->oobsize < 256) {
 		chip->ecc.bytes = BIT_24_ECC_BYTE; // should be 13 bytes but the ECC encoder register is in 32 bit word
@@ -1122,7 +1137,40 @@ static int do_switchecc(cmd_tbl_t *cmdtp, int flag, int argc,
 	
 	if (argc >= 2) {
 		bootecc = simple_strtoul(argv[1], NULL, 16);
-		if (bootecc) {
+		if (bootecc == 2) {
+			/* Diagnostic mode — see nand_hw_eccoob_64_2seg13b above.
+			 * 1024-byte step (like the "restore to normal" case below)
+			 * but 13-byte/7-bit BCH strength and eccpos starting at
+			 * offset 3 (like the bootstrap case above), a combination
+			 * neither of the other two modes represents. Register bits
+			 * follow the same pattern as the two known-working modes:
+			 * bit7 selects the 1024-byte step (as in the "normal" case),
+			 * bits[6:4] left at 0 select 13-byte/7-bit strength (as in
+			 * the bootstrap case, which also leaves them at 0). */
+			chip->ecc.size = 1024;
+			chip->ecc.steps = mtd->writesize / chip->ecc.size;
+			chip->ecc.bytes = BIT_7_ECC_BYTE;
+			chip->ecc.strength = 7;
+			chip->ecc.layout = &nand_hw_eccoob_64_2seg13b;
+			chip->ecc.prepad = nand_hw_eccoob_64_2seg13b.eccpos[0];
+			chip->ecc.postpad = nand_hw_eccoob_64_2seg13b.oobfree[0].offset;
+			/* BCH_CR = 0x182 (bit8|bit7|bit1), confirmed by reading the
+			 * register live on the STOCK U-Boot prompt immediately after
+			 * a real, working `nand read ... kernel` on that binary (see
+			 * docs/HANDOFF_touch_and_bootargs_fix.md / session notes) —
+			 * not derived from datasheet bit semantics, which aren't
+			 * available. Originally this set bit0 instead of bit1
+			 * (0x181), which is off by exactly one bit from stock's
+			 * value; that version passed on some reads and intermittently
+			 * failed with "err more than 8 bit" on others. bit1 instead
+			 * of bit0 has been reproducibly clean and repeatable across
+			 * multiple back-to-back reads on real hardware, matching
+			 * stock exactly. */
+			val = readl(rBCH_CR);
+			val &= ~(0x7 << 4);
+			val |= (1 << 8) | (1 << 7) | (1 << 1);
+			writel(val, rBCH_CR);
+		} else if (bootecc) {
 			chip->ecc.size = 512;
 			chip->ecc.steps = mtd->writesize / chip->ecc.size;
 			chip->ecc.bytes = BIT_7_ECC_BYTE; // should be 13 bytes but the ECC encoder register is in 32 bit word
@@ -1176,6 +1224,6 @@ static int do_switchecc(cmd_tbl_t *cmdtp, int flag, int argc,
 
 U_BOOT_CMD(switchecc, 4, 1, do_switchecc,
 	"switch or restore nand ecc to/from bootstrap setting",
-	"1:to bootstrap ecc; 0:restore to normal ecc"
+	"1:to bootstrap ecc; 0:restore to normal ecc; 2:diagnostic 1024-byte-step/13-byte-strength mode (see nand_hw_eccoob_64_2seg13b in ark_nand.c)"
 );
 

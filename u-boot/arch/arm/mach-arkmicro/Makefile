@@ -3,6 +3,7 @@
 ifneq ($(CONFIG_SPL_BUILD),)
 obj-$(CONFIG_TARGET_ARK1668) += spl_ark1668.o ddr_ark1668.o
 obj-$(CONFIG_TARGET_ARK1668_TYW_ZKSW) += spl_ark1668.o ddr_ark1668.o
+obj-$(CONFIG_TARGET_ARK1668_LIMCET_P305) += spl_ark1668.o ddr_ark1668.o
 obj-$(CONFIG_TARGET_TYW_DASHBOARD) += spl_ark1668.o ddr_ark1668.o
 obj-$(CONFIG_TARGET_XINSHIYU) += spl_ark1668.o ddr_ark1668.o
 obj-$(CONFIG_TARGET_ARK1668_FT) += spl_ark1668.o ddr_ark1668.o

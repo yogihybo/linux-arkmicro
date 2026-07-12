@@ -51,6 +51,14 @@ config TARGET_ARK1668_TYW_ZKSW
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
 
+config TARGET_ARK1668_LIMCET_P305
+	bool "ark1668_limcet_p305 board"
+	select ARK1668FAMILY
+	select CPU_V7A
+	select BOARD_LATE_INIT
+	select SUPPORT_SPL
+	select BOARD_EARLY_INIT_F
+
 config TARGET_ARK1668
 	bool "ark1668 board"
 	select ARK1668FAMILY
@@ -242,6 +250,7 @@ source "board/arkmicro/ark1668_dongle_sim/Kconfig"
 source "board/arkmicro/xinshiyu/Kconfig"
 source "board/arkmicro/tyw-dashboard/Kconfig"
 source "board/arkmicro/ark1668_tyw_zksw/Kconfig"
+source "board/arkmicro/ark1668_limcet_p305/Kconfig"
 source "board/arkmicro/ark1668/Kconfig"
 source "board/arkmicro/ark1668_aofan/Kconfig"
 source "board/arkmicro/arkn141/Kconfig"

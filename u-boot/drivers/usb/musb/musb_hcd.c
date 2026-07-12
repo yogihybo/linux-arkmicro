@@ -1188,6 +1188,20 @@ reqpkt_again:
 }
 
 /*
+ * Optional board hook: reconfigure musb_cfg.regs (and reset that port's
+ * PHY) for a different physical USB port, so usb_lowlevel_init() can
+ * retry on a second port if the first one times out with nothing
+ * attached. Weak default is a no-op that reports "no other port to try",
+ * preserving the original single-attempt behavior for any board that
+ * doesn't provide a real implementation (e.g. ark1668_limcet_p305's
+ * ark_musb.c defines the real one, covering its two MUSB instances).
+ */
+int __attribute__((weak)) musb_ark_configure_port(int index)
+{
+	return -1;
+}
+
+/*
  * This function initializes the usb controller module.
  */
 extern int musb_platform_init(void);
@@ -1221,6 +1235,32 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 		printf("=============== usb_lowlevel_init time is %d us===============\r\n", musb_cfg.timeout-timeout);
 	else
 		printf("=============== usb_lowlevel_init %d us timeout===============\r\n", musb_cfg.timeout);
+
+	/* Nothing responded on this port — try the other physical USB port
+	 * before giving up. This board has two independent MUSB instances
+	 * (see ark_musb.c); whichever one actually has a device attached is
+	 * what we want, and there's no way to know which that is ahead of
+	 * time without probing both. musb_ark_configure_port() is a no-op
+	 * weak stub (returns -1) on any board that doesn't implement it, so
+	 * this retry is inert everywhere except ark1668_limcet_p305. */
+	if (!timeout && musb_ark_configure_port(1) == 0) {
+		printf("usb_lowlevel_init: port 0 empty, retrying on port 1\n");
+		musbr = musb_cfg.regs;
+		musb_configure_ep(&epinfo[0], ARRAY_SIZE(epinfo));
+		musb_start();
+
+		timeout = musb_cfg.timeout;
+		while (--timeout) {
+			if (readb(&musbr->devctl) & MUSB_DEVCTL_HM)
+				break;
+			udelay(1);
+		}
+
+		if (timeout)
+			printf("=============== port 1 usb_lowlevel_init time is %d us===============\r\n", musb_cfg.timeout-timeout);
+		else
+			printf("=============== port 1 usb_lowlevel_init %d us timeout===============\r\n", musb_cfg.timeout);
+	}
 
 	/* if musb core is not in host mode, then return */
 	if (!timeout)

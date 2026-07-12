@@ -45,4 +45,5 @@ struct ark1680_musb_dma_regs {
 } __attribute__((packed, aligned(USB_DMA_MINALIGN)));
 
 int musb_platform_init(void);
+int musb_ark_configure_port(int index);
 #endif
