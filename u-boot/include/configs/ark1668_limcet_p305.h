@@ -178,6 +178,7 @@
 	"dtbfile=ark1668_limcet_p305.dtb\0" \
 	"mmcroot=/dev/mmcblk0p2\0" \
 	"stockubootfile=stock_uboot.bin\0" \
+	"machid=1068\0" \
 	"bootargs_common=console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8\0" \
 	NANDARGS
 

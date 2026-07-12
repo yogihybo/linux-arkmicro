@@ -235,8 +235,16 @@ static int boot_from_block_dev(const char *iface)
 	const char *mmcroot = env_or_default("mmcroot", "/dev/mmcblk0p2");
 	const char *bootargs_common = env_or_default("bootargs_common",
 		"console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8");
+	unsigned long machid = env_or_default_hex("machid", 0x1068);
 
 	sprintf(cmd, "setenv bootargs root=%s %s", mmcroot, bootargs_common);
+	run_command(cmd, 0);
+
+	/* Same fix as nandboot's machid — ARK1680's machine ID, needed even
+	 * on the DT boot path (bootz still checks it before the kernel gets
+	 * far enough to fall back on the DTB's compatible string). Without
+	 * it: "Error: unrecognized/unsupported machine ID (r1 = 0x00000000)". */
+	sprintf(cmd, "setenv machid 0x%lx", machid);
 	run_command(cmd, 0);
 
 	sprintf(cmd, "fatload %s 0:1 0x%lx %s", iface, kerneladdr, kernelfile);
