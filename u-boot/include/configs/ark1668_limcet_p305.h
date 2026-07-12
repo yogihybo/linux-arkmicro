@@ -181,19 +181,19 @@
 	"bootargs_common=console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8\0" \
 	NANDARGS
 
-/* Default (non-interrupted) autoboot: try a USB stick first (see
- * bootusb in ark1668_boot_cmds.c — kernel+DTB from USB, rootfs on the
- * SD card). If no USB device/boot files are found, fall back to
- * `bootstock` — chainloading the original stock dumped U-Boot from the
- * SD card (stock_uboot.bin) and letting IT boot NAND with its own
- * field-proven driver — rather than `run nandboot` directly, which uses
- * THIS build's NAND driver and currently hits uncorrectable ECC errors
- * against this unit's NAND (see the bootstock comment block in
- * ark1668_boot_cmds.c for the full story). `run nandboot` is kept as a
- * last-resort fallback only for the case where stock_uboot.bin is
- * missing from the SD card (bootstock's fatload fails and it returns
- * without ever jumping) — it is expected to also fail on the same ECC
- * issue right now, but that's no worse than before this change.
+/* Default (non-interrupted) autoboot, in priority order:
+ *   1. bootusb    — kernel+DTB from a USB stick, rootfs on the SD card.
+ *   2. bootstockusb — chainload the original stock U-Boot from a USB
+ *      stick (stock_uboot.bin), letting IT boot NAND with its own
+ *      field-proven driver. Confirmed working end-to-end on real
+ *      hardware (2026-07-13) via the SD variant — see the bootstock
+ *      comment block in ark1668_boot_cmds.c for the full story.
+ *   3. bootstock  — same chainload, sourced from the SD card instead.
+ *   4. run nandboot — last-resort direct NAND kernel boot using THIS
+ *      build's own NAND driver, only reached if stock_uboot.bin is
+ *      missing from both USB and SD. Known to hang at kernel entry
+ *      (see docs/HANDOFF_nand_ecc_uboot_vs_kernel.md §5) — kept only
+ *      as a fallback of last resort, not expected to fully succeed.
  * Deliberately does NOT fall back to the SD-card uEnv.txt flow — SD is
  * meant to hold only U-Boot itself now (see
  * docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md §8.2); `bootmmc` remains available
@@ -201,13 +201,14 @@
 /* Import uEnv.txt from the SD card first, if present — this can override
  * ANY env var (bootargs, kernelfile, mmcroot, bootcmd itself, etc.)
  * without recompiling. If bootcmd wasn't overridden by that import, this
- * falls through to the compiled-in default: USB, then chainload to
- * stock U-Boot for NAND, then a direct NAND attempt as last resort. */
+ * falls through to the compiled-in default above. */
 #define CONFIG_BOOTCOMMAND	\
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
-	"if bootusb; then true; else bootstock; run nandboot; fi"
+	"if bootusb; then true; " \
+	"elif bootstockusb; then true; " \
+	"else bootstock; run nandboot; fi"
 
 #else
 
