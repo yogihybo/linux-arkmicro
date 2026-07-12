@@ -22,57 +22,57 @@
  *              stick without touching the SD card" workflow discussed in
  *              docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md §8.2, not a full
  *              USB-hosted rootfs.
- *   bootstock — chainloads the ORIGINAL stock U-Boot binary (U-Boot
- *              2012.10) from an SD file (stockubootfile env var,
- *              stock_uboot.bin by default, sourced from Prado firmware
- *              dump/mtd1-mtd2_uboot/extracted/uboot.bin) and jumps into
- *              it. NOT sourced from the "U-boot" NAND partition — that
- *              was tried and reliably corrupted console output / left
- *              NAND in a bad state on real hardware (reads targeting
- *              address 0x30000 specifically; the same read to other
- *              addresses works fine). Root cause not yet found; SD
- *              avoids it and is the path confirmed working end-to-end.
+ *   bootstock / bootstockusb — chainloads the ORIGINAL stock U-Boot binary
+ *              (U-Boot 2012.10) from a FAT file on SD or USB respectively
+ *              (stockubootfile env var, stock_uboot.bin by default,
+ *              sourced from Prado firmware dump/mtd1-mtd2_uboot/extracted/
+ *              uboot.bin) and jumps into it, which then boots the stock
+ *              kernel+rootfs+UI from NAND with its own NAND driver.
+ *              CONFIRMED WORKING END-TO-END on real hardware
+ *              (2026-07-13) — this is the reliable path to a working
+ *              stock NAND boot from this fork.
  *
- *              Exists because `bootnand` above hits uncorrectable ECC
- *              errors ("err more than 8 bit") reading the kernel
- *              partition — root-caused live on real hardware (see the
- *              nand_hw_eccoob_64_2seg13b comment in drivers/mtd/nand/
- *              ark_nand.c) to this build's NAND driver using the wrong
- *              ECC layout for this chip's actual on-flash format;
- *              `switchecc 2` now fixes it (baked into `nandboot`). Even
- *              with the ECC read fixed, direct `bootnand` still hits an
- *              "undefined instr resetting" crash right at kernel entry —
- *              this stock 3.4 kernel has only ever shipped paired with
- *              the stock 2012.10 U-Boot, and jumping into it from this
- *              2018.07 fork is untested, unproven territory (ATAGS/CPU
- *              state expectations may differ between U-Boot versions).
- *              `bootstock` sidesteps that entirely by handing off to the
- *              ORIGINAL bootloader, so IT boots the kernel it was always
- *              paired with. This is a WARM handoff, not a real reset —
- *              the stock binary re-runs its own hardware init on top of
- *              whatever this build already configured, rather than
- *              starting from Stepldr's known-clean state. See
- *              docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md §8.3 for the general
- *              chainload caveats this borrows from, and note the cache
- *              flush below (cleanup_before_linux()) — do_go() (cmd/
- *              boot.c) does a bare jump with no cache maintenance at
- *              all, which caused its own "undefined instr resetting"
- *              crashes here independent of the NAND issues above.
+ *              NOT sourced from the "U-boot" NAND partition — every ECC
+ *              scheme tried (ours and stock's own native switchecc) fails
+ *              to read it; proven via Stepldr disassembly (see
+ *              docs/HANDOFF_nand_ecc_uboot_vs_kernel.md §3) that Stepldr
+ *              reads it via a raw, BCH_CR-free path no U-Boot-level tool
+ *              replicates. Not a bug — don't revisit NAND-sourcing here.
  *
- *              NOTE: if the SD card is inserted, a genuine hardware
- *              reset at ANY point after this chainload (e.g. a watchdog
- *              fire from the stock binary re-arming/feeding the
- *              watchdog differently than this build does) will still go
- *              through Stepldr, which prefers booting UBOOT.BIN from SD
- *              p1 over NAND — landing straight back in THIS build, not
- *              stock, regardless of where bootstock sourced the stock
- *              image from. Sourcing from NAND instead of SD only
- *              changes where the bytes come from for the initial jump;
- *              it does not change Stepldr's own boot-device preference
- *              on a subsequent reset. If that loop is what's actually
- *              being observed, the fix is diagnosing why the stock
- *              binary resets after being jumped into, or removing/
- *              renaming UBOOT.BIN from the SD card for that test.
+ *              Exists because `bootnand` above, even with its NAND ECC
+ *              issue fixed (`switchecc 2`, see
+ *              docs/HANDOFF_nand_ecc_uboot_vs_kernel.md §1) and machid
+ *              set correctly, still hangs silently at kernel entry — this
+ *              stock 3.4 kernel has only ever shipped paired with the
+ *              stock 2012.10 U-Boot, and jumping into it from this
+ *              2018.07 fork's bootz is untested, unproven territory.
+ *              `bootstock` sidesteps that entirely by handing the kernel
+ *              boot to the binary it was actually built against.
+ *
+ *              This is a WARM handoff, not a real reset — the stock
+ *              binary re-runs its own hardware init on top of whatever
+ *              this build already configured, rather than starting from
+ *              Stepldr's known-clean state. Two real bugs were found and
+ *              fixed here to get this working:
+ *              1. Cache maintenance before the jump: do_go() (cmd/boot.c)
+ *                 does a bare jump with NO cache maintenance at all.
+ *                 cleanup_before_linux() (what bootm/bootz use) is too
+ *                 aggressive for a bootloader-to-bootloader handoff — it's
+ *                 built for kernel handoff and fully disables MMU/
+ *                 interrupts/both caches, which the stock binary may not
+ *                 expect from this entry path. Uses flush_cache() +
+ *                 invalidate_icache_all() instead, narrow enough to just
+ *                 guarantee the CPU executes what was actually loaded.
+ *              2. Jump target: was jumping to the ARK header's EP field.
+ *                 Verified via objdump disassembly of the real
+ *                 Stepldr.bin that Stepldr's own load routine hardcodes
+ *                 `mov r0, #0x30000; blx r0` — it jumps to the LOAD
+ *                 ADDRESS (reset vector / _start), completely ignoring
+ *                 the header's EP. See docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md
+ *                 §8.3 for the correction. This was the fix that made it
+ *                 reliable — jumping to EP was skipping required
+ *                 _start/vector-table setup, causing intermittent
+ *                 "undefined instr resetting" crashes.
  *
  * The sequencing/error-checking below stays in C (worth keeping robust —
  * this project has had a lot of debugging pain from silent failures this
@@ -119,28 +119,29 @@ U_BOOT_CMD(
 
 extern int cleanup_before_linux(void);
 
-int do_bootstock(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int bootstock_from_block_dev(const char *iface)
 {
 	char cmd[64];
 	const char *stockfile = env_or_default("stockubootfile", "stock_uboot.bin");
 	unsigned long magic, ep, filesize;
 
-	/* SD file only for now, NOT the "U-boot" NAND partition. A NAND-partition
-	 * read was tried here and reliably failed on real hardware — `nand read
-	 * 0x30000 U-boot` (and even a plain offset/size read to that same
-	 * address, no partition name involved) corrupts console output and
-	 * appears to leave the NAND controller/cache in a bad state for
-	 * subsequent commands. Root cause not yet found — it reproduces
-	 * specifically for reads targeting 0x30000, while the exact same read
-	 * to other addresses (e.g. the kernel partition to 0x1000000) works
-	 * fine, so it isn't a partition-name or generic-NAND-read problem.
-	 * Needs its own investigation before being trusted; SD avoids it
-	 * entirely and is the path already confirmed working end-to-end. */
-	sprintf(cmd, "fatload mmc 0:1 0x%x %s", STOCK_UBOOT_LOAD_ADDR, stockfile);
+	/* File on a FAT block device only, NOT the "U-boot" NAND partition. A
+	 * NAND-partition read was tried here and reliably failed on real
+	 * hardware — `nand read 0x30000 U-boot` (and even a plain offset/size
+	 * read to that same address, no partition name involved) corrupts
+	 * console output and appears to leave the NAND controller/cache in a
+	 * bad state for subsequent commands. Root cause not yet found — it
+	 * reproduces specifically for reads targeting 0x30000, while the exact
+	 * same read to other addresses (e.g. the kernel partition to
+	 * 0x1000000) works fine, so it isn't a partition-name or generic-
+	 * NAND-read problem. Needs its own investigation before being trusted;
+	 * a FAT file avoids it entirely and is the path already confirmed
+	 * working end-to-end (SD; USB untested but same code path). */
+	sprintf(cmd, "fatload %s 0:1 0x%x %s", iface, STOCK_UBOOT_LOAD_ADDR, stockfile);
 	if (run_command(cmd, 0) != 0) {
-		printf("bootstock: fatload of %s failed — copy it to the SD "
-		       "card FAT partition (see Prado firmware dump/"
-		       "mtd1-mtd2_uboot/extracted/uboot.bin)\n", stockfile);
+		printf("bootstock: fatload of %s from %s 0:1 failed — copy it to "
+		       "the %s FAT partition (see Prado firmware dump/"
+		       "mtd1-mtd2_uboot/extracted/uboot.bin)\n", stockfile, iface, iface);
 		return 1;
 	}
 
@@ -153,8 +154,9 @@ int do_bootstock(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	filesize = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x50);
 	ep = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x44);
-	printf("bootstock: header OK, entry point 0x%lx — flushing caches and "
-	       "jumping now (warm handoff, watch serial closely)\n", ep);
+	printf("bootstock: header OK (header EP 0x%lx, unused — see below), "
+	       "flushing caches and jumping to 0x%x now (warm handoff, watch "
+	       "serial closely)\n", ep, STOCK_UBOOT_LOAD_ADDR);
 
 	/* do_go() (cmd/boot.c) does a bare jump with NO cache maintenance at
 	 * all — unlike bootm/bootz (used by bootmmc/bootusb), which call
@@ -182,14 +184,45 @@ int do_bootstock(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	flush_cache(STOCK_UBOOT_LOAD_ADDR, filesize);
 	invalidate_icache_all();
 
-	sprintf(cmd, "go 0x%lx", ep);
+	/* Jump to the LOAD ADDRESS (reset vector / _start), not the header's
+	 * EP field — verified via objdump disassembly of the real Stepldr.bin
+	 * (Holden firmware update package) that Stepldr's own load routine
+	 * hardcodes `mov r0, #0x30000; blx r0`, ignoring the header's EP
+	 * entirely. Jumping to EP instead skips whatever _start/vector-table
+	 * setup the binary's own reset-vector path does, which is a plausible
+	 * cause of this command's previous intermittent "undefined instr
+	 * resetting" crashes (worked once, then failed consistently — a
+	 * skipped-required-init pattern). See docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md
+	 * §8.3 correction. */
+	sprintf(cmd, "go 0x%x", STOCK_UBOOT_LOAD_ADDR);
 	return run_command(cmd, 0);
+}
+
+int do_bootstock(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	return bootstock_from_block_dev("mmc");
 }
 
 U_BOOT_CMD(
 	bootstock, 1, 0, do_bootstock,
 	"chainload the original stock dumped U-Boot from the SD card (bypasses this build's NAND driver)",
 	"bootstock\n"
+);
+
+int do_bootstockusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	printf("bootstockusb: starting USB...\n");
+	if (run_command("usb start", 0) != 0) {
+		printf("bootstockusb: usb start failed\n");
+		return 1;
+	}
+	return bootstock_from_block_dev("usb");
+}
+
+U_BOOT_CMD(
+	bootstockusb, 1, 0, do_bootstockusb,
+	"chainload the original stock dumped U-Boot from a USB stick (same as bootstock, different source)",
+	"bootstockusb\n"
 );
 
 static int boot_from_block_dev(const char *iface)
