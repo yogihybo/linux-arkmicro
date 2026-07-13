@@ -259,6 +259,16 @@ static int boot_from_block_dev(const char *iface)
 		return 1;
 	}
 
+	/* If the kernel/DTB were fatload'd from USB, U-Boot's own musb-hdrc
+	 * driver is left mid-enumeration on the controller. Without stopping
+	 * it here, the kernel's musb-hdrc probe hangs trying to take over a
+	 * controller that was never quiesced — cleanup_before_linux() (called
+	 * inside bootz below) resets CPU/cache/MMU state but knows nothing
+	 * about USB hardware state. Only applies to the "usb" iface; mmc never
+	 * touches the USB controller so there's nothing to stop there. */
+	if (strcmp(iface, "usb") == 0)
+		run_command("usb stop", 0);
+
 	sprintf(cmd, "bootz 0x%lx - 0x%lx", kerneladdr, dtbaddr);
 	return run_command(cmd, 0);
 }
