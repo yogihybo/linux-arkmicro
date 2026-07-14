@@ -12,6 +12,7 @@
 #include <command.h>
 #include <console.h>
 #include <linux/ctype.h>
+#include <malloc.h>
 
 /*
  * Use puts() instead of printf() to avoid printf buffer overflow
@@ -25,8 +26,28 @@ int _do_help(cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t *cmdtp, int flag,
 	int rcode = 0;
 
 	if (argc == 1) {	/* show list of commands */
-		cmd_tbl_t *cmd_array[cmd_items];
+		/* Was a stack-allocated VLA (cmd_tbl_t *cmd_array[cmd_items]),
+		 * sized by the total number of registered commands with no
+		 * bound and no safety margin, several stack frames deep in
+		 * the command-dispatch call chain. This board's command
+		 * table has grown substantially across sessions (bootstock/
+		 * bootstockusb/nandoobcheck/switchecc/regr/regw/pmem/
+		 * gpiotest/jpeghw/itu656/arkdatatest/bootlogofind and more,
+		 * on top of the vendor baseline) — on real hardware, `help`
+		 * itself started corrupting console output (garbled '▒'
+		 * characters in its own printed list, reproducible even on
+		 * a fresh boot, not session-state-dependent), consistent
+		 * with a stack-adjacent memory corruption that scales with
+		 * how many commands are registered. Heap allocation removes
+		 * the unbounded-stack-growth risk entirely regardless of
+		 * how large this board's command table gets in the future. */
+		cmd_tbl_t **cmd_array = malloc(cmd_items * sizeof(cmd_tbl_t *));
 		int i, j, swaps;
+
+		if (!cmd_array) {
+			puts("help: out of memory\n");
+			return 1;
+		}
 
 		/* Make array of commands from .uboot_cmd section */
 		cmdtp = cmd_start;
@@ -56,13 +77,16 @@ int _do_help(cmd_tbl_t *cmd_start, int cmd_items, cmd_tbl_t *cmdtp, int flag,
 			const char *usage = cmd_array[i]->usage;
 
 			/* allow user abort */
-			if (ctrlc())
+			if (ctrlc()) {
+				free(cmd_array);
 				return 1;
+			}
 			if (usage == NULL)
 				continue;
 			printf("%-*s- %s\n", CONFIG_SYS_HELP_CMD_WIDTH,
 			       cmd_array[i]->name, usage);
 		}
+		free(cmd_array);
 		return 0;
 	}
 	/*
