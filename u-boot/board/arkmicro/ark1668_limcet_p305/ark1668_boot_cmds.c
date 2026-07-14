@@ -233,11 +233,21 @@ static int boot_from_block_dev(const char *iface)
 	const char *kernelfile = env_or_default("kernelfile", "zImage");
 	const char *dtbfile = env_or_default("dtbfile", "ark1668_limcet_p305.dtb");
 	const char *mmcroot = env_or_default("mmcroot", "/dev/mmcblk0p2");
+	const char *usbroot = env_or_default("usbroot", "/dev/sda2");
+	const char *root = (strcmp(iface, "usb") == 0) ? usbroot : mmcroot;
 	const char *bootargs_common = env_or_default("bootargs_common",
 		"console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8");
 	unsigned long machid = env_or_default_hex("machid", 0x1068);
 
-	sprintf(cmd, "setenv bootargs root=%s %s", mmcroot, bootargs_common);
+	/* bootusb previously always used mmcroot here regardless of iface —
+	 * loaded the kernel from USB but still told it to mount root from the
+	 * SD card. root= now follows the actual boot device. Note this only
+	 * covers the kernel's root filesystem; whether /data (userdata) also
+	 * ends up on USB depends on how the rootfs's own init script (rcS)
+	 * derives that partition — that's a rootfs-level concern, not
+	 * something U-Boot's bootargs alone control. Check/patch rcS
+	 * separately if userdata needs to follow root onto USB too. */
+	sprintf(cmd, "setenv bootargs root=%s %s", root, bootargs_common);
 	run_command(cmd, 0);
 
 	/* Same fix as nandboot's machid — ARK1680's machine ID, needed even
