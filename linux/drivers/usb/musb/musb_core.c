@@ -2551,6 +2551,7 @@ static void musb_recovery_usb_proc(struct work_struct *work)
 {
 	struct musb *musb = NULL;
 	unsigned long flags;
+	u32 port1_status;
 
 	if (NULL == work)
 		return;
@@ -2558,6 +2559,33 @@ static void musb_recovery_usb_proc(struct work_struct *work)
 	musb = container_of(work, struct musb, recovery_usb_work);
 	if (NULL == musb)
 		return;
+
+	/* This is armed via musb_reset_usb_controller() (musb_host.c), called
+	 * from the generic USB core's own hub_port_init() retry loop
+	 * (drivers/usb/core/hub.c) whenever a port enable attempt fails --
+	 * including transiently, during normal runtime, not just at initial
+	 * connect. The PERIPHERAL -> OTG cycle below goes through
+	 * ark_musb_set_mode()'s MUSB_OTG case, which power-cycles the port's
+	 * VBUS -- a real, physical disconnect for whatever is currently
+	 * attached. If that happens to be the device currently serving as
+	 * the root filesystem (confirmed live on real hardware: root mounted
+	 * over USB, this fired during otherwise-normal boot, and the
+	 * resulting VBUS cycle disconnected it mid-boot, aborting the ext4
+	 * journal and forcing a read-only remount), this recovery path does
+	 * far more damage than whatever transient issue triggered it.
+	 *
+	 * Only perform the disruptive reset if the port genuinely isn't
+	 * already enabled with a working connection -- a stuck/dead port has
+	 * nothing to lose here; an already-enabled one very much does. */
+	spin_lock_irqsave(&musb->lock, flags);
+	port1_status = musb->port1_status;
+	spin_unlock_irqrestore(&musb->lock, flags);
+
+	if (port1_status & USB_PORT_STAT_ENABLE) {
+		printk(KERN_ALERT "### %s port already enabled, skipping "
+		       "disruptive VBUS reset\n", __func__);
+		return;
+	}
 
 	printk(KERN_ALERT "### %s reset otg.\n", __func__);
 	spin_lock_irqsave(&musb->lock, flags);
