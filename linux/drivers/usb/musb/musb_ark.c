@@ -456,6 +456,32 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 				gpio_set_value(gpio_pwr, 0);
 				mdelay(10);
 				gpio_set_value(gpio_pwr, 1);
+				/* If a device is already plugged into this port when
+				 * this VBUS power-cycle happens (e.g. a USB stick
+				 * present at boot), it loses power and has to fully
+				 * re-initialize internally before it can respond to
+				 * enumeration again — confirmed on real hardware via
+				 * the stock application's own log, which shows several
+				 * seconds between insertion and the device being
+				 * usable, plus explicit open() retry logic on its side
+				 * for exactly this reason. This function returns right
+				 * after this block with no wait-for-connect check at
+				 * all (see ark_musb_set_vbus() below for the pattern
+				 * this should arguably use instead — a real status-bit
+				 * poll with a timeout — but that needs correctly
+				 * understanding this register's semantics, which
+				 * hasn't been verified). The previous 10ms-then-nothing
+				 * gap was nowhere near enough settle time, and with
+				 * nothing here to keep the port from being probed as
+				 * "connected" too early, the generic USB core's own
+				 * hotplug polling can end up never re-noticing the
+				 * device at all if it wasn't ready yet — matching the
+				 * "device never enumerates on this port no matter how
+				 * long you wait afterward" symptom root-caused this
+				 * session. Give the device real time to power back up
+				 * before this function returns and driver init
+				 * continues. */
+				mdelay(300);
 			}
 
 			if (musb->is_runtime_suspended) {
