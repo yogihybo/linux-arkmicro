@@ -303,8 +303,8 @@ int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("bootusb: usb start failed\n");
 		return 1;
 	}
-	printf("bootusb: booting kernel+DTB from USB stick (usb 0:1), rootfs still on %s\n",
-	       env_or_default("mmcroot", "/dev/mmcblk0p2"));
+	printf("bootusb: booting kernel+DTB+rootfs from USB stick (usb 0:1), root=%s\n",
+	       env_or_default("usbroot", "/dev/sda2"));
 	return boot_from_block_dev("usb");
 }
 
