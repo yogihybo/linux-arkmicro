@@ -184,6 +184,13 @@ static int bootstock_from_block_dev(const char *iface)
 	flush_cache(STOCK_UBOOT_LOAD_ADDR, filesize);
 	invalidate_icache_all();
 
+	/* Zero out BCH_CR (and rNAND_CR timing/control register) to reset the
+	 * NAND/ECC controller state to a clean Power-On Reset (POR) equivalent
+	 * baseline. This prevents stock U-Boot's OR-based initialization from
+	 * inheriting polluted state from this build's NAND operations. */
+	*(volatile unsigned int *)(0xec000000 + 0x27c) = 0; /* rBCH_CR */
+	*(volatile unsigned int *)(0xec000000 + 0x00) = 0;  /* rNAND_CR */
+
 	/* Jump to the LOAD ADDRESS (reset vector / _start), not the header's
 	 * EP field — verified via objdump disassembly of the real Stepldr.bin
 	 * (Holden firmware update package) that Stepldr's own load routine
