@@ -1,0 +1,321 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "ark1668.dtsi"
+#include "ark1668-pinctrl.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "Limcet P305/P306 Dashboard Head Unit";
+	compatible = "arkmicro,ark1668-limcet", "arkmicro,ark1668";
+
+	memory {
+		reg = <0x0 0x8000000>; // 128MB RAM
+	};
+
+	// Reversing Signal (Mapped but Prado uses UART protocol via MCUAdapter)
+	carback: carback@0 {
+		compatible = "arkmicro,ark-carback";
+		interrupt-parent = <&gpio0>;
+		interrupts = <5 IRQ_TYPE_EDGE_BOTH>;
+		detect-gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+		debounce-detect = <20>;
+	};
+
+	// ARK1680 on-SoC resistive ADC touchscreen — this is the touch path
+	// this unit's stock firmware actually selects (see
+	// docs/boot_experiment_log.md "ROOT CAUSE FOUND" and
+	// docs/ARK1680_TS_REVERSE_ENGINEERING.md), not the GT911 node below.
+	tsc: tsc@e4500000 {
+		compatible = "arkmicro,ark1680-ts";
+		reg = <0xe4500000 0x40>;
+		interrupt-parent = <&vicl>;
+		interrupts = <4>;
+	};
+
+	mcu_serial: mcu-serial@0 {
+		compatible = "arkmicro,ark-mcu-serial";
+	};
+
+	tool_serial: tool-serial@0 {
+		compatible = "arkmicro,ark-tool-serial";
+	};
+
+	// Bit-banged I2C Bus 0 (Analog I2C)
+	i2c-gpio-0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gpio0 3 0		/* SDA (GPIO 3) */
+			 &gpio0 2 0		/* SCL (GPIO 2) */
+		>;
+		i2c-gpio,delay-us = <6>;
+		i2c-gpio,scl-output-only;
+
+		// Richwave RN6752 AHD Camera Decoder
+		dvr_rn6752: dvr_rn6752@2c {
+			compatible = "arkmicro,ark1668_rn6752";
+			reg = <0x2c>;
+			reset-gpio = <&gpio0 0 0>;
+			carback-config = <1>;
+		};
+
+		// Goodix GT911 Touchscreen Controller
+		gt911: touchscreen@5d {
+			compatible = "goodix,gt911";
+			reg = <0x5d>;
+			interrupt-parent = <&gpio0>;
+			interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
+			irq-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+			reset-gpios = <&gpio2 16 GPIO_ACTIVE_HIGH>;
+			touchscreen-inverted-x;
+		};
+
+	};
+
+	// Bit-banged I2C Bus 1
+	i2c-gpio-1 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <&gpio0 9 0		/* SDA (GPIO 9) */
+			 &gpio3 25 0		/* SCL (GPIO 121) */
+		>;
+		i2c-gpio,delay-us = <6>;
+		i2c-gpio,scl-output-only;
+
+		// ROHM BD37033FV Sound Processor. Moved back here from
+		// i2c-gpio-0 (2026-07-13) after getting a live root shell on
+		// real stock hardware (via the msn_autocopy telnetd payload)
+		// and running i2c-scan directly against stock's own
+		// /dev/i2c-*: /sys/bus/i2c/devices/2-0041 shows a kernel
+		// i2c_client bound on stock's i2c-gpio2 -- i.e. exactly these
+		// SDA=GPIO9/SCL=GPIO121 pins, not i2c-gpio-0/GPIO2-3 where an
+		// earlier session moved it based on a misread of i2c-scan's
+		// XX marker (XX only means a driver is bound, not that the
+		// device answers -- see docs/I2C_GPIO0_LCD_PIN_CONFLICT.md).
+		// Bus placement confirmed correct via that path. CONFIG_SND_
+		// SOC_BD37033_NOP must stay OFF, this is real, addressable
+		// hardware.
+		//
+		// Address corrected 0x41 -> 0x40 (2026-07-14). The 0x41 value
+		// came only from disassembling stock's *kernel* board file's
+		// i2c_board_info struct + the i2c-scan XX marker above --
+		// both just prove a kernel i2c_client got registered at that
+		// address, not that the chip answers there (same class of
+		// mistake the XX-marker note above already flags for other
+		// devices). Ground truth is what the vendor's own shipped
+		// userspace audio-control code actually uses at runtime:
+		// disassembly of libMsnSound.so's Sound_BD37033::Sound_BD37033()
+		// constructor shows `I2COperator(bus=2, addr=0x80)`, and
+		// libMsnCommons.so's arki2c_open() does `ioctl(fd, I2C_SLAVE,
+		// addr >> 1)` -- i.e. the real wire address is 0x80 >> 1 =
+		// 0x40, matching the BD37033 datasheet's public 7-bit address.
+		// This also fully explains the persistent bd37033_write_byte
+		// timeout seen throughout this investigation (including on
+		// stock's own kernel dmesg, see docs/I2C_GPIO0_LCD_PIN_CONFLICT.md):
+		// stock's *kernel-level* i2c_client was always misaddressed
+		// too, its writes just never mattered because stock's real
+		// control path bypasses the kernel driver entirely via direct
+		// /dev/i2c-2 ioctls at the correct address. Not yet hardware-
+		// retested with this fix.
+		amp: drv_bd37033@40 {
+			status = "okay";
+			compatible = "arkmicro,drv_bd37033";
+			reg = <0x40>;
+			flout-gain = <65>;
+			frout-gain = <65>;
+			rlout-gain = <65>;
+			rrout-gain = <65>;
+			#sound-dai-cells = <0>;
+		};
+	};
+
+	// Audio Card configuration
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "ark1668-audio";
+
+		// BD37033 (&amp) is control-only from this card's point of view --
+		// no I2S DAI stream of its own, just I2C-driven mixer controls
+		// ("PA Volume" etc, see sound/soc/arkmicro/BD37033.c). Without
+		// listing it as an aux-dev, devm_snd_soc_register_component()
+		// still registers the component driver (see bd37033_drv_probe),
+		// but its controls are only ever added to a card's kcontrol list
+		// when the component is bound into that card -- which never
+		// happened here, since no dai-link below references &amp. That's
+		// why "PA Volume"/"PA Mute" never appeared in `amixer scontrols`
+		// even on boots where the I2S data path and I2C bus were both
+		// fine (2026-07-14, see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md).
+		simple-audio-card,aux-devs = <&amp>;
+
+		// DAC/playback link listed FIRST (2026-07-13) so it lands on
+		// PCM device 0, matching /etc/asound.conf's hardcoded
+		// dmix slave "hw:0,0" -- simple-audio-card assigns device
+		// numbers by dai-link order, and with ADC first the playback
+		// device landed on hw:0,1 instead, causing every dmix/softvol
+		// PCM to fail with "unable to open slave" at MsnCoreApp
+		// startup (see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md). Only
+		// the DTS order changed here; asound.conf is untouched
+		// (shared with stock, which the reg errors elsewhere suggest
+		// expects device 0 to be playback).
+		simple-audio-card,dai-link@0 { /* I2S DAC link */
+			bitclock-master = <&playback_cpu>;
+			frame-master = <&playback_cpu>;
+			playback_cpu: cpu {
+				sound-dai = <&i2s_dac>;
+			};
+			playback_codec: codec {
+				sound-dai = <&sddac>;
+			};
+		};
+		simple-audio-card,dai-link@1 { /* I2S ADC link */
+			cpu {
+				sound-dai = <&i2s_adc>;
+			};
+			codec {
+				sound-dai = <&sdadc>;
+			};
+		};
+	};
+};
+
+&usb0_phy {
+	compatible = "usb-nop-xceiv";
+	#phy-cells = <0>;
+	status = "okay";
+};
+
+&usb1_phy {
+	compatible = "usb-nop-xceiv";
+	#phy-cells = <0>;
+	status = "okay";
+};
+
+&usb0 {
+	status = "okay";
+};
+
+&usb1 {
+	status = "okay";
+};
+
+// Console debug UART
+&uart0 {
+	use-in-kernel;
+	use-for-tool;
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+// High-speed MCU Communication UART
+&uart3 {
+	use-in-kernel;
+	use-for-mcu;
+};
+
+// LCD Framebuffer Configuration
+&lcdc {
+	display = <&display0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_prado>;
+
+	display0: display@0 {
+		interface-type = "TTL";
+		lvds-con = <0x160fd>;
+		bits-per-pixel = <32>;
+		power-control-gpio = <&gpio2 17 GPIO_ACTIVE_HIGH>; /* LCD power enable pin (GPIO 81) */
+		lcd-wiring-mode = "BGR";
+		lcdcon-backlight;
+		pwms = <&pwm0 1 50000>; /* Backlight PWM Channel 1 */
+		pwm-names = "backlight";
+		backlight-value = <20>;
+		backlight-delay = <200>;
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing0 {
+				clock-frequency = <33000000>;
+				hactive = <800>;
+				vactive = <480>;
+				hback-porch = <16>;
+				hfront-porch = <210>;
+				vback-porch = <12>;
+				vfront-porch = <22>;
+				hsync-len = <30>;
+				vsync-len = <13>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+	};
+};
+
+&vdec0 {
+	status = "okay";
+};
+
+// SDIO WiFi Controller
+&mmc1 {
+	status = "okay";
+	non-removable;
+	broken-cd;
+};
+
+&gpu {
+	compatible = "arkmicro,vivante-hal", "fsl,imx6q-gpu";
+	reg-names = "iobase_3d";
+	interrupt-names = "irq_3d";
+	clocks = <&gpuclk>, <&gpuclk>, <&gpuclk>, <&gpuclk>, <&gpuclk>, <&gpuclk>;
+	clock-names = "gpu3d_clk", "gpu3d_axi_clk", "gpu3d_shader_clk", "gpu2d_clk", "gpu2d_axi_clk", "openvg_axi_clk";
+	status = "okay";
+};
+
+// DIAGNOSTIC: enabled with no child devices so both this controller and
+// i2c-gpio-0 (which still owns the gt911@5d + dvr_rn6752@2c nodes above) are
+// live simultaneously. Lets a userspace i2c scan on /dev/i2c-* determine,
+// empirically, which physical bus the GT911 actually ACKs on — see
+// docs/boot_experiment_log.md "Systematic I2C bus verification" and
+// tools/i2c-scan/. Do not attach gt911 here until that scan confirms it.
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+};
+
+&gpio0 {
+	gpio-ranges = <&pinctrl0 0 0 6>, <&pinctrl0 6 6 2>, <&pinctrl0 10 10 22>;
+};
+
+&pinctrl0 {
+	lcd {
+		pinctrl_lcd_prado: lcd-prado {
+			ark,pins =
+				<ARK_PBANK_0 4 ARK_PVAL_1		/* r2 */
+				 ARK_PBANK_0 5 ARK_PVAL_1		/* r3 */
+				 ARK_PBANK_0 6 ARK_PVAL_1		/* r4 */
+				 ARK_PBANK_0 7 ARK_PVAL_1		/* r5 */
+				 ARK_PBANK_0 8 ARK_PVAL_1		/* r6 */
+				 /* Exclude r0, r1 (pins 2, 3) and r7 (pin 9) for I2C use */
+				 ARK_PBANK_0 10 ARK_PVAL_1		/* g0 */
+				 ARK_PBANK_0 11 ARK_PVAL_1		/* g1 */
+				 ARK_PBANK_0 12 ARK_PVAL_1		/* g2 */
+				 ARK_PBANK_0 13 ARK_PVAL_1		/* g3 */
+				 ARK_PBANK_0 14 ARK_PVAL_1		/* g4 */
+				 ARK_PBANK_0 15 ARK_PVAL_1		/* g5 */
+				 ARK_PBANK_0 16 ARK_PVAL_1		/* g6 */
+				 ARK_PBANK_0 17 ARK_PVAL_1		/* g7 */
+				 ARK_PBANK_0 18 ARK_PVAL_1		/* b0 */
+				 ARK_PBANK_0 19 ARK_PVAL_1		/* b1 */
+				 ARK_PBANK_0 20 ARK_PVAL_1		/* b2 */
+				 ARK_PBANK_0 21 ARK_PVAL_1		/* b3 */
+				 ARK_PBANK_0 22 ARK_PVAL_1		/* b4 */
+				 ARK_PBANK_0 23 ARK_PVAL_1		/* b5 */
+				 ARK_PBANK_0 24 ARK_PVAL_1		/* b6 */
+				 ARK_PBANK_0 25 ARK_PVAL_1>;	/* b7 */
+		};
+	};
+};
