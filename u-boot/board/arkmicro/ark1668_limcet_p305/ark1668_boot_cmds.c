@@ -184,12 +184,20 @@ static int bootstock_from_block_dev(const char *iface)
 	flush_cache(STOCK_UBOOT_LOAD_ADDR, filesize);
 	invalidate_icache_all();
 
-	/* Zero out BCH_CR (and rNAND_CR timing/control register) to reset the
-	 * NAND/ECC controller state to a clean Power-On Reset (POR) equivalent
-	 * baseline. This prevents stock U-Boot's OR-based initialization from
-	 * inheriting polluted state from this build's NAND operations. */
-	*(volatile unsigned int *)(0xec000000 + 0x27c) = 0; /* rBCH_CR */
-	*(volatile unsigned int *)(0xec000000 + 0x00) = 0;  /* rNAND_CR */
+	printf("bootstock: resetting NAND/BCH controller registers (was BCH_CR=0x%08x)\n",
+	       *(volatile unsigned int *)(0xec000000 + 0x27c));
+
+	/* Zero out BCH and NAND configuration/control/status registers to reset the
+	 * controller state to a clean Power-On Reset (POR) equivalent baseline.
+	 * This prevents stock U-Boot's OR-based initialization from inheriting
+	 * polluted state from this build's NAND operations. */
+	*(volatile unsigned int *)(0xec000000 + 0x27c) = 0;          /* rBCH_CR */
+	*(volatile unsigned int *)(0xec000000 + 0x288) = 0x0000000f; /* Clear pending BCH interrupts */
+	*(volatile unsigned int *)(0xec000000 + 0x28c) = 0;          /* Mask BCH interrupts */
+	*(volatile unsigned int *)(0xec000000 + 0x290) = 0;          /* rNAND_DMA_CTRL */
+	*(volatile unsigned int *)(0xec000000 + 0x294) = 0;          /* rNAND_GLOBAL_CTL */
+	*(volatile unsigned int *)(0xec000000 + 0x298) = 0;          /* rNAND_JUMP_CTL */
+	*(volatile unsigned int *)(0xec000000 + 0x00) = 0;           /* rNAND_CR */
 
 	/* Jump to the LOAD ADDRESS (reset vector / _start), not the header's
 	 * EP field — verified via objdump disassembly of the real Stepldr.bin
