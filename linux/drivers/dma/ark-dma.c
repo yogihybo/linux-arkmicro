@@ -120,8 +120,6 @@ static dma_cookie_t dwc_tx_submit(struct dma_async_tx_descriptor *tx)
 			dwc->cdesc->period_callback_param = tx->callback_param;
 		}
 		spin_unlock_irqrestore(&dwc->lock, flags);
-		printk(KERN_ERR "ARKDMA_DBG: dwc_tx_submit cyclic path, cookie=%d cdesc=%p callback=%p\n",
-				cookie, dwc->cdesc, tx->callback);
 		return cookie;
 	}
 
@@ -561,9 +559,6 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
 {
 	unsigned long flags;
 
-	printk(KERN_ERR "ARKDMA_DBG: dwc_handle_cyclic chan_mask=0x%x block=0x%x err=0x%x xfer=0x%x\n",
-			dwc->mask, status_block, status_err, status_xfer);
-
 	if (status_block & dwc->mask) {
 		void (*callback)(void *param);
 		void *callback_param;
@@ -660,8 +655,6 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
 
 	status = dma_readl(dw, STATUS_INT);
 	dev_vdbg(dw->dma.dev, "%s: status=0x%x\n", __func__, status);
-
-	printk(KERN_ERR "ARKDMA_DBG: dw_dma_interrupt status=0x%x\n", status);
 
 	/* Check if we have any interrupt from the DMAC */
 	if (!status)
@@ -971,18 +964,10 @@ dwc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr,
 {
 	struct dw_cyclic_desc *cdesc;
 
-	printk(KERN_ERR "ARKDMA_DBG: dwc_prep_dma_cyclic called, buf_len=%zu period_len=%zu dir=%d\n",
-			buf_len, period_len, direction);
-
 	cdesc = dw_dma_cyclic_prep(chan, buf_addr, buf_len, period_len,
 			direction);
-	if (IS_ERR(cdesc)) {
-		printk(KERN_ERR "ARKDMA_DBG: dw_dma_cyclic_prep failed, err=%ld\n",
-				PTR_ERR(cdesc));
+	if (IS_ERR(cdesc))
 		return NULL;
-	}
-	printk(KERN_ERR "ARKDMA_DBG: dw_dma_cyclic_prep succeeded, periods=%lu\n",
-			cdesc->periods);
 
 	return &cdesc->desc[0]->txd;
 }
@@ -1088,8 +1073,6 @@ static int dwc_terminate_all(struct dma_chan *chan)
 		 * second aplay attempt in a session, see
 		 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md.
 		 */
-		printk(KERN_ERR "ARKDMA_DBG: dwc_terminate_all cyclic path\n");
-		dump_stack();
 		dw_dma_cyclic_free(chan);
 		return 0;
 	}
@@ -1183,8 +1166,32 @@ dwc_tx_status(struct dma_chan *chan,
 
 		ret = dma_cookie_status(chan, cookie, txstate);
 		spin_lock_irqsave(&dwc->lock, flags);
-		if (dwc->cdesc)
-			residue = dwc_get_sent(dwc);
+		if (dwc->cdesc) {
+			/*
+			 * dwc_get_sent() returns bytes already transferred
+			 * out of the *current* period's configured block
+			 * size (see its own comment + how dwc_get_residue()
+			 * uses it for the one-shot path: "residue -=
+			 * dwc_get_sent()", i.e. it's a sent count, not a
+			 * residue). This branch was setting residue directly
+			 * to that sent count instead of subtracting it from
+			 * the period length -- so residue read back near-zero
+			 * immediately after a period started (when almost
+			 * nothing had been sent yet), which
+			 * dmaengine_pcm's .pointer() callback (what
+			 * ark1668_i2s.c's generic playback path polls) reads
+			 * as "hardware pointer already at/past the end of the
+			 * buffer" -- an instant, spurious underrun on every
+			 * single attempt, well before any real transfer could
+			 * complete. Confirmed live: aplay -D hw:0,0 underran
+			 * in under 0.1ms, far faster than one real ~23ms
+			 * period, on every attempt. See
+			 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md.
+			 */
+			u32 sent = dwc_get_sent(dwc);
+			residue = sent < dwc->cdesc->period_len ?
+				dwc->cdesc->period_len - sent : 0;
+		}
 		spin_unlock_irqrestore(&dwc->lock, flags);
 		dma_set_residue(txstate, residue);
 		return ret == DMA_COMPLETE ? DMA_IN_PROGRESS : ret;
@@ -1213,9 +1220,6 @@ static void dwc_issue_pending(struct dma_chan *chan)
 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
 	unsigned long		flags;
 
-	printk(KERN_ERR "ARKDMA_DBG: dwc_issue_pending called, cyclic=%d\n",
-			test_bit(DW_DMA_IS_CYCLIC, &dwc->flags));
-
 	if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags)) {
 		/*
 		 * dw_dma_cyclic_start() takes dwc->lock itself and correctly
@@ -1224,11 +1228,7 @@ static void dwc_issue_pending(struct dma_chan *chan)
 		 * locking dwc->lock, since it's already held by the normal
 		 * path below).
 		 */
-		{
-			int __ret = dw_dma_cyclic_start(chan);
-			printk(KERN_ERR "ARKDMA_DBG: dwc_issue_pending cyclic path, dw_dma_cyclic_start ret=%d\n",
-					__ret);
-		}
+		dw_dma_cyclic_start(chan);
 		return;
 	}
 
@@ -1531,6 +1531,7 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
 			&buf_addr, buf_len, period_len, periods);
 
 	cdesc->periods = periods;
+	cdesc->period_len = period_len;
 	dwc->cdesc = cdesc;
 
 	return cdesc;

@@ -84,6 +84,7 @@ struct dw_desc;
 struct dw_cyclic_desc {
 	struct dw_desc	**desc;
 	unsigned long	periods;
+	size_t		period_len;
 	void		(*period_callback)(void *param);
 	void		*period_callback_param;
 };
