@@ -336,6 +336,7 @@ static int ark_gpio_probe(struct platform_device *pdev)
 	port->gc.set = ark_gpio_set;
 	port->gc.to_irq = ark_gpio_to_irq;
 	port->gc.set_config = ark_gpio_set_config;
+	port->gc.of_node = np;
 	port->gc.base = (pdev->id < 0) ? of_alias_get_id(np, "gpio") * 32 :
 					     pdev->id * 32;
 	port->gc.ngpio = 32;
