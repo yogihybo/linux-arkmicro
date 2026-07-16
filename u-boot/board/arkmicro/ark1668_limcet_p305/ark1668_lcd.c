@@ -393,7 +393,7 @@ void ark_gamma_init(void)
 	//set gamma from flash
 	if ((g_display_para.gammainfo.gamma_en== 0x03) && (g_display_para.flag_gamma== GAMMA_INFO_FLAG))
 	{
-		printf("set gamma info from flash.\n"); 
+		printf("[gamma] set gamma info from flash.\n"); 
 		rLCD_GAMMA_REG_0 = 3;
 		for (i = 0;i < GAMMA_REG_MAX;i++)
 		{
@@ -847,7 +847,7 @@ void ark_set_osd_image(enum DISP_OSD_LAYER_ID  layer_id,
 			(1 << 17) | (rgb_ycbcr_bypass << 16) | (format << 12);		
 		break;
 	default:
-		printf("error osd layer_id %d.\n", layer_id);
+		printf("[osd_image] error osd layer_id %d.\n", layer_id);
 		break;
 	}
 }
@@ -865,7 +865,7 @@ void ark_set_video_scaler(enum DISP_OSD_LAYER_ID  layer_id,
 	{
 		if(src_width & 7)
 		{
-			printf("Parameter error, width is not the multiple of 8.\r\n");
+			printf("[video_scaler] parameter error, width is not a multiple of 8.\r\n");
 			return;
 		}
 	}    	
@@ -968,7 +968,7 @@ void ark_set_video_addr(enum DISP_VIDEO_LAYER_ID  layer_id,
 		rLCD_VIDEO2_ADDR1 = yrgbaddr;
 		rLCD_VIDEO2_ADDR2 = cbcraddr;
 		rLCD_VIDEO2_ADDR3 = craddr;	
-	} else printf("error video layer_id %d.\n", layer_id);
+	} else printf("[video_addr] error video layer_id %d.\n", layer_id);
 }
 
 #endif
@@ -977,7 +977,7 @@ void ark_set_osd_addr(enum DISP_OSD_LAYER_ID  layer_id, unsigned int addr)
 	if( layer_id == OSD1_LAYER ) rLCD_OSD1_ADDR = addr;
 	else if ( layer_id == OSD2_LAYER ) rLCD_OSD2_ADDR = addr;
 	else if ( layer_id == OSD3_LAYER ) rLCD_OSD3_ADDR = addr;
-	else printf("error osd layer_id %d.\n", layer_id);
+	else printf("[osd_addr] error osd layer_id %d.\n", layer_id);
 }
 
 void ark_disp_wait_lcd_frame_int(void)
@@ -1304,7 +1304,7 @@ static void cvbs_init_pal(void)
 	#define 	 white_level					0x36c
 	#define 	 sync_level 					0x0
 	
-	printf("cvbs_init_pal,change level.\r\n");
+	printf("[cvbs_init_pal] change level.\r\n");
 #else	
 	#define 	 black_level					0xf2
 	#define 	 white_level					0x320
@@ -1396,13 +1396,13 @@ void cvbs_dac_enable(void)
 		strict_strtoul(s, 19, &val);
 		if (val == 1){
                         rSYS_ANALOG_REG1 &= ~(1<<5);
-                        printf("+++cvbs dac disable.\r\n");
+                        printf("[cvbs_dac] disable.\r\n");
                         return;
                 }
 	}
 
         rSYS_ANALOG_REG1 |= (1<<5);
-        printf("cvbs dac enable.\r\n");
+        printf("[cvbs_dac] enable.\r\n");
 }
 
 void initializa_tvenc_ypbpr(struct screen_info *screen)

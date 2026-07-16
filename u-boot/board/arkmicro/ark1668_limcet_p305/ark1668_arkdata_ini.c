@@ -48,16 +48,16 @@ static int arkdata_ini_load(void)
 	int ret;
 
 	if (arkdata_loaded != 0) {
-		debug("arkdata.ini: load() called again, using cached result (%s)\n",
+		debug("[arkdata.ini] load() called again, using cached result (%s)\n",
 		      arkdata_loaded == 1 ? "loaded" : "failed");
 		return arkdata_loaded == 1 ? 0 : -1;
 	}
 
 	sprintf(cmd, "fatload mmc 0:1 0x%x arkdata.ini", ARKDATA_BUF_ADDR);
-	printf("arkdata.ini: loading -> `%s`\n", cmd);
+	printf("[arkdata.ini] loading -> `%s`\n", cmd);
 	ret = run_command(cmd, 0);
 	if (ret != 0) {
-		printf("arkdata.ini: fatload failed (ret=%d) — file missing from SD "
+		printf("[arkdata.ini] fatload failed (ret=%d) — file missing from SD "
 		       "card FAT partition, or mmc 0:1 not accessible; using compiled "
 		       "defaults\n", ret);
 		arkdata_loaded = -1;
@@ -65,10 +65,10 @@ static int arkdata_ini_load(void)
 	}
 
 	filesize = env_get_hex("filesize", 0);
-	printf("arkdata.ini: fatload reported filesize=0x%lx (%lu bytes)\n",
+	printf("[arkdata.ini] fatload reported filesize=0x%lx (%lu bytes)\n",
 	       filesize, filesize);
 	if (filesize == 0 || filesize >= ARKDATA_BUF_MAXLEN) {
-		printf("arkdata.ini: size 0x%lx out of expected range (1..0x%x), "
+		printf("[arkdata.ini] size 0x%lx out of expected range (1..0x%x), "
 		       "ignoring file and using compiled defaults\n",
 		       filesize, ARKDATA_BUF_MAXLEN);
 		arkdata_loaded = -1;
@@ -78,7 +78,7 @@ static int arkdata_ini_load(void)
 	arkdata_buf = (char *)ARKDATA_BUF_ADDR;
 	arkdata_len = filesize;
 	arkdata_loaded = 1;
-	printf("arkdata.ini: loaded %u bytes from SD into RAM @ 0x%x\n",
+	printf("[arkdata.ini] loaded %u bytes from SD into RAM @ 0x%x\n",
 	       arkdata_len, ARKDATA_BUF_ADDR);
 	return 0;
 }
@@ -138,11 +138,11 @@ int arkdata_ini_get_int(const char *key, int base, int *out)
 
 	val = arkdata_find_key(key, &len);
 	if (!val) {
-		debug("arkdata.ini: key '%s' not found\n", key);
+		debug("[arkdata.ini] key '%s' not found\n", key);
 		return -1;
 	}
 	if (len == 0 || len >= sizeof(tmp)) {
-		printf("arkdata.ini: key '%s' has an unusable value (len=%u), skipping\n",
+		printf("[arkdata.ini] key '%s' has an unusable value (len=%u), skipping\n",
 		       key, len);
 		return -1;
 	}
@@ -151,7 +151,7 @@ int arkdata_ini_get_int(const char *key, int base, int *out)
 	tmp[len] = '\0';
 
 	*out = (int)simple_strtoul(tmp, NULL, base);
-	debug("arkdata.ini: %s='%s' -> %d (0x%x)\n", key, tmp, *out, *out);
+	debug("[arkdata.ini] %s='%s' -> %d (0x%x)\n", key, tmp, *out, *out);
 	return 0;
 }
 
@@ -162,14 +162,14 @@ static int apply_field(const char *key, unsigned int *field)
 	int v;
 
 	if (arkdata_ini_get_int(key, 10, &v) != 0) {
-		printf("arkdata.ini:   %-8s not found, keeping compiled default (%u)\n",
+		printf("[arkdata.ini]   %-8s not found, keeping compiled default (%u)\n",
 		       key, *field);
 		return 0;
 	}
 	if ((unsigned int)v != *field)
-		printf("arkdata.ini:   %-8s %u -> %u\n", key, *field, (unsigned int)v);
+		printf("[arkdata.ini]   %-8s %u -> %u\n", key, *field, (unsigned int)v);
 	else
-		printf("arkdata.ini:   %-8s %u (unchanged)\n", key, *field);
+		printf("[arkdata.ini]   %-8s %u (unchanged)\n", key, *field);
 	*field = (unsigned int)v;
 	return 1;
 }
@@ -181,11 +181,11 @@ void arkdata_apply_lcd_timing(struct screen_info *screen)
 {
 	int overridden = 0;
 
-	printf("arkdata.ini: applying LCD timing overrides for screen_id=%d\n",
+	printf("[arkdata.ini] applying LCD timing overrides for screen_id=%d\n",
 	       screen->screen_id);
 
 	if (arkdata_ini_load() != 0) {
-		printf("arkdata.ini: not available, screen_id=%d keeps compiled "
+		printf("[arkdata.ini] not available, screen_id=%d keeps compiled "
 		       "timing (vbp=%u vfp=%u vsw=%u hbp=%u hfp=%u hsw=%u)\n",
 		       screen->screen_id, screen->vbp, screen->vfp, screen->vsw,
 		       screen->hbp, screen->hfp, screen->hsw);
@@ -205,7 +205,7 @@ void arkdata_apply_lcd_timing(struct screen_info *screen)
 	overridden += apply_field("CLKDIV1", &screen->clk_div1);
 	overridden += apply_field("CLKDIV2", &screen->clk_div2);
 
-	printf("arkdata.ini: done — %d/12 fields overridden from SD card, "
+	printf("[arkdata.ini] done — %d/12 fields overridden from SD card, "
 	       "final timing (vbp=%u vfp=%u vsw=%u hbp=%u hfp=%u hsw=%u "
 	       "clk_freq=%u clk_div1=%u clk_div2=%u)\n",
 	       overridden, screen->vbp, screen->vfp, screen->vsw, screen->hbp,
@@ -221,9 +221,9 @@ int do_arkdatatest(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return cmd_usage(cmdtp);
 
 	if (arkdata_ini_get_int(argv[1], 10, &v) == 0)
-		printf("%s = %d (0x%x)\n", argv[1], v, v);
+		printf("[arkdatatest] %s = %d (0x%x)\n", argv[1], v, v);
 	else
-		printf("%s: not found or arkdata.ini not loaded\n", argv[1]);
+		printf("[arkdatatest] %s: not found or arkdata.ini not loaded\n", argv[1]);
 
 	return 0;
 }

@@ -181,7 +181,7 @@ void ark_lcd_console_init(void)
 
 	if (stdio_register(&dev) == 0) {
 		console_started = 1;
-		printf("lcdconsole: registered, %dx%d chars on OSD2 @ 0x%x\n",
+		printf("[lcdconsole] registered, %dx%d chars on OSD2 @ 0x%x\n",
 		       CONSOLE_COLS, CONSOLE_ROWS, CONSOLE_FB_ADDR);
 
 		/* console_init_r() already ran (long before board_late_init())
@@ -192,10 +192,10 @@ void ark_lcd_console_init(void)
 		 * (iomux_doenv(), CONFIG_CONSOLE_MUX) now that the device is
 		 * actually registered, so it gets picked up this time. */
 		if (iomux_doenv(stdout, "serial,lcdconsole"))
-			printf("lcdconsole: iomux_doenv(stdout) failed\n");
+			printf("[lcdconsole] iomux_doenv(stdout) failed\n");
 		if (iomux_doenv(stderr, "serial,lcdconsole"))
-			printf("lcdconsole: iomux_doenv(stderr) failed\n");
+			printf("[lcdconsole] iomux_doenv(stderr) failed\n");
 	} else {
-		printf("lcdconsole: stdio_register failed\n");
+		printf("[lcdconsole] stdio_register failed\n");
 	}
 }

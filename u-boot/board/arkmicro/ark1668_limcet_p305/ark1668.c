@@ -62,7 +62,7 @@ int ark_dwmci_init(char *name, u32 regbase, int bus_width, int index)
 	struct dwmci_host *host = NULL;
 	host = malloc(sizeof(struct dwmci_host));
 	if (!host) {
-		printf("dwmci_host malloc fail!\n");
+		printf("[dwmci] host malloc fail!\n");
 		return 1;
 	}
 	memset(host, 0, sizeof(struct dwmci_host));
@@ -169,12 +169,12 @@ int board_late_init(void)
 #if ENABLE_LCDCONSOLE
 	ark_lcd_console_init();
 #else
-	printf("lcdconsole: disabled at build time (ENABLE_LCDCONSOLE=0), serial-only\n");
+	printf("[lcdconsole] disabled at build time (ENABLE_LCDCONSOLE=0), serial-only\n");
 #endif
 
 	update_flash = env_get("update_from_flash");
 	if (update_flash)
-		printf("++++++++++%s+++++++\n", update_flash);
+		printf("[update] update_from_flash=%s\n", update_flash);
 	need_update = env_get("need_update");
 	if (need_update && !strcmp(need_update, "yes")) {
 		loadaddr = env_get_hex("loadaddr", 0);
@@ -190,7 +190,7 @@ int board_late_init(void)
 			run_command("env default -f -a", 0);
 			goto update_done;
 		} else {
-			printf("Wrong update magic, do not update from mmc.\n");
+			printf("[update] wrong update magic, do not update from mmc.\n");
 		}
 
 #ifdef CONFIG_USB_MUSB_HCD
@@ -207,7 +207,7 @@ int board_late_init(void)
 			update_from_mmc = 0;
 			goto update_done;
 		} else {
-			printf("Wrong update magic, do not update from usb.\n");
+			printf("[update] wrong update magic, do not update from usb.\n");
 		}
 	}	
 	else if (update_flash && !strcmp(update_flash, "yes")){
@@ -217,7 +217,7 @@ int board_late_init(void)
  		env_set("update_from_flash", "yes");	
 		mdelay(100);	
 	    sprintf(cmd, "run updatefromflash");
-		printf("cmd=%s\n", cmd);	
+		printf("[update] cmd=%s\n", cmd);	
 		run_command(cmd, 0);
  
 	}
@@ -228,11 +228,11 @@ update_done:
 		env_set("need_update", "no");
 		env_set("do_update", "yes");
 		if (update_from_mmc) {
-			printf("update form mmc...\n");
+			printf("[update] update form mmc...\n");
 			env_set("update_dev_type", "mmc");
 			env_set("update_dev_part", env_get("sd_dev_part"));
 		} else {
-			printf("update form usb...\n");
+			printf("[update] update form usb...\n");
 			env_set("update_dev_type", "usb");
 			env_set("update_dev_part", "0");
 		}
@@ -276,6 +276,6 @@ reset:
 
 	rREMAP = 1;
 	udelay(10);
-	printf("remap...\n");
+	printf("[mem_init] remap...\n");
 }
 #endif

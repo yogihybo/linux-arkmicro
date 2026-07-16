@@ -49,7 +49,7 @@ static void gpio_clear_bit_a(unsigned int pin)
 	unsigned int grp = pin / 32;
 	unsigned int bit = pin % 32;
 	if (grp >= GPIO_NUM_GROUPS) {
-		printf("gpiotest: pin %u out of range\n", pin);
+		printf("[gpiotest] pin %u out of range\n", pin);
 		return;
 	}
 	*(volatile unsigned int *)(GPIO_BASE + grp * GPIO_GROUP_STRIDE) &= ~(1U << bit);
@@ -61,7 +61,7 @@ static void gpio_clear_bit_b(unsigned int pin)
 	unsigned int grp = pin / 32;
 	unsigned int bit = pin % 32;
 	if (grp >= GPIO_NUM_GROUPS) {
-		printf("gpiotest: pin %u out of range\n", pin);
+		printf("[gpiotest] pin %u out of range\n", pin);
 		return;
 	}
 	*(volatile unsigned int *)(GPIO_BASE + 0x04 + grp * GPIO_GROUP_STRIDE) &= ~(1U << bit);
@@ -78,13 +78,13 @@ static void gpiotest_input(void)
 	gpio_clear_bit_b(0); gpio_clear_bit_b(1); gpio_clear_bit_b(2);
 
 	baseline = *(volatile unsigned int *)(GPIO_BASE + 0x04);
-	printf("gpiotest input: baseline=0x%08x (Ctrl-C to stop)\n", baseline);
+	printf("[gpiotest] input: baseline=0x%08x (Ctrl-C to stop)\n", baseline);
 
 	while (!ctrlc()) {
 		unsigned int cur = *(volatile unsigned int *)(GPIO_BASE + 0x04);
 		for (i = 0; i < 6; i++) {
 			if ((cur ^ baseline) & (1U << i))
-				printf("gpiotest: pin %u changed (now %u)\n", i,
+				printf("[gpiotest] pin %u changed (now %u)\n", i,
 				       (cur >> i) & 1);
 		}
 	}
@@ -99,7 +99,7 @@ static void gpiotest_output(void)
 	gpio_clear_bit_a(0); gpio_clear_bit_a(1); gpio_clear_bit_a(2);
 	gpio_clear_bit_a(3); gpio_clear_bit_a(4); gpio_clear_bit_a(5);
 
-	printf("gpiotest output: blinking pins 0-5 (Ctrl-C to stop)\n");
+	printf("[gpiotest] output: blinking pins 0-5 (Ctrl-C to stop)\n");
 	while (!ctrlc()) {
 		volatile unsigned int *reg = (volatile unsigned int *)(GPIO_BASE + 0x04);
 		for (i = 0; i < 6; i++)
@@ -120,7 +120,7 @@ int do_gpiotest(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (argc < 2)
 		return cmd_usage(cmdtp);
 	if (strict_strtoul(argv[1], 10, &mode) < 0) {
-		printf("error format mode\n");
+		printf("[gpiotest] error format mode\n");
 		return 1;
 	}
 
@@ -135,11 +135,11 @@ int do_gpiotest(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		/* Stock mode 2 combines JPEG clock bring-up with registering
 		 * dummy interrupt callbacks through the VIC — deliberately
 		 * not ported, see file header. */
-		printf("gpiotest: mode 2 (interrupt test) requires the VIC/IRQ "
+		printf("[gpiotest] mode 2 (interrupt test) requires the VIC/IRQ "
 		       "plumbing, which is intentionally not ported here.\n");
 		break;
 	default:
-		printf("wrong select\n");
+		printf("[gpiotest] wrong select\n");
 		break;
 	}
 
@@ -199,11 +199,11 @@ static int jpeg_hw_decode(unsigned int src, unsigned int dst,
 	} while (--timeout > 0);
 
 	if (timeout <= 0) {
-		printf("jpeghw: timed out waiting for decode\n");
+		printf("[jpeghw] timed out waiting for decode\n");
 		return -1;
 	}
 	if (status & JPEG_STAT_ERROR) {
-		printf("jpeghw: decode error, status=0x%08x\n", status);
+		printf("[jpeghw] decode error, status=0x%08x\n", status);
 		JREG(0x3c) = 0xff;
 		return -1;
 	}
@@ -225,12 +225,12 @@ int do_jpeghw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (strict_strtoul(argv[1], 16, &src) < 0 ||
 	    strict_strtoul(argv[2], 16, &dst) < 0) {
-		printf("error format addr\n");
+		printf("[jpeghw] error format addr\n");
 		return 1;
 	}
 
 	if (jpeg_hw_decode(src, dst, (unsigned int *)&w, (unsigned int *)&h) == 0)
-		printf("jpeghw: decoded %lux%lu -> 0x%08lx (Y), 0x%08lx (chroma)\n",
+		printf("[jpeghw] decoded %lux%lu -> 0x%08lx (Y), 0x%08lx (chroma)\n",
 		       w, h, dst, dst + 0x200000);
 
 	return 0;
@@ -320,7 +320,7 @@ int do_itu656(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	*(volatile unsigned int *)(ITU656_BASE) |= 6;
 	*(volatile unsigned int *)(ITU656_BASE + 0x8fc) = 0x1e0a;
 
-	printf("itu656: NTSC timing configured\n");
+	printf("[itu656] NTSC timing configured\n");
 	return 0;
 }
 
@@ -367,13 +367,13 @@ int do_nandoobcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	int ret, is_bad, i, pos;
 
 	if (argc < 2) {
-		printf("usage: nandoobcheck <page-or-block-offset (hex)>\n");
+		printf("[nandoobcheck] usage: nandoobcheck <page-or-block-offset (hex)>\n");
 		return 1;
 	}
 
 	mtd = get_nand_dev_by_index(nand_curr_device);
 	if (!mtd) {
-		printf("nandoobcheck: no NAND device\n");
+		printf("[nandoobcheck] no NAND device\n");
 		return 1;
 	}
 	chip = mtd_to_nand(mtd);
@@ -383,7 +383,7 @@ int do_nandoobcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	oobbuf = memalign(ARCH_DMA_MINALIGN, mtd->oobsize);
 	if (!oobbuf) {
-		printf("nandoobcheck: out of memory\n");
+		printf("[nandoobcheck] out of memory\n");
 		return 1;
 	}
 
@@ -394,13 +394,13 @@ int do_nandoobcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	ret = mtd_read_oob(mtd, off, &ops);
 	if (ret < 0) {
-		printf("nandoobcheck: raw OOB read failed at 0x%llx (ret=%d)\n",
+		printf("[nandoobcheck] raw OOB read failed at 0x%llx (ret=%d)\n",
 		       (unsigned long long)off, ret);
 		free(oobbuf);
 		return 1;
 	}
 
-	printf("nandoobcheck: page 0x%llx, oobsize=%u, raw OOB (bypasses ECC/BBT):\n",
+	printf("[nandoobcheck] page 0x%llx, oobsize=%u, raw OOB (bypasses ECC/BBT):\n",
 	       (unsigned long long)off, mtd->oobsize);
 	for (i = 0; i < mtd->oobsize; i += 16) {
 		int j, n = (mtd->oobsize - i < 16) ? mtd->oobsize - i : 16;
@@ -411,23 +411,23 @@ int do_nandoobcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 	pos = chip->badblockpos;
-	printf("nandoobcheck: factory bad-block marker byte (offset %d) = 0x%02x -> %s\n",
+	printf("[nandoobcheck] factory bad-block marker byte (offset %d) = 0x%02x -> %s\n",
 	       pos, oobbuf[pos],
 	       oobbuf[pos] == 0xFF ? "GOOD (factory-good marker)" : "BAD (factory bad marker)");
 
 	is_bad = mtd_block_isbad(mtd, off);
-	printf("nandoobcheck: this driver's cached bad-block table says: %s\n",
+	printf("[nandoobcheck] this driver's cached bad-block table says: %s\n",
 	       is_bad ? "BAD" : "GOOD");
 
 	if (oobbuf[pos] == 0xFF && is_bad) {
-		printf("nandoobcheck: MISMATCH — raw marker is factory-good but the "
+		printf("[nandoobcheck] MISMATCH — raw marker is factory-good but the "
 		       "cached bad-block table says bad. This confirms the driver's "
 		       "cached NAND_BBT_USE_FLASH table is wrong, not the chip.\n");
 	} else if (oobbuf[pos] != 0xFF && !is_bad) {
-		printf("nandoobcheck: MISMATCH — raw marker is factory-bad but the "
+		printf("[nandoobcheck] MISMATCH — raw marker is factory-bad but the "
 		       "cached table says good. Unexpected either way.\n");
 	} else {
-		printf("nandoobcheck: raw marker and cached table agree.\n");
+		printf("[nandoobcheck] raw marker and cached table agree.\n");
 	}
 
 	free(oobbuf);

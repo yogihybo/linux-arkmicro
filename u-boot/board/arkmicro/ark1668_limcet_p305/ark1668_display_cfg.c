@@ -96,13 +96,13 @@ display_updatepara g_display_para;
 
 static void  screen_info_show(struct screen_info *p_info)
 {
-        printf("screen_id=%d------------------->\n",p_info->screen_id);
-        printf("ScreenType:%d, subType:%d,Width:%d, Height:%d,Format:%d, TvoutType:%d,screen_id:%d,interlace:%d\r\n", 
+        printf("[screen_info] screen_id=%d\n",p_info->screen_id);
+        printf("[screen_info] ScreenType:%d, subType:%d,Width:%d, Height:%d,Format:%d, TvoutType:%d,screen_id:%d,interlace:%d\r\n", 
         		p_info->screen_type,p_info->format,p_info->width, p_info->height, p_info->src_format,p_info->tvout_format,p_info->screen_id,p_info->interlace); 
-        printf("RgbMode:%d ,BPP:%d ,pad_unset:%d\r\n", p_info->rgb_mode,p_info->bpp,p_info->pad_unset); 
-        printf("HFP:%d,HBP:%d,HSW:%d,VBP:%d,VFP:%d,VSW:%d,HSYNCPolarity:0x%0x,VSYNCPolarity:0x%0x ,DEPolarity:%d\r\n", 
+        printf("[screen_info] RgbMode:%d ,BPP:%d ,pad_unset:%d\r\n", p_info->rgb_mode,p_info->bpp,p_info->pad_unset); 
+        printf("[screen_info] HFP:%d,HBP:%d,HSW:%d,VBP:%d,VFP:%d,VSW:%d,HSYNCPolarity:0x%0x,VSYNCPolarity:0x%0x ,DEPolarity:%d\r\n", 
         		p_info->hfp,p_info->hbp,p_info->hsw,p_info->vbp,p_info->vfp,p_info->vsw,p_info->hsync_active,p_info->vsync_active,p_info->de_active);
-        printf("CLKSource:%d,CLKFreq:%d,CLKDIV1:%d,CLKDIV2:%d,CLKPolarity:%d,LVDSCfg:0x%0x,FrameRate:%d,\r\n", 
+        printf("[screen_info] CLKSource:%d,CLKFreq:%d,CLKDIV1:%d,CLKDIV2:%d,CLKPolarity:%d,LVDSCfg:0x%0x,FrameRate:%d,\r\n", 
         		p_info->clk_source,p_info->clk_freq,p_info->clk_div1,p_info->clk_div2,p_info->vclk_active,p_info->lvds_cfg,p_info->frame_rate);
 }
 
@@ -150,7 +150,7 @@ static void update_progress_set(int percent)
         unsigned int color = 0xff00ff00;
 
         if(percent < 0 || percent > 100){
-                printf("update progress percent=%d, error.",percent);
+                printf("[update_progress] percent=%d, error.",percent);
                 return;
         }
 
@@ -237,24 +237,24 @@ int do_bootlogofind(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (run_command("nand read " __stringify(BOOTLOGO_SCRATCH_ADDR)
 			 " bootlogo 0x140000", 0) == 0 &&
 	    bootlogo_has_jpeg_soi(BOOTLOGO_SCRATCH_ADDR)) {
-		printf("bootlogofind: valid JPEG in NAND bootlogo partition "
+		printf("[bootlogofind] valid JPEG in NAND bootlogo partition "
 		       "(loaded at 0x%x)\n", BOOTLOGO_SCRATCH_ADDR);
 		return 0;
 	}
-	printf("bootlogofind: no valid JPEG in NAND, trying SD card...\n");
+	printf("[bootlogofind] no valid JPEG in NAND, trying SD card...\n");
 
 	for (part = 0; part < 3; part++) {
 		sprintf(cmd, "fatload mmc %d:1 0x%x bootlogo", part,
 			BOOTLOGO_SCRATCH_ADDR);
 		if (run_command(cmd, 0) == 0 &&
 		    bootlogo_has_jpeg_soi(BOOTLOGO_SCRATCH_ADDR)) {
-			printf("bootlogofind: valid JPEG on mmc %d (loaded at 0x%x)\n",
+			printf("[bootlogofind] valid JPEG on mmc %d (loaded at 0x%x)\n",
 			       part, BOOTLOGO_SCRATCH_ADDR);
 			return 0;
 		}
 	}
 
-	printf("bootlogofind: no valid bootlogo JPEG found in NAND or SD 0-2\n");
+	printf("[bootlogofind] no valid bootlogo JPEG found in NAND or SD 0-2\n");
 	return 1;
 }
 
@@ -337,50 +337,50 @@ static int display_bootlogo_from_sd(void)
 	memset((void *)BOOTLOGO_SD_ADDR, 0, BOOTLOGO_WIDTH * BOOTLOGO_HEIGHT * 4);
 
 	sprintf(cmd, "fatload mmc 0:1 0x%x bootlogo.raw", BOOTLOGO_SD_ADDR);
-	printf("bootlogo: loading -> `%s`\n", cmd);
+	printf("[bootlogo] loading -> `%s`\n", cmd);
 	ret = run_command(cmd, 0);
 	if (ret != 0) {
-		printf("bootlogo: fatload of bootlogo.raw failed (ret=%d) — file "
+		printf("[bootlogo] fatload of bootlogo.raw failed (ret=%d) — file "
 		       "missing from SD card FAT partition, or mmc 0:1 not "
 		       "accessible; skipping splash\n", ret);
 		return -1;
 	}
 
 	filesize = env_get_hex("filesize", 0);
-	printf("bootlogo: fatload reported filesize=0x%lx (%lu bytes), "
+	printf("[bootlogo] fatload reported filesize=0x%lx (%lu bytes), "
 	       "expected 0x%x (%dx%dx32bpp)\n",
 	       filesize, filesize, BOOTLOGO_WIDTH * BOOTLOGO_HEIGHT * 4,
 	       BOOTLOGO_WIDTH, BOOTLOGO_HEIGHT);
 	if (filesize != (unsigned long)(BOOTLOGO_WIDTH * BOOTLOGO_HEIGHT * 4)) {
-		printf("bootlogo: WARNING — size mismatch, bootlogo.raw may be the "
+		printf("[bootlogo] WARNING — size mismatch, bootlogo.raw may be the "
 		       "wrong resolution or corrupt; showing it anyway\n");
 	}
 
-	printf("bootlogo: pushing OSD1 image %dx%d @ 0x%x (DISP_RGB_888)\n",
+	printf("[bootlogo] pushing OSD1 image %dx%d @ 0x%x (DISP_RGB_888)\n",
 	       BOOTLOGO_WIDTH, BOOTLOGO_HEIGHT, BOOTLOGO_SD_ADDR);
 	ark_set_osd_image(OSD1_LAYER, DISP_RGB_888, BOOTLOGO_WIDTH, BOOTLOGO_HEIGHT);
 	ark_set_osd_addr(OSD1_LAYER, BOOTLOGO_SD_ADDR);
 	ark_disp_set_osd_layer_position(OSD1_LAYER, 0, 0);
 	ark_osd_en_layer(OSD1_LAYER, 1);
-	printf("bootlogo: OSD1 layer enabled, splash should be visible now\n");
+	printf("[bootlogo] OSD1 layer enabled, splash should be visible now\n");
 
 	return 0;
 }
 
 void ark_show_bootlogo(void)
 {
-	printf("bootlogo: ark_show_bootlogo() starting, screen_id=%d\n", SCREEN_QUN700);
+	printf("[bootlogo] ark_show_bootlogo() starting, screen_id=%d\n", SCREEN_QUN700);
 
 	g_screen_id = SCREEN_QUN700;
 	ark_display_init(g_screen_id);
-	printf("bootlogo: ark_display_init() done\n");
+	printf("[bootlogo] ark_display_init() done\n");
 
 	/* ark_display_init() enables the small OSD2 update-progress overlay
 	 * and disables OSD1 — undo that so our full-screen splash on OSD1
 	 * is what's actually visible. */
 	ark_osd_en_layer(OSD2_LAYER, 0);
 	if (display_bootlogo_from_sd() != 0)
-		printf("bootlogo: no splash shown this boot (see reason above)\n");
+		printf("[bootlogo] no splash shown this boot (see reason above)\n");
 }
 
 int do_disconfig (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -391,22 +391,22 @@ int do_disconfig (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return cmd_usage(cmdtp);
 	ret = strict_strtoul(argv[1], 10, &percent);
 	if(ret < 0){
-		printf("error format screen id\n");
+		printf("[disconfig] error format screen id\n");
 	}
 	
 	if(percent > 100)
 	{
-		printf("Invalide param.\n");
+		printf("[disconfig] invalid param.\n");
 		return cmd_usage(cmdtp);
 	}
                 
         if(percent == 0){
                 g_screen_id = SCREEN_QUN700;//SCREEN_CLAA101;
 	        ark_display_init(g_screen_id);
-                printf("ark display init g_screen_id=%d.\n",g_screen_id);
+                printf("[disconfig] ark display init g_screen_id=%d.\n",g_screen_id);
         }else{
                 update_progress_set(percent);
-                printf("update progress set percent=%ld.\n",percent);
+                printf("[disconfig] update progress set percent=%ld.\n",percent);
         }
 
 	return 0;
@@ -459,24 +459,24 @@ int do_regr(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (strict_strtoul(argv[1], 16, &op) < 0 ||
 	    strict_strtoul(argv[2], 16, &off) < 0) {
-		printf("error format op_code/register\n");
+		printf("[regr] error format op_code/register\n");
 		return 1;
 	}
 	if (off & 3) {
-		printf("invalid reg offset 0x%02lx, should be 4-byte aligned\n", off);
+		printf("[regr] invalid reg offset 0x%02lx, should be 4-byte aligned\n", off);
 		return 1;
 	}
 	ret = reg_base_for_op(op, &base, off);
 	if (ret == -2) {
-		printf("invalid op_code %ld\n", op);
+		printf("[regr] invalid op_code %ld\n", op);
 		return 0;
 	}
 	if (ret == -1 || off > 0x800) {
-		printf("invalid reg offset 0x%02lx, exceeds range for op_code %ld\n", off, op);
+		printf("[regr] invalid reg offset 0x%02lx, exceeds range for op_code %ld\n", off, op);
 		return 1;
 	}
 
-	printf("[op=%ld] reg 0x%02lx = 0x%08x\n", op, off,
+	printf("[regr] op=%ld reg 0x%02lx = 0x%08x\n", op, off,
 	       *(volatile unsigned int *)(base + off));
 	return 0;
 }
@@ -492,25 +492,25 @@ int do_regw(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (strict_strtoul(argv[1], 16, &op) < 0 ||
 	    strict_strtoul(argv[2], 16, &off) < 0 ||
 	    strict_strtoul(argv[3], 16, &val) < 0) {
-		printf("error format op_code/register/value\n");
+		printf("[regw] error format op_code/register/value\n");
 		return 1;
 	}
 	if (off & 3) {
-		printf("invalid reg offset 0x%02lx, should be 4-byte aligned\n", off);
+		printf("[regw] invalid reg offset 0x%02lx, should be 4-byte aligned\n", off);
 		return 1;
 	}
 	ret = reg_base_for_op(op, &base, off);
 	if (ret == -2) {
-		printf("invalid op_code %ld\n", op);
+		printf("[regw] invalid op_code %ld\n", op);
 		return 0;
 	}
 	if (ret == -1 || off > 0x800) {
-		printf("invalid reg offset 0x%02lx, exceeds range for op_code %ld\n", off, op);
+		printf("[regw] invalid reg offset 0x%02lx, exceeds range for op_code %ld\n", off, op);
 		return 1;
 	}
 
 	*(volatile unsigned int *)(base + off) = val;
-	printf("[op=%ld] reg 0x%02lx <- 0x%08x (readback 0x%08x)\n", op, off, (unsigned int)val,
+	printf("[regw] op=%ld reg 0x%02lx <- 0x%08x (readback 0x%08x)\n", op, off, (unsigned int)val,
 	       *(volatile unsigned int *)(base + off));
 	return 0;
 }
@@ -525,7 +525,7 @@ int do_pmem(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (strict_strtoul(argv[1], 16, &addr) < 0 ||
 	    strict_strtoul(argv[2], 16, &len) < 0) {
-		printf("error format addr/len\n");
+		printf("[pmem] error format addr/len\n");
 		return 1;
 	}
 

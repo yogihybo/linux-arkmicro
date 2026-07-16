@@ -98,7 +98,7 @@ static unsigned long env_or_default_hex(const char *name, unsigned long fallback
 
 int do_bootnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("bootnand: booting from NAND with original dumped settings (ubi.mtd=6 root=ubi0:rootfs)\n");
+	printf("[bootnand] booting from NAND with original dumped settings (ubi.mtd=6 root=ubi0:rootfs)\n");
 	return run_command("run nandboot", 0);
 }
 
@@ -139,7 +139,7 @@ static int bootstock_from_block_dev(const char *iface)
 	 * working end-to-end (SD; USB untested but same code path). */
 	sprintf(cmd, "fatload %s 0:1 0x%x %s", iface, STOCK_UBOOT_LOAD_ADDR, stockfile);
 	if (run_command(cmd, 0) != 0) {
-		printf("bootstock: fatload of %s from %s 0:1 failed — copy it to "
+		printf("[bootstock] fatload of %s from %s 0:1 failed — copy it to "
 		       "the %s FAT partition (see Prado firmware dump/"
 		       "mtd1-mtd2_uboot/extracted/uboot.bin)\n", stockfile, iface, iface);
 		return 1;
@@ -147,14 +147,14 @@ static int bootstock_from_block_dev(const char *iface)
 
 	magic = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x3c);
 	if (magic != ARK_HEADER_MAGIC) {
-		printf("bootstock: bad ARK header magic 0x%lx (expected 0x%x) — "
+		printf("[bootstock] bad ARK header magic 0x%lx (expected 0x%x) — "
 		       "refusing to jump into garbage\n", magic, ARK_HEADER_MAGIC);
 		return 1;
 	}
 
 	filesize = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x50);
 	ep = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x44);
-	printf("bootstock: header OK (header EP 0x%lx, unused — see below), "
+	printf("[bootstock] header OK (header EP 0x%lx, unused — see below), "
 	       "flushing caches and jumping to 0x%x now (warm handoff, watch "
 	       "serial closely)\n", ep, STOCK_UBOOT_LOAD_ADDR);
 
@@ -184,7 +184,7 @@ static int bootstock_from_block_dev(const char *iface)
 	flush_cache(STOCK_UBOOT_LOAD_ADDR, filesize);
 	invalidate_icache_all();
 
-	printf("bootstock: resetting NAND/BCH controller registers (was BCH_CR=0x%08x)\n",
+	printf("[bootstock] resetting NAND/BCH controller registers (was BCH_CR=0x%08x)\n",
 	       *(volatile unsigned int *)(0xec000000 + 0x27c));
 
 	/* Zero out BCH and NAND configuration/control/status registers to reset the
@@ -226,9 +226,9 @@ U_BOOT_CMD(
 
 int do_bootstockusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("bootstockusb: starting USB...\n");
+	printf("[bootstockusb] starting USB...\n");
 	if (run_command("usb start", 0) != 0) {
-		printf("bootstockusb: usb start failed\n");
+		printf("[bootstockusb] usb start failed\n");
 		return 1;
 	}
 	return bootstock_from_block_dev("usb");
@@ -274,13 +274,13 @@ static int boot_from_block_dev(const char *iface)
 
 	sprintf(cmd, "fatload %s 0:1 0x%lx %s", iface, kerneladdr, kernelfile);
 	if (run_command(cmd, 0) != 0) {
-		printf("boot%s: failed to load %s from %s 0:1\n", iface, kernelfile, iface);
+		printf("[boot%s] failed to load %s from %s 0:1\n", iface, kernelfile, iface);
 		return 1;
 	}
 
 	sprintf(cmd, "fatload %s 0:1 0x%lx %s", iface, dtbaddr, dtbfile);
 	if (run_command(cmd, 0) != 0) {
-		printf("boot%s: failed to load %s from %s 0:1\n", iface, dtbfile, iface);
+		printf("[boot%s] failed to load %s from %s 0:1\n", iface, dtbfile, iface);
 		return 1;
 	}
 
@@ -300,7 +300,7 @@ static int boot_from_block_dev(const char *iface)
 
 int do_bootmmc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("bootmmc: booting kernel+DTB from SD card (mmc 0:1), rootfs on %s\n",
+	printf("[bootmmc] booting kernel+DTB from SD card (mmc 0:1), rootfs on %s\n",
 	       env_or_default("mmcroot", "/dev/mmcblk0p2"));
 	return boot_from_block_dev("mmc");
 }
@@ -313,12 +313,12 @@ U_BOOT_CMD(
 
 int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("bootusb: starting USB...\n");
+	printf("[bootusb] starting USB...\n");
 	if (run_command("usb start", 0) != 0) {
-		printf("bootusb: usb start failed\n");
+		printf("[bootusb] usb start failed\n");
 		return 1;
 	}
-	printf("bootusb: booting kernel+DTB+rootfs from USB stick (usb 0:1), root=%s\n",
+	printf("[bootusb] booting kernel+DTB+rootfs from USB stick (usb 0:1), root=%s\n",
 	       env_or_default("usbroot", "/dev/sda2"));
 	return boot_from_block_dev("usb");
 }
