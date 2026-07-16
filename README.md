@@ -104,12 +104,12 @@ header yet), `u-boot.map`.
 **The raw `u-boot.bin` isn't directly bootable on this hardware** — the
 board's Stepldr expects an ARK-format header (magic, entry point, load
 address, checksum) at fixed offsets that a stock U-Boot build doesn't
-produce. `prado-firmware-reconstruction/build_tools/inject_ark_header.py`
-adds it:
+produce. `inject_ark_header.py` (at this repo's root — canonical copy is
+`prado-firmware-reconstruction/build_tools/inject_ark_header.py`, keep
+both in sync) adds it, run from the `u-boot/` build directory:
 
 ```bash
-python3 /path/to/prado-firmware-reconstruction/build_tools/inject_ark_header.py \
-    u-boot.bin UBOOT.BIN
+python3 ../inject_ark_header.py u-boot.bin UBOOT.BIN
 ```
 
 `build_bootable_sdcard.sh --new-uboot` does this automatically as part of
