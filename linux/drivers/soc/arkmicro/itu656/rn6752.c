@@ -1,3 +1,5 @@
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -55,7 +57,7 @@ static bool rn6752_dbg = false;
 static int rn6752_detect_signal(void)
 {
 	if(rn6752_dbg)
-		printk(KERN_ALERT "### rn6752_detect_signal\n");
+		pr_debug("rn6752_detect_signal\n");
 	if(g_dvr_rn6752)
 	{
 #ifdef RN6752_USE_TIMER
@@ -122,7 +124,7 @@ static int rn6752_get_progressive(void)
 	}
 
 	if(rn6752_dbg)
-		printk(KERN_ALERT "### itu656 get rn6752 progressive:%d\n", progressive);
+		pr_debug("itu656 get rn6752 progressive:%d\n", progressive);
 
 	return progressive;
 }
@@ -138,7 +140,7 @@ static int rn6752_enter_carback_cb(void)
 		queue_work(g_dvr_rn6752->eq_queue, &g_dvr_rn6752->eq_work);
 	}
 	if(rn6752_dbg)
-		printk(KERN_ALERT "### rn6752 enter carback\n");
+		pr_debug("rn6752 enter carback\n");
 #endif
 	return 0;
 }
@@ -153,7 +155,7 @@ static int rn6752_exit_carback_cb(void)
 		g_dvr_rn6752->enter_carback = 0;
 	}
 	if(rn6752_dbg)
-		printk(KERN_ALERT "### rn6752 exit carback\n");
+		pr_debug("rn6752 exit carback\n");
 #endif
 	return 0;
 }
@@ -173,7 +175,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 				break;
 			}
 			if(copy_to_user((void  *)arg, &brightness, sizeof(int))){
-				printk("%s: copy to carback_brightness error\n", __func__);
+				pr_err("%s: copy to carback_brightness error\n", __func__);
 				error = -EFAULT;
 			}
 			break;
@@ -182,7 +184,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 		{
 			int brightness;
 			if(copy_from_user(&brightness, (void *)arg, sizeof(int))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;
 			}
 			else
@@ -205,7 +207,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 				break;
 			}
 			if(copy_to_user((void  *)arg, &contrast, sizeof(int))){
-				printk("%s: copy to carback_contrast error\n", __func__);
+				pr_err("%s: copy to carback_contrast error\n", __func__);
 				error = -EFAULT;
 			}
 			break;
@@ -214,7 +216,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 		{
 			int contrast;
 			if(copy_from_user(&contrast, (void *)arg, sizeof(int))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;
 			}
 			else
@@ -237,7 +239,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 				break;
 			}
 			if(copy_to_user((void  *)arg, &saturation, sizeof(int))){
-				printk("%s: copy to carback_saturation error\n", __func__);
+				pr_err("%s: copy to carback_saturation error\n", __func__);
 				error = -EFAULT;
 			}
 			break;
@@ -246,7 +248,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 		{
 			int saturation;
 			if(copy_from_user(&saturation, (void *)arg, sizeof(int))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;
 			}
 			else
@@ -269,7 +271,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 				break;
 			}
 			if(copy_to_user((void  *)arg, &hue, sizeof(int))){
-				printk("%s: copy to carback_hue error\n", __func__);
+				pr_err("%s: copy to carback_hue error\n", __func__);
 				error = -EFAULT;
 			}
 			break;
@@ -278,7 +280,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 		{
 			int hue;
 			if(copy_from_user(&hue, (void *)arg, sizeof(int))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;
 			}
 			else
@@ -302,7 +304,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 			}
 			shaprness &= 0x7F;
 			if(copy_to_user((void  *)arg, &shaprness, sizeof(int))){
-				printk("%s: copy to carback_sharpness error\n", __func__);
+				pr_err("%s: copy to carback_sharpness error\n", __func__);
 				error = -EFAULT;
 			}
 			break;
@@ -311,7 +313,7 @@ static int rn6752_set_display_effect(int cmd, unsigned long arg)
 		{
 			int sharpness;
 			if(copy_from_user(&sharpness, (void *)arg, sizeof(int))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;
 			}
 			else
@@ -366,7 +368,7 @@ static int rn6752_write_byte(unsigned char regaddr, unsigned char regval)
 	}
 	if(retries >= 5)
 	{
-		printk(KERN_ALERT "### ERR: %s failure\n",__FUNCTION__);
+		dev_err(&client->dev, "%s: i2c_transfer failure\n",__FUNCTION__);
 		return -EBUSY;
 	}
 
@@ -405,7 +407,7 @@ static int rn6752_read_byte(unsigned char regaddr)
 
     if((retries >= 5))
     {
-		printk(KERN_ALERT "### ERR: %s failure\n",__FUNCTION__);
+		dev_err(&client->dev, "%s: i2c_transfer failure\n",__FUNCTION__);
 		return -EBUSY;
 	}
 	return regValue;
@@ -571,7 +573,7 @@ static void rn6752_eq_work(struct work_struct *work)
 	//mutex_lock(&dvr_rn6752->eq_lock);
 	if(mode_cfg == RN6752_MODE_NONE)
 	{
-		printk(KERN_ALERT "### rn6752_eq_work reset\n");
+		pr_debug("rn6752_eq_work reset\n");
 		//reset
 		rn6752_reset(dvr_rn6752->gpio_reset);
 		//check id
@@ -595,7 +597,7 @@ static void rn6752_eq_work(struct work_struct *work)
 	if(!g_dvr_rn6752->enter_carback)
 	{
 		if(rn6752_dbg)
-			printk(KERN_ALERT "### rn6752_eq_work return when exit carback\n");
+			pr_debug("rn6752_eq_work return when exit carback\n");
 		return;
 	}
 #endif
@@ -613,12 +615,12 @@ static void rn6752_eq_work(struct work_struct *work)
 	}
 	rn6752_write_byte(0x48, 0x13);
 	if(rn6752_dbg)
-		printk(KERN_ALERT "### rn6752 mode:%s, mode_cfg:%s\n", rn6752_get_mode_string(dvr_rn6752->mode), rn6752_get_mode_string(mode_cfg));
+		pr_debug("rn6752 mode:%s, mode_cfg:%s\n", rn6752_get_mode_string(dvr_rn6752->mode), rn6752_get_mode_string(mode_cfg));
 	
 	if((dvr_rn6752->mode == RN6752_MODE_NONE) || (mode_cfg != dvr_rn6752->mode))
 	{
 		if(rn6752_dbg)
-			printk(KERN_ALERT "### rn6752 change mode to (%s)\n", rn6752_get_mode_string(dvr_rn6752->mode));
+			pr_debug("rn6752 change mode to (%s)\n", rn6752_get_mode_string(dvr_rn6752->mode));
 		switch(dvr_rn6752->mode)
 		{
 			case RN6752_MODE_CVBS_PAL:
@@ -691,7 +693,7 @@ static void rn6752_eq_work(struct work_struct *work)
 		if(restart)
 		{
 			if(rn6752_dbg)
-				printk(KERN_ALERT "### mode(%s) progressive(%d) does not match, itu656 dvr_restart\n", rn6752_get_mode_string(dvr_rn6752->mode), progressive);
+				pr_debug("mode(%s) progressive(%d) does not match, itu656 dvr_restart\n", rn6752_get_mode_string(dvr_rn6752->mode), progressive);
 			dvr_restart();
 		}
 	}
@@ -771,7 +773,7 @@ static int rn6752_check_id(struct dvr_rn6752 *dvr_rn6752)
 
 	return 0;
 err_check_id:
-	printk(KERN_ERR "***ERR: %s failed, id:%d, ret:%d\n", __FUNCTION__, id, ret);
+	pr_err("%s failed, id:%d, ret:%d\n", __FUNCTION__, id, ret);
 	dvr_rn6752->id = RN675X_ID_UNKNOWN;
 	return -1;
 }
@@ -850,7 +852,7 @@ static ssize_t rn6752_get(struct device *dev,
 	
 	for(i=0; i<0xff; i++)
 	{
-		printk(KERN_ALERT "[0x%x]:0x%x\n",i,rn6752_read_byte(i));
+		pr_debug("[0x%x]:0x%x\n",i,rn6752_read_byte(i));
 	}
 
 	return 0;
@@ -864,7 +866,7 @@ static ssize_t rn6752_set(struct device *dev,
 		unsigned int reg,val;
 		sscanf(buf,"%*s%x%x",&reg,&val);
 		rn6752_write_byte(reg,val);
-		printk(KERN_ALERT "write reg[0x%02x]:0x%02x\n",reg,val);
+		pr_debug("write reg[0x%02x]:0x%02x\n",reg,val);
 	}
 	
 	if(!strncmp(buf, "read", 4))
@@ -872,7 +874,7 @@ static ssize_t rn6752_set(struct device *dev,
 		unsigned int reg,val;
 		sscanf(buf,"%*s%x",&reg);
 		val = rn6752_read_byte(reg);
-		printk(KERN_ALERT "read reg[0x%02x]:0x%02x\n",reg,val);
+		pr_debug("read reg[0x%02x]:0x%02x\n",reg,val);
 	}
 
 	if(!strncmp(buf, "debug", 5))
@@ -882,19 +884,19 @@ static ssize_t rn6752_set(struct device *dev,
 		if(val)
 		{
 			rn6752_dbg = true;
-			printk(KERN_ALERT "rn6752 debug on\n");
+			pr_debug("rn6752 debug on\n");
 		}
 		else
 		{
 			rn6752_dbg = false;
-			printk(KERN_ALERT "rn6752 debug off\n");
+			pr_debug("rn6752 debug off\n");
 		}
 	}
 
 	if(!strncmp(buf, "work", 4))
 	{
 		rn6752_eq_work(NULL);
-		printk(KERN_ALERT "### eq_work\n");
+		pr_debug("eq_work\n");
 	}
 
 
@@ -931,7 +933,7 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 	dvr_rn6752 = devm_kzalloc(&client->dev, sizeof(struct dvr_rn6752), GFP_KERNEL);
 	if (!dvr_rn6752)
 	{
-		printk(KERN_ERR "***ERR: %s %d: failed to allocate memory\n", __FUNCTION__, __LINE__);
+		pr_err("%s %d: failed to allocate memory\n", __FUNCTION__, __LINE__);
 		return -ENOMEM;
 	}
 
@@ -940,7 +942,7 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 		//ark_sys_pad_config_gpio_mode(dvr_rn6752->gpio_reset);
 		ret = devm_gpio_request_one(&client->dev, dvr_rn6752->gpio_reset, GPIOF_OUT_INIT_HIGH, "rn6752_reset");
 		if (ret) {
-			printk(KERN_ERR "***ERR: Failed to request rn6752 reset gpio:%d\n", dvr_rn6752->gpio_reset);
+			pr_err("Failed to request rn6752 reset gpio:%d\n", dvr_rn6752->gpio_reset);
 			return -EBUSY;
 		}
 	} else {
@@ -952,7 +954,7 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 		//ark_sys_pad_config_gpio_mode(dvr_rn6752->gpio_pdn);
 		ret = devm_gpio_request_one(&client->dev, dvr_rn6752->gpio_pdn, GPIOF_OUT_INIT_HIGH, "rn6752_pdn");
 		if (ret) {
-			printk(KERN_ERR "***ERR: Failed to request rn6752 pdn gpio:%d\n", dvr_rn6752->gpio_pdn);
+			pr_err("Failed to request rn6752 pdn gpio:%d\n", dvr_rn6752->gpio_pdn);
 			return -EBUSY;
 		}
 	} else {
@@ -964,7 +966,7 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 		//ark_sys_pad_config_gpio_mode(dvr_rn6752->gpio_irq);
 		ret = devm_gpio_request_one(&client->dev, dvr_rn6752->gpio_irq, GPIOF_OUT_INIT_HIGH, "rn6752_irq");
 		if (ret) {
-			printk(KERN_ERR "***ERR: Failed to request rn6752 pd gpio:%d\n", dvr_rn6752->gpio_irq);
+			pr_err("Failed to request rn6752 pd gpio:%d\n", dvr_rn6752->gpio_irq);
 			return -EBUSY;
 		}
 	} else {
@@ -1005,7 +1007,7 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 			//check id
 			if(rn6752_check_id(dvr_rn6752))
 			{
-				printk(KERN_ERR "***ERR: %s rn6752_check_id failed\n", __FUNCTION__);
+				pr_err("%s rn6752_check_id failed\n", __FUNCTION__);
 				return EINVAL;
 			}
 
@@ -1113,7 +1115,7 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 			ret = devm_request_irq(&client->dev, gpio_to_irq(dvr_rn6752->gpio_irq), rn6752_intr_handler, IRQF_TRIGGER_FALLING, "rn6752", (void *)dvr_rn6752);
 			if (ret)
 			{
-				printk(KERN_ERR "***ERR: %s: request irq error\n", __FUNCTION__);
+				pr_err("%s: request irq error\n", __FUNCTION__);
 				goto err_request_irq;
 			}
 		}
@@ -1127,12 +1129,12 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 
 	ret = sysfs_create_group(&client->dev.kobj, &rn6752_sysfs);
 	if (ret) {
-		printk(KERN_ERR "***ERR: sysfs_create_group failed\n");
+		pr_err("sysfs_create_group failed\n");
 		goto err_sysfs_create_group;
 	}
 	i2c_set_clientdata(client, dvr_rn6752);
 
-	printk("%s:init done\n", __FUNCTION__);
+	pr_info("%s:init done\n", __FUNCTION__);
 
 	return 0;
 

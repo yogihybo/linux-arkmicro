@@ -489,13 +489,22 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	value = (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_CTL, value);
 
-	/* open osd layer1 */
-        
-        if(!set_par){
-        	value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL);
-        	value |= (1 << ARK1668_LCDC_OSD1_EN_OFFSET);
-        	lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
-        }
+	/* Open OSD1 layer. Deliberately unconditional (not gated by set_par
+	 * like the wiring-mode block above): this is a read-modify-write of
+	 * a single bit, so re-running it on every fb_set_par call is
+	 * harmless, and guarantees OSD1 is (re-)enabled every time this
+	 * function runs regardless of whatever earlier disabled it -- unlike
+	 * the wiring-mode block above, which does a full non-RMW overwrite
+	 * of ARK1668_LCDC_CONTROL and must stay latched to avoid clobbering
+	 * this very bit on a second call. Previously this was also gated by
+	 * set_par, making it a one-shot: only the very first fb_set_par call
+	 * of the boot (from any caller) could ever enable OSD1, and nothing
+	 * -- including a userspace FBIOPUT_VSCREENINFO -- could re-enable it
+	 * if something later disabled it. See docs/DISPLAY_SUBSYSTEM.md.
+	 */
+	value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL);
+	value |= (1 << ARK1668_LCDC_OSD1_EN_OFFSET);
+	lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
 
 	/* Clear all interrupts */
 	lcdc_writel(sinfo, ARK1668_LCDC_INT_STATUS, 0);

@@ -35,6 +35,8 @@
 --------------------------------------------------------------------------------
 ------------------------------------------------------------------------------*/
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
@@ -173,7 +175,7 @@ u32 DWLReadAsicID()
 
 	if (IS_ERR(regs)) {
 		ret = PTR_ERR(regs);
-		 printk("Error !!!!!\n");
+		 dev_err(vdec6731_global->dev, "failed to map registers\n");
 	}
 	io = regs;
 	id = io[0];
@@ -543,8 +545,8 @@ i32 DWLMallocLinear(const void *instance, u32 size, DWLLinearMem_t * info)
 		size, &info->busAddress, GFP_KERNEL);
 
 #ifdef MEMORY_USAGE_TRACE
-    printk("DWLMallocLinear 0x%08x,%d 0x%08x virtualAddress: 0x%08x\n",
-           vdec6731_global->dev, size, info->busAddress, (unsigned) info->virtualAddress);
+    dev_dbg(vdec6731_global->dev, "DWLMallocLinear %d 0x%08x virtualAddress: 0x%08x\n",
+           size, info->busAddress, (unsigned) info->virtualAddress);
 #endif
 
     return DWL_OK;
@@ -567,8 +569,8 @@ void DWLFreeLinear(const void *instance, DWLLinearMem_t * info)
 //    assert(dec_dwl != NULL);
 //    assert(info != NULL);
 #ifdef MEMORY_USAGE_TRACE
-    printk("DWLFreeLinear 0x%08x,%d 0x%08x virtualAddress: 0x%08x\n",
-           vdec6731_global->dev, info->size, info->busAddress, (unsigned) info->virtualAddress);
+    dev_dbg(vdec6731_global->dev, "DWLFreeLinear %d 0x%08x virtualAddress: 0x%08x\n",
+           info->size, info->busAddress, (unsigned) info->virtualAddress);
 #endif
     if(info->virtualAddress != 0)
         dma_free_coherent(vdec6731_global->dev, info->size,
@@ -754,7 +756,7 @@ i32 DWLWaitHwReady(const void *instance, /*i32 coreID,*/ u32 timeout)
 			vdec6731_global->dec_irq_done, msecs_to_jiffies(100));
     vdec6731_global->dec_irq_done = false;
 	if (ret == 0) {
-		printk("DWLWaitHwReady timeout\n");
+		dev_err(vdec6731_global->dev, "DWLWaitHwReady timeout\n");
 	}
 
 	return DWL_HW_WAIT_OK;
@@ -861,7 +863,7 @@ void DWLFakeTimeout(u32 * status)
     {
         *status &= ~DEC_IRQ_ERROR;
         *status |= DEC_IRQ_TIMEOUT;
-        printk("\nDWL: Change stream error to hw timeout\n");
+        dev_dbg(vdec6731_global->dev, "change stream error to hw timeout\n");
     }
 }
 #endif

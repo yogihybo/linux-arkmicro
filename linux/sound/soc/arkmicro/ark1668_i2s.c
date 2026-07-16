@@ -5,6 +5,8 @@
  *
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/io.h>
@@ -27,12 +29,12 @@
 
 #undef ARK_I2S_DEBUG
 #ifdef ARK_I2S_DEBUG
-#define DBG(f, a...) printk(KERN_DEBUG "ASOC %s-%d: "f, __FUNCTION__, __LINE__, ##a)
+#define DBG(f, a...) pr_debug("%s-%d: "f, __FUNCTION__, __LINE__, ##a)
 #else
 #define DBG(...)
 #endif
 
-#define ERR(f, a...) printk(KERN_ERR "ASOC %s-%d: "f, __FUNCTION__, __LINE__, ##a)
+#define ERR(f, a...) pr_err("%s-%d: "f, __FUNCTION__, __LINE__, ##a)
 
 
 struct ark_i2s_dev {
@@ -516,7 +518,7 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	u32 val;
 	int ret = 0;
 
-	printk("start:==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+	dev_dbg(&pdev->dev, "probe start\n");
 	i2s = devm_kzalloc(&pdev->dev, sizeof(struct ark_i2s_dev), GFP_KERNEL);
 	if (!i2s) {
 		ERR("Failed to allocate ark_i2s_dev\n");
@@ -531,7 +533,7 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "no mem resource\n");
 		return PTR_ERR(i2s->base);
 	}
-	printk(KERN_ALERT "dev %s 0x%x.\n", dev_name(&pdev->dev), mem->start);
+	dev_info(&pdev->dev, "mem resource at 0x%x\n", mem->start);
 
 	// Release I2S controller soft reset (bit 0 for I2S2/ADC, bit 2 for I2S1/DAC)
 	{
@@ -540,10 +542,10 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 			u32 reset_val = readl(sys_base + 0x6c);
 			if (mem->start == 0xe8200000) {
 				reset_val &= ~(1 << 0); /* Release I2S2 reset */
-				printk(KERN_INFO "Releasing soft reset for I2S2 (ADC/external I2S) at 0xe8200000\n");
+				dev_info(&pdev->dev, "releasing soft reset for I2S2 (ADC/external I2S) at 0xe8200000\n");
 			} else if (mem->start == 0xe4000000) {
 				reset_val &= ~(1 << 2); /* Release I2S1 reset */
-				printk(KERN_INFO "Releasing soft reset for I2S1 (DAC/internal I2S) at 0xe4000000\n");
+				dev_info(&pdev->dev, "releasing soft reset for I2S1 (DAC/internal I2S) at 0xe4000000\n");
 			}
 			writel(reset_val, sys_base + 0x6c);
 			iounmap(sys_base);
@@ -576,11 +578,11 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 				writel(val | 0x400, audio_clk_base + 0x1f0);
 				val = readl(audio_clk_base + 0x1d8);
 				writel(val & ~0x80000000, audio_clk_base + 0x1d8);
-				printk(KERN_INFO "Enabled external I2S2/CS4334 clock-gate bits at 0xe4a00000\n");
+				dev_info(&pdev->dev, "enabled external I2S2/CS4334 clock-gate bits at 0xe4a00000\n");
 			} else if (mem->start == 0xe4000000) {
 				val = readl(audio_clk_base + 0x1f0);
 				writel(val | 0x400, audio_clk_base + 0x1f0);
-				printk(KERN_INFO "Enabled internal I2S1 clock-gate bit at 0xe4a00000+0x1f0\n");
+				dev_info(&pdev->dev, "enabled internal I2S1 clock-gate bit at 0xe4a00000+0x1f0\n");
 			}
 			iounmap(audio_clk_base);
 		}
@@ -637,7 +639,7 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 		return ret;
 	}
 	
-	printk("end:==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+	dev_dbg(&pdev->dev, "probe end\n");
 	return 0;
 }
 

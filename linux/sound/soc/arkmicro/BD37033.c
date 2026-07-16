@@ -1,3 +1,5 @@
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mm.h>
@@ -90,9 +92,9 @@ static int bd37033_write_bytes(struct i2c_client *client,
 	}
 	if((retries >= 5))
 	{
-		printk(KERN_ERR "err %s.\n",__FUNCTION__);
+		dev_err(&client->dev, "%s: i2c_transfer failed\n", __func__);
 	}
-	
+
 	return ret;
 }
 
@@ -129,7 +131,7 @@ static int bd37033_write_byte(struct i2c_client *client,
 	
 	if((retries >= 5))
 	{
-		printk(KERN_ERR "err %s timeout.\n",__FUNCTION__);
+		dev_err(&client->dev, "%s: i2c_transfer timeout\n", __func__);
 	}
 	
 	return (ret>0 ? 0 : -1);
@@ -241,7 +243,7 @@ static int register_read(unsigned char regaddr)
 	if(data_addr)
 	{
 		regval = *data_addr;
-		printk(KERN_LEVEL "regval:%x\n",regval);
+		pr_debug("regval:%x\n",regval);
 	}
 
 	return regval;
@@ -656,8 +658,7 @@ int bd37033_set_default(struct bd37033_data *bd)
 		mp.rl_gain = bd->dac.vol_flout;
 	if (!of_property_read_u32(bd->client->dev.of_node, "rrout-gain", &bd->dac.vol_flout))
 		mp.rr_gain = bd->dac.vol_flout;
-	//printk("dac.vol_flout = %d dac.vol_flout = %d dac.vol_flout = %d dac.vol_flout = %d\n",bd->dac.vol_flout,bd->dac.vol_flout,bd->dac.vol_flout,bd->dac.vol_flout);
-	printk("mp.fl_gain = %d mp.fr_gain = %d mp.rl_gain = %d mp.rr_gain = %d\n",mp.fl_gain,mp.fr_gain,mp.rl_gain,mp.rr_gain);
+	dev_dbg(&bd->client->dev, "fl_gain=%d fr_gain=%d rl_gain=%d rr_gain=%d\n",mp.fl_gain,mp.fr_gain,mp.rl_gain,mp.rr_gain);
 	if(mp.fl_gain >= 0)
 		bd37033_set_fader(SELECT_ADDR_FADER_1CH_FRONT,mp.fl_gain);
 	if(mp.fr_gain >= 0)
@@ -701,14 +702,14 @@ static void bd37033_init(struct bd37033_data *bd)
 
 	if (bd == NULL)
 	{
-		printk(KERN_ERR "err %s, bd37033_data null\n",__FUNCTION__);
+		pr_err("%s: bd37033_data null\n",__FUNCTION__);
 		return ;
 	}
-		
+
 	client = bd->client;
 	if (client == NULL)
 	{
-		printk(KERN_ERR "err %s, i2c_client null\n",__FUNCTION__);
+		pr_err("%s: i2c_client null\n",__FUNCTION__);
 		return ;
 	}
 
@@ -2189,7 +2190,7 @@ static int bd37033_drv_remove(struct i2c_client *client)
 	
 	if (!bd)
 	{
-		printk(KERN_ERR "err %s, no device to remove\n",__FUNCTION__);
+		dev_err(&client->dev, "%s: no device to remove\n",__FUNCTION__);
 		return -ENODEV;
 	}
 

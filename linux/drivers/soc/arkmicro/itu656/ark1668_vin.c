@@ -4,6 +4,8 @@
  * Licensed under GPLv2 or later.
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/clk.h>
 #include <linux/clkdev.h>
 #include <linux/clk-provider.h>
@@ -326,7 +328,7 @@ static long vin_ioctl_default(struct file *file, void *priv,
 	unsigned long error = 0;
 	unsigned long flags;
 	if(!dvr_dev){
-		printk(KERN_ERR"%s error null device", __func__);
+		pr_err("%s: error null device\n", __func__);
 		return -ENXIO;
 	}
 	spin_lock_irqsave(&dvr_dev->spin_lock, flags);
@@ -381,7 +383,7 @@ static long vin_ioctl_default(struct file *file, void *priv,
 		}
 		
 		default:
-			printk("%s: error cmd 0x%x\n", __func__, cmd);
+			pr_err("%s: error cmd 0x%x\n", __func__, cmd);
 			error = -EFAULT;
 			goto end;
     }
@@ -496,7 +498,7 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 	
 	if(deinterlace_field != DEINTERLACE_FIELD_ODD
 		&&	deinterlace_field != DEINTERLACE_FIELD_EVEN){
-		printk("invalid deinterlace field (%d)\r\n", deinterlace_field);
+		pr_err("invalid deinterlace field (%d)\n", deinterlace_field);
 		return DEINTERLACE_PARA_ERROR;				
 	}
 	field = deinterlace_field;
@@ -506,7 +508,7 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 	}else if(deinterlace_size == DEINTERLACE_LINE_SIZE_720H){
 		pixel_per_line = 90 * (1 + data_mode);
 	}else{
-		printk("invalid deinterlace size (%d)\r\n", deinterlace_size);
+		pr_err("invalid deinterlace size (%d)\n", deinterlace_size);
 		return DEINTERLACE_PARA_ERROR;
 	}
 	
@@ -516,14 +518,14 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 		only_wr_1_field = 1;
 	}else if(data_mode == DEINTERLACE_DATA_MODE_422){
 		if(dst_y_addr == 0){
-			printk("illegal deinterlace dst Y address\r\n");
+			pr_err("illegal deinterlace dst Y address\n");
 			return DEINTERLACE_PARA_ERROR;
 		}
 		denoise_bypass = 1;
 		stride = 0;
 		only_wr_1_field = 0;
 	}else{
-		printk("invalid deinterlace data mode (%d)\r\n", data_mode);
+		pr_err("invalid deinterlace data mode (%d)\n", data_mode);
 		return DEINTERLACE_PARA_ERROR;
 	}
 	
@@ -536,7 +538,7 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 		total_line = 240;
 		vary_level_th = 0x8;
 	}else{
-		printk("invalid deinterlace type (%d)\r\n", deinterlace_type);
+		pr_err("invalid deinterlace type (%d)\n", deinterlace_type);
 		return DEINTERLACE_PARA_ERROR;		
 	}		
 
@@ -926,7 +928,7 @@ int dvr_enter_carback(void)
 {
 	g_ark168_vin->dvr_dev->buffer_virtaddr = (void *)__get_free_pages(GFP_KERNEL, get_order(g_ark168_vin->dvr_dev->buffer_size));
 	if (!g_ark168_vin->dvr_dev->buffer_virtaddr) {
-	        printk("%s get. buffer fail\n", __func__);
+	        pr_err("%s: get buffer fail\n", __func__);
 	}
 	g_ark168_vin->dvr_dev->buffer_phyaddr = virt_to_phys(g_ark168_vin->dvr_dev->buffer_virtaddr);
 	ARKVIN_DBGPRTK("g_ark168_vin->dvr_dev->buffer_size = %d.\n",g_ark168_vin->dvr_dev->buffer_size);
@@ -973,7 +975,7 @@ int dvr_enter_carback(void)
 		ark_vin_reg_uninit();
 		g_ark168_vin->dvr_dev->carback_break = 1;
 	} else g_ark168_vin->dvr_dev->carback_break = 0;
-	printk("%s carback_break=%d.\n", __FUNCTION__, g_ark168_vin->dvr_dev->carback_break);
+	pr_debug("%s: carback_break=%d\n", __FUNCTION__, g_ark168_vin->dvr_dev->carback_break);
 	if(arkvin_priv->get_progressive)
 		para.progressive = arkvin_priv->get_progressive();
 	vin_init(g_ark168_vin, &para);	
@@ -1016,7 +1018,7 @@ int dvr_exit_carback(void)
 	msleep(200);
 	if(!g_ark168_vin->stream_flag)
 	ark_vin_reg_uninit();
-	printk("%s carback_break=%d.\n", __FUNCTION__, g_ark168_vin->dvr_dev->carback_break);
+	pr_debug("%s: carback_break=%d\n", __FUNCTION__, g_ark168_vin->dvr_dev->carback_break);
 
 	if (g_ark168_vin->dvr_dev->start_carback_exit) {
 		vin_start(g_ark168_vin->dvr_dev);
@@ -1060,7 +1062,7 @@ int dvr_detect_carback_signal(void)
 	
 	spin_lock(&g_ark168_vin->dvr_dev->spin_lock);
 	if (g_ark168_vin->dvr_dev->channel != ARK7116_AV0) {
-		printk("now is not in carback.\n");
+		pr_debug("now is not in carback\n");
 	} else {
 		if(g_ark168_vin->pdata.g_arkvin_priv->detect_signal)
 			signal = g_ark168_vin->pdata.g_arkvin_priv->detect_signal();
@@ -1086,7 +1088,7 @@ void ark_itu656_display_int_handler(void)
 		if (dvr_dev->show_video) {
 			if(g_ark168_vin->pdata.g_arkvin_priv->detect_signal && g_ark168_vin->pdata.g_arkvin_priv->detect_signal())
 			{
-				printk(KERN_ALERT "ark_itu656_display_int_handler-->show_video\n");
+				pr_debug("ark_itu656_display_int_handler-->show_video\n");
 				ark_disp_set_layer_en(DISPLAY_LAYER, 1);
 				if (dvr_dev->itu656in.tvout)
 					ark_disp_set_layer_en(TVOUT_LAYER, 1);
@@ -1096,7 +1098,7 @@ void ark_itu656_display_int_handler(void)
 			else
 			{
 				dvr_dev->carback_signal = 0;
-				printk(" No signal detect.\n");
+				pr_warn("no signal detect\n");
 			}
 			
 		}
@@ -1784,7 +1786,7 @@ static irqreturn_t ark_deinterlace_int_handler(int irq, void *dev_id)
 	}else if(raw_int & (1 << 1)){
 		vin_writel_dein(ARK1668_DEINTERLACE_INT_CLEAR, 0x2);   //error
 		deinterlace_reset();
-		printk("deinterlace axi error\n");
+		pr_err("deinterlace axi error\n");
 	}
 	
 	if(last_mirror_type != dvr_dev->mirror_type && dvr_dev->interlace){
@@ -1795,7 +1797,7 @@ static irqreturn_t ark_deinterlace_int_handler(int irq, void *dev_id)
 				dvr_dev->buf_status[i] = 0;
 			vin_writel_lcd(ARK1668_LCDC_VIDEO2_CTL, vin_readl_lcd(ARK1668_LCDC_VIDEO2_CTL)& ~(0x03<<17));
 			last_mirror_type = MIRROR_TYPE_NONE;
-			printk("mirror_type=0, reset.\n");
+			pr_debug("mirror_type=0, reset\n");
 			goto end;
 		}
 	}
@@ -1919,12 +1921,12 @@ static int vin_async_complete(struct v4l2_async_notifier *notifier)
 	/* Register subdev device node */
 	ret = v4l2_device_register_subdev_nodes(&ark_vin->v4l2_dev);
 	if (ret < 0) {
-		printk(KERN_ALERT "v4l2_device_register_subdev_nodes  error\n");
+		pr_err("v4l2_device_register_subdev_nodes error\n");
 		return ret;
 	}
 
 	if(!ark_data->g_arkvin_priv || !ark_data->g_arkvin_client){
-		printk(KERN_ALERT "get ark_data error .\n");
+		pr_err("get ark_data error\n");
 		return 	-EINVAL;
 	}
 	/* Get a method from a child device's private data */
@@ -2106,15 +2108,15 @@ static int ark1668_vin_probe(struct platform_device *pdev)
 
 	ret = v4l2_device_register(dev,&ark_vin->v4l2_dev);
 	if (ret) {
-		printk(KERN_ALERT "unable to register v4l2 device.\n");
+		pr_err("unable to register v4l2 device\n");
 	}
 
 	ret = vin_parse_dt(dev, ark_vin);
 	if (ret)
-		printk(KERN_ALERT "fail to parse device tree\n");
+		pr_err("fail to parse device tree\n");
 
 	if (list_empty(&ark_vin->subdev_entities)) {
-		printk(KERN_ALERT "no subdev found \n");
+		pr_err("no subdev found\n");
 		ret = -ENODEV;
 	}
 	/*find and prepare the async subdev notifier and register it */
@@ -2132,7 +2134,7 @@ static int ark1668_vin_probe(struct platform_device *pdev)
 		ret = v4l2_async_notifier_register(&ark_vin->v4l2_dev,
 						   &subdev_entity->notifier);
 		if (ret) {
-			printk(KERN_ALERT "fail to register async notifier\n");
+			pr_err("fail to register async notifier\n");
 		}
 
 		if (video_is_registered(&ark_vin->video_dev))
@@ -2227,7 +2229,7 @@ static int ark1668_vin_probe(struct platform_device *pdev)
 	timer_setup(&ark_vin->dvr_dev->timer, dither_timeout_timer, 0);	
 	ark_vin->dvr_dev->mirror_queue = create_singlethread_workqueue("mirror_queue");
 	if(!ark_vin->dvr_dev->mirror_queue) {
-		printk(KERN_ERR "%s %d: , create_singlethread_workqueue fail.\n",__FUNCTION__, __LINE__);	
+		pr_err("%s: create_singlethread_workqueue failed\n", __FUNCTION__);	
 		return -1;
 	}
 
@@ -2243,7 +2245,7 @@ static int ark1668_vin_probe(struct platform_device *pdev)
 
 	ark_vin->dvr_dev->mirror_type = MIRROR_TYPE_NONE;
 	if(!of_property_read_u32(pdev->dev.of_node, "mirror", &value)) {
-	        printk("get mirror type=%d\n", value);
+	        pr_debug("get mirror type=%d\n", value);
 	        if(value >= MIRROR_TYPE_NONE && value < MIRROR_TYPE_END)
 	                ark_vin->dvr_dev->mirror_type = value;
 

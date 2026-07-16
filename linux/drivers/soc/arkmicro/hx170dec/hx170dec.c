@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
@@ -148,7 +150,7 @@ static int mfc_jpeg_decode(unsigned int src_addr,unsigned int pvSrc_addr,
 	JpegDecOutput DecOut;
 	infoRet = JpegDecInit(&decoder);
 	if(infoRet !=JPEGDEC_OK) {
-		printk("JpegDecInit failure %d.\n", infoRet);
+		pr_err("JpegDecInit failure %d.\n", infoRet);
 		return -1;
 	}
 
@@ -166,7 +168,7 @@ static int mfc_jpeg_decode(unsigned int src_addr,unsigned int pvSrc_addr,
 		                   &DecImgInf);
 	if(infoRet !=JPEGDEC_OK)
 	{
-		printk("JpegDecGetImageInfo failure.\n");
+		pr_err("JpegDecGetImageInfo failure.\n");
 		ret = -1;
 		goto dec_end;
 	}
@@ -188,7 +190,7 @@ static int mfc_jpeg_decode(unsigned int src_addr,unsigned int pvSrc_addr,
     infoRet = JpegDecDecode(decoder, &DecIn, &DecOut);
 	if(infoRet != JPEGDEC_FRAME_READY)
 	{
-		printk("JpegDecDecode failure, ret=%d\n", infoRet);
+		pr_err("JpegDecDecode failure, ret=%d\n", infoRet);
 		ret = -1;
 		goto dec_end;
 	}
@@ -211,11 +213,11 @@ static void animation_dec_work(struct work_struct *work)
 	struct vdec_device *p = vdec6731_global;
 
 	if (timeout_count > 50) {
-		printk(KERN_ALERT "%s Error! Dec timeout.\n", __FUNCTION__);
+		dev_err(context->dev, "%s: dec timeout\n", __FUNCTION__);
 		context->animation_end = true;
 	} else if (context->animation_file_phyaddr + size >= context->animation_data_phyaddr + context->animation_data_size
 		&& frame < header->aniCount + header->hasBootlogo ? 1 : 0) {
-		printk(KERN_ALERT "%s Error! Animation data is beyond the mark.\n", __FUNCTION__);
+		dev_err(context->dev, "%s: animation data is beyond the mark\n", __FUNCTION__);
 		context->animation_end = true;
 	}
 
@@ -297,7 +299,7 @@ static void animation_dec_work(struct work_struct *work)
 			}
 			context->animation_dec_finish = true;
 		} else {
-				printk(KERN_ALERT "decode boot animation jpeg error.\n");
+				dev_err(context->dev, "decode boot animation jpeg error\n");
 				context->animation_dec_finish = true;
 
 		}
@@ -655,7 +657,7 @@ static int vdec_probe(struct platform_device *pdev)
 					p->context.animation_initdisplay = false;
 					p->context.animation_queue = create_singlethread_workqueue("animation_queue");
 					if(!p->context.animation_queue) {
-					    printk(KERN_ERR "%s %d: , create_singlethread_workqueue fail.\n",__FUNCTION__, __LINE__);
+					    dev_err(&pdev->dev, "create_singlethread_workqueue failed\n");
 					    return -1;
 					}
 					INIT_WORK(&p->context.animation_work, animation_dec_work);
@@ -721,8 +723,7 @@ static int __init ark_vdec_init(void)
 
     ret = platform_driver_register(&vdec_of_driver);
     if (ret != 0) {
-        printk(KERN_ERR "%s %d: failed to register vdec_of_driver\n",
-            __FUNCTION__, __LINE__);
+        pr_err("failed to register vdec_of_driver\n");
     }
 
     return ret;
