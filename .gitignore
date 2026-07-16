@@ -249,3 +249,7 @@
 #output
 #
 /output/
+
+# build_uboot.sh / build_kernel.sh log output
+u-boot/build_uboot.log
+linux/build_kernel.log

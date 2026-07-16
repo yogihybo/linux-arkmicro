@@ -9,6 +9,22 @@ U-Boot for that specific board — see that project's `docs/KERNEL_REFERENCE.md`
 and `docs/UBOOT_BUILD_GUIDE.md` for the full reverse-engineering context,
 board-specific config deltas, and known gotchas.
 
+## Quick start — automated build scripts
+
+`build_uboot.sh` and `build_kernel.sh` (this repo's root) wrap all the
+manual steps below into one command each, including U-Boot's mandatory
+ARK-header patch routine:
+
+```bash
+./build_uboot.sh    # -> u-boot/UBOOT.BIN (ARK header already injected)
+./build_kernel.sh   # -> zImage.w_dtb, compiled_modules/
+```
+
+Both default to an incremental build (skip `defconfig` if `.config`
+already exists, use `nproc` jobs). `--clean` forces `make mrproper` first,
+`--defconfig` forces reapplying the board defconfig even with an existing
+`.config`, `-j N` overrides the job count. `--help` on either for details.
+
 ## Source tree layout
 
 ```
