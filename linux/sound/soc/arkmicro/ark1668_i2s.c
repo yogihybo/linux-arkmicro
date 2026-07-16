@@ -539,7 +539,43 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 			iounmap(sys_base);
 		}
 	}
-	
+
+	/*
+	 * Stock 3.4 kernel's ark_i2s_init_cfg()/setup_i2s2() (disassembled from
+	 * vmlinux.elf, see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md "CS4334 external
+	 * I2S clock-gate register" section) additionally touches a register block
+	 * at physical 0xe4a00000 -- the same page ark1668.dtsi's `timer@e4a00000`
+	 * node covers, but these offsets (0x1d8-0x1f0) sit well above anything the
+	 * timer driver itself uses (its counters live in the low offsets) and are
+	 * almost certainly shared SoC clock-gate/mux bits for the audio block.
+	 * Neither SYS_BASE (0xe4900000, pinctrl/pad-config) nor the soft-reset
+	 * register above cover this page -- without these bits the external I2S2
+	 * peripheral (feeding the CS4334 DAC) never actually gets its output
+	 * clock domain enabled at the SoC level, even though probe/hw_params/
+	 * DMA all report success. Not yet hardware-verified -- see the doc.
+	 */
+	{
+		void __iomem *audio_clk_base = ioremap(0xe4a00000, 0x1000);
+		if (audio_clk_base) {
+			if (mem->start == 0xe8200000) {
+				val = readl(audio_clk_base + 0x1e4);
+				writel(val | 0x3f000000, audio_clk_base + 0x1e4);
+				val = readl(audio_clk_base + 0x1e8);
+				writel(val | 0x700, audio_clk_base + 0x1e8);
+				val = readl(audio_clk_base + 0x1f0);
+				writel(val | 0x400, audio_clk_base + 0x1f0);
+				val = readl(audio_clk_base + 0x1d8);
+				writel(val & ~0x80000000, audio_clk_base + 0x1d8);
+				printk(KERN_INFO "Enabled external I2S2/CS4334 clock-gate bits at 0xe4a00000\n");
+			} else if (mem->start == 0xe4000000) {
+				val = readl(audio_clk_base + 0x1f0);
+				writel(val | 0x400, audio_clk_base + 0x1f0);
+				printk(KERN_INFO "Enabled internal I2S1 clock-gate bit at 0xe4a00000+0x1f0\n");
+			}
+			iounmap(audio_clk_base);
+		}
+	}
+
 	if (!of_property_read_u32(pdev->dev.of_node, "nco-reg", &val))
 		i2s->nco_reg = val;
 	
