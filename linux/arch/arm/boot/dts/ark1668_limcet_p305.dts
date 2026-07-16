@@ -130,7 +130,21 @@
 		};
 	};
 
-	// External Cirrus Logic CS4334 I2S DAC
+	// External Cirrus Logic CS4334 I2S DAC. Stock's own board file binds
+	// this as a second dai-link ("cs4334 <-> ark_i2s_dev.1 mapping ok" in
+	// docs/logs/dmesg live device kernel 3.4 dmeg.txt) but it never
+	// produces a usable PCM device -- live `aplay -l` on stock hardware
+	// (docs/logs/audio log stock.txt) shows exactly ONE playback device,
+	// "card 0: ARKSDDAC [ARK-SDDAC], device 0: SDDAC sddac-hifi-0" --
+	// i.e. stock's actual, working playback path is the INTERNAL SDDAC
+	// (ark_i2s_dev.0), not CS4334. The 2026-07-16 pivot to CS4334 as the
+	// primary playback dai-link (based on the KERNEL_REFERENCE.md module
+	// table + that "mapping ok" line alone) was the wrong turn -- same
+	// class of mistake as trusting an I2C "XX" marker or a DAI mapping
+	// line as proof of a *working* path rather than just a *registered*
+	// one (feedback_bootlog_evidence_weak). Reverted below; this node
+	// kept (unreferenced) since it's harmless and stock's own driver
+	// graph still includes it, even though it's a dead end for audio.
 	cs4334_codec: cs4334-codec {
 		compatible = "arkmicro,ark1668e_cs4334_codec";
 		#sound-dai-cells = <0>;
@@ -140,7 +154,11 @@
 	sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
-		simple-audio-card,name = "ark1668-audio";
+		// Matches stock's card name exactly (soc-audio.0 machine driver,
+		// "ASoC machine ARK-SDDAC" in dmesg / "card 0: ARKSDDAC
+		// [ARK-SDDAC]" in aplay -l) -- purely cosmetic/diagnostic parity,
+		// not required for function.
+		simple-audio-card,name = "ARK-SDDAC";
 
 		// BD37033 (&amp) is control-only from this card's point of view --
 		// no I2S DAI stream of its own, just I2C-driven mixer controls
@@ -165,22 +183,23 @@
 		// the DTS order changed here; asound.conf is untouched
 		// (shared with stock, which the reg errors elsewhere suggest
 		// expects device 0 to be playback).
-		simple-audio-card,dai-link@0 { /* I2S DAC link */
+		simple-audio-card,dai-link@0 { /* I2S DAC link -- internal SDDAC, stock's real playback path */
+			simple-audio-card,stream-name = "sddac-hifi";
 			bitclock-master = <&playback_cpu>;
 			frame-master = <&playback_cpu>;
 			playback_cpu: cpu {
-				sound-dai = <&i2s_adc>; /* Use external I2S port (ark_i2s_dev.1) */
+				sound-dai = <&i2s_dac>;
 			};
 			playback_codec: codec {
-				sound-dai = <&cs4334_codec>; /* External DAC */
+				sound-dai = <&sddac>;
 			};
 		};
 		simple-audio-card,dai-link@1 { /* I2S ADC link */
 			cpu {
-				sound-dai = <&i2s_dac>; /* Internal I2S port for capture */
+				sound-dai = <&i2s_adc>;
 			};
 			codec {
-				sound-dai = <&sdadc>; /* Internal ADC */
+				sound-dai = <&sdadc>;
 			};
 		};
 	};
