@@ -168,6 +168,16 @@ static int ark_i2s_startup(
 		//val |= ARK_I2SSDDAC_SACR0_BCKD;// Bitclock output
 		val |= ARK_I2SSDDAC_SACR0_TFTH; // set tfth
 		val |= ARK_I2SSDDAC_SACR0_SARADC_DATA; // set saradc data
+		// The CAPTURE branch below explicitly powers down the DAC and its
+		// voltage reference (DAC_PD/VREF_PD) since they're not needed for
+		// recording -- but this playback branch never powered them back
+		// up, only ever OR'ing in unrelated bits via read-modify-write.
+		// So the DAC/vref stay powered down across a prior capture, and
+		// quite possibly by default at reset -- meaning digital I2S/DMA
+		// could be (and, per live testing 2026-07-16, was) completely
+		// correct with zero errors while no analog signal could ever
+		// reach the speaker. See docs/AUDIO_SUBSYSTEM_INVESTIGATION.md.
+		val &= ~(ARK_I2SSDDAC_SACR0_DAC_PD | ARK_I2SSDDAC_SACR0_VREF_PD);
 		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
 
 		val = readl(i2s->base + ARK_I2SSDDAC_SAIMR);
