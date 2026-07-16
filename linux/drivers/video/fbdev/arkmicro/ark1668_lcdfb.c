@@ -536,6 +536,18 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 } */
 
 
+static int ark1668_lcdfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+{
+	unsigned int offset = vma->vm_pgoff << PAGE_SHIFT;
+
+	if (offset < info->fix.smem_len) {
+		return dma_mmap_wc(info->device, vma, info->screen_base,
+				   info->fix.smem_start, info->fix.smem_len);
+	}
+
+	return -EINVAL;
+}
+
 static struct fb_ops ark1668_lcdfb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_check_var	= ark1668_lcdfb_check_var,
@@ -546,6 +558,7 @@ static struct fb_ops ark1668_lcdfb_ops = {
 	.fb_copyarea	= cfb_copyarea,
 	.fb_imageblit	= cfb_imageblit,
 	.fb_ioctl       = ark1668_lcdfb_ioctl,
+	.fb_mmap	= ark1668_lcdfb_mmap,
 };
 
 static irqreturn_t ark1668_lcdfb_interrupt(int irq, void *dev_id)

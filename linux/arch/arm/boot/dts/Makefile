@@ -1210,6 +1210,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
 dtb-$(CONFIG_ARCH_ARKMICRO) += \
 	ark169.dtb \
 	ark1668_tyw_zksw.dtb \
+	ark1668_limcet_p305.dtb \
 	tyw-dashboard.dtb \
 	xinshiyu.dtb \
 	ark1668_dongle_sim.dtb \

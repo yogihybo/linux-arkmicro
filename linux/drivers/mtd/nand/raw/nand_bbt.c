@@ -172,6 +172,7 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 		struct nand_bbt_descr *td, int offs)
 {
 	int res, ret = 0, i, j, act = 0;
+	int bad_count = 0;
 	struct nand_chip *this = mtd_to_nand(mtd);
 	size_t retlen, len, totlen;
 	loff_t from;
@@ -228,12 +229,17 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 					continue;
 				}
 				/*
-				 * Leave it for now, if it's matured we can
-				 * move this message to pr_debug.
+				 * Individual bad-block addresses are noisy on
+				 * a chip with hundreds of them (see
+				 * docs/ARK1680_TS_REVERSE_ENGINEERING.md-adjacent
+				 * NAND ECC investigation) -- keep them at
+				 * pr_debug and print just a one-line summary
+				 * count below instead.
 				 */
-				pr_info("nand_read_bbt: bad block at 0x%012llx\n",
+				pr_debug("nand_read_bbt: bad block at 0x%012llx\n",
 					 (loff_t)(offs + act) <<
 					 this->bbt_erase_shift);
+				bad_count++;
 				/* Factory marked bad or worn out? */
 				if (tmp == 0)
 					bbt_mark_entry(this, offs + act,
@@ -247,6 +253,8 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 		totlen -= len;
 		from += len;
 	}
+	if (bad_count)
+		pr_info("nand_read_bbt: %d bad block(s) found\n", bad_count);
 	return ret;
 }
 

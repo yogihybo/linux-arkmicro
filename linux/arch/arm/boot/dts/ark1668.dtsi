@@ -686,7 +686,7 @@
 		};
 
 		i2s_dac: i2s-dac@e4000000 {
-			compatible = "arkmicro,ark-i2s";
+			compatible = "arkmicro,ark1668-i2s";
 			reg = <0xe4000000 0x1000>;
 			interrupt-parent = <&vicl>;
 			interrupts = <6>;
@@ -698,7 +698,7 @@
 		};
 
 		i2s_adc: i2s-adc@e8200000 {
-			compatible = "arkmicro,ark-i2s";
+			compatible = "arkmicro,ark1668-i2s";
 			reg = <0xe8200000 0x1000>;
 			external-i2s;
 			interrupt-parent = <&vich>;
@@ -715,7 +715,7 @@
 		};
 
 		sddac: sddac@e4000000 {
-			compatible = "arkmicro,ark-sddac";
+			compatible = "arkmicro,ark1668-sddac";
 			reg = <0xe4000000 0x1000>;
 			left-volume = <112>;
 			right-volume = <112>;
@@ -723,7 +723,7 @@
 		};
 
 		sdadc: sdadc@0 {
-			compatible = "arkmicro,ark-sdadc";
+			compatible = "arkmicro,ark1668-sdadc";
 			#sound-dai-cells = <0>;
 		};
 

@@ -25,6 +25,22 @@
 #include "dmaengine.h"
 #include "ark-dma.h"
 
+/*
+ * Forward declarations for the legacy cyclic-DMA entry points defined later
+ * in this file (only EXPORT_SYMBOL'd for other modules, no prototype in
+ * ark-dma.h). Needed here because dwc_tx_submit()/dwc_issue_pending()/
+ * dwc_prep_dma_cyclic() (added 2026-07-13 to wire cyclic support into the
+ * generic dmaengine_pcm framework -- see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md)
+ * call them before their definitions appear textually. Without a prototype,
+ * dw_dma_cyclic_prep()'s implicit declaration would default to an int
+ * return type instead of a pointer, truncating/corrupting the result.
+ */
+int dw_dma_cyclic_start(struct dma_chan *chan);
+struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+		dma_addr_t buf_addr, size_t buf_len, size_t period_len,
+		enum dma_transfer_direction direction);
+void dw_dma_cyclic_free(struct dma_chan *chan);
+
 #define DRV_NAME	"dw_dmac"
 
 /*
@@ -86,6 +102,28 @@ static dma_cookie_t dwc_tx_submit(struct dma_async_tx_descriptor *tx)
 
 	spin_lock_irqsave(&dwc->lock, flags);
 	cookie = dma_cookie_assign(tx);
+
+	if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags)) {
+		/*
+		 * Cyclic transfers are started via dw_dma_cyclic_start()
+		 * (see dwc_issue_pending), not through the one-shot queue/
+		 * dwc_dostart_first_queued() path below -- that path's
+		 * dwc_initialize() only unmasks XFER/ERROR, not BLOCK, which
+		 * dwc_handle_cyclic()'s period-boundary detection needs.
+		 * Just bridge the generic dmaengine callback the
+		 * dmaengine_pcm framework set on this descriptor onto the
+		 * legacy per-period callback dwc_handle_cyclic() actually
+		 * invokes.
+		 */
+		if (dwc->cdesc) {
+			dwc->cdesc->period_callback = tx->callback;
+			dwc->cdesc->period_callback_param = tx->callback_param;
+		}
+		spin_unlock_irqrestore(&dwc->lock, flags);
+		printk(KERN_ERR "ARKDMA_DBG: dwc_tx_submit cyclic path, cookie=%d cdesc=%p callback=%p\n",
+				cookie, dwc->cdesc, tx->callback);
+		return cookie;
+	}
 
 	/*
 	 * REVISIT: We should attempt to chain as many descriptors as
@@ -523,6 +561,9 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
 {
 	unsigned long flags;
 
+	printk(KERN_ERR "ARKDMA_DBG: dwc_handle_cyclic chan_mask=0x%x block=0x%x err=0x%x xfer=0x%x\n",
+			dwc->mask, status_block, status_err, status_xfer);
+
 	if (status_block & dwc->mask) {
 		void (*callback)(void *param);
 		void *callback_param;
@@ -619,6 +660,8 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
 
 	status = dma_readl(dw, STATUS_INT);
 	dev_vdbg(dw->dma.dev, "%s: status=0x%x\n", __func__, status);
+
+	printk(KERN_ERR "ARKDMA_DBG: dw_dma_interrupt status=0x%x\n", status);
 
 	/* Check if we have any interrupt from the DMAC */
 	if (!status)
@@ -904,6 +947,47 @@ bool dw_dma_filter(struct dma_chan *chan, void *param)
 EXPORT_SYMBOL_GPL(dw_dma_filter);
 
 /*
+ * Generic dmaengine device_prep_dma_cyclic wrapper (added 2026-07-13 --
+ * see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md). This driver's cyclic-DMA
+ * support (dw_dma_cyclic_prep/_start/_stop/_free below) predates the
+ * standard dmaengine cyclic API and was only ever wired up as a set of
+ * directly-called EXPORT_SYMBOL functions for a caller to invoke by hand --
+ * it was never registered as dw->dma.device_prep_dma_cyclic, so generic
+ * consumers (e.g. devm_snd_dmaengine_pcm_register(), used by
+ * sound/soc/arkmicro/ark1668_i2s.c) had no way to reach it at all:
+ * dmaengine_prep_dma_cyclic() would just get back a NULL op and fail
+ * silently, well before any hardware register was touched. This wrapper
+ * just builds the descriptor via the existing dw_dma_cyclic_prep() logic
+ * and returns its already-initialized txd (dwc_desc_get() already sets
+ * tx_submit/etc. on every allocated descriptor) so the framework can drive
+ * it through the normal prep/submit/issue_pending sequence. See
+ * dwc_tx_submit() and dwc_issue_pending() for how cyclic descriptors are
+ * special-cased through that sequence.
+ */
+static struct dma_async_tx_descriptor *
+dwc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr,
+		size_t buf_len, size_t period_len,
+		enum dma_transfer_direction direction, unsigned long flags)
+{
+	struct dw_cyclic_desc *cdesc;
+
+	printk(KERN_ERR "ARKDMA_DBG: dwc_prep_dma_cyclic called, buf_len=%zu period_len=%zu dir=%d\n",
+			buf_len, period_len, direction);
+
+	cdesc = dw_dma_cyclic_prep(chan, buf_addr, buf_len, period_len,
+			direction);
+	if (IS_ERR(cdesc)) {
+		printk(KERN_ERR "ARKDMA_DBG: dw_dma_cyclic_prep failed, err=%ld\n",
+				PTR_ERR(cdesc));
+		return NULL;
+	}
+	printk(KERN_ERR "ARKDMA_DBG: dw_dma_cyclic_prep succeeded, periods=%lu\n",
+			cdesc->periods);
+
+	return &cdesc->desc[0]->txd;
+}
+
+/*
  * Fix sconfig's burst size according to dw_dmac. We need to convert them as:
  * 1 -> 0, 4 -> 1, 8 -> 2, 16 -> 3.
  *
@@ -989,6 +1073,27 @@ static int dwc_terminate_all(struct dma_chan *chan)
 	unsigned long		flags;
 	LIST_HEAD(list);
 
+	if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags)) {
+		/*
+		 * dw_dma_cyclic_free() takes dwc->lock itself and fully
+		 * tears down cyclic state (disables the channel, frees
+		 * dwc->cdesc and its descriptors, clears DW_DMA_IS_CYCLIC).
+		 * Without this, cyclic descriptors never touch dwc->queue/
+		 * active_list (see dwc_tx_submit()) so this function's
+		 * one-shot cleanup below is a no-op for them, and
+		 * DW_DMA_IS_CYCLIC stays set forever -- the next
+		 * dw_dma_cyclic_prep() on this channel then permanently
+		 * fails with -EBUSY (its test_and_set_bit(DW_DMA_IS_CYCLIC)
+		 * guard). Confirmed live: exactly this symptom on the
+		 * second aplay attempt in a session, see
+		 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md.
+		 */
+		printk(KERN_ERR "ARKDMA_DBG: dwc_terminate_all cyclic path\n");
+		dump_stack();
+		dw_dma_cyclic_free(chan);
+		return 0;
+	}
+
 	spin_lock_irqsave(&dwc->lock, flags);
 
 	clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
@@ -1054,6 +1159,37 @@ dwc_tx_status(struct dma_chan *chan,
 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
 	enum dma_status		ret;
 
+	if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags)) {
+		/*
+		 * dwc_scan_descriptors() below was written only for the
+		 * one-shot queue/active_list path. It checks RAW.XFER
+		 * *before* bailing out on an empty active_list (which is
+		 * how cyclic transfers always look -- see dwc_tx_submit()),
+		 * so if RAW.XFER is ever latched during a cyclic transfer
+		 * (it's a raw status bit, set by hardware regardless of
+		 * IRQ masking) it falls into dwc_complete_all(), which
+		 * treats a still-enabled channel as a bug and calls
+		 * dwc_chan_disable() -- killing the cyclic transfer that
+		 * dw_dma_cyclic_start() just armed, typically before a
+		 * single real dw_dma_interrupt() has fired. The generic
+		 * dmaengine_pcm framework (used by ark1668_i2s.c) polls
+		 * this function via .pointer() during normal playback,
+		 * something stock's direct dw_dma_cyclic_* callers never
+		 * did, so this path was never exercised until now. Skip
+		 * the one-shot scan machinery entirely for cyclic channels.
+		 */
+		unsigned long flags;
+		u32 residue = 0;
+
+		ret = dma_cookie_status(chan, cookie, txstate);
+		spin_lock_irqsave(&dwc->lock, flags);
+		if (dwc->cdesc)
+			residue = dwc_get_sent(dwc);
+		spin_unlock_irqrestore(&dwc->lock, flags);
+		dma_set_residue(txstate, residue);
+		return ret == DMA_COMPLETE ? DMA_IN_PROGRESS : ret;
+	}
+
 	ret = dma_cookie_status(chan, cookie, txstate);
 	if (ret == DMA_COMPLETE)
 		return ret;
@@ -1076,6 +1212,25 @@ static void dwc_issue_pending(struct dma_chan *chan)
 {
 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
 	unsigned long		flags;
+
+	printk(KERN_ERR "ARKDMA_DBG: dwc_issue_pending called, cyclic=%d\n",
+			test_bit(DW_DMA_IS_CYCLIC, &dwc->flags));
+
+	if (test_bit(DW_DMA_IS_CYCLIC, &dwc->flags)) {
+		/*
+		 * dw_dma_cyclic_start() takes dwc->lock itself and correctly
+		 * unmasks MASK.BLOCK before starting -- reuse it as-is rather
+		 * than duplicating that logic here (and to avoid double-
+		 * locking dwc->lock, since it's already held by the normal
+		 * path below).
+		 */
+		{
+			int __ret = dw_dma_cyclic_start(chan);
+			printk(KERN_ERR "ARKDMA_DBG: dwc_issue_pending cyclic path, dw_dma_cyclic_start ret=%d\n",
+					__ret);
+		}
+		return;
+	}
 
 	spin_lock_irqsave(&dwc->lock, flags);
 	if (list_empty(&dwc->active_list))
@@ -1583,6 +1738,7 @@ static int dw_dma_probe(struct dw_dma_chip *chip)
 
 	/* Set capabilities */
 	dma_cap_set(DMA_SLAVE, dw->dma.cap_mask);
+	dma_cap_set(DMA_CYCLIC, dw->dma.cap_mask);
 	if (pdata->is_private)
 		dma_cap_set(DMA_PRIVATE, dw->dma.cap_mask);
 	if (pdata->is_memcpy)
@@ -1594,6 +1750,7 @@ static int dw_dma_probe(struct dw_dma_chip *chip)
 
 	dw->dma.device_prep_dma_memcpy = dwc_prep_dma_memcpy;
 	dw->dma.device_prep_slave_sg = dwc_prep_slave_sg;
+	dw->dma.device_prep_dma_cyclic = dwc_prep_dma_cyclic;
 
 	dw->dma.device_config = dwc_config;
 	dw->dma.device_pause = dwc_pause;

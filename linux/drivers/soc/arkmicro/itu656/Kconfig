@@ -36,7 +36,6 @@ config ARK7116
 
 config RN6752
 	tristate "Support AHD RN6752 Driver"
-	depends on ARKN141_ITU656 || ARK1668_ITU656
 
 	help
 	  Say y here to enable rn6752 driver.

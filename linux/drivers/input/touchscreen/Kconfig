@@ -1310,5 +1310,18 @@ config TOUCHSCREEN_ARK_NOP
 	  To compile this driver as a module, choose M here: the
 	  module will be called ark_nop_ts.
 
+config TOUCHSCREEN_ARK1680
+	tristate "ARK1680 on-SoC resistive ADC touchscreen"
+	help
+	  Say Y here to support the ARK1680/ARK1668 SoC's built-in
+	  resistive ADC touchscreen controller, ported from the stock
+	  3.4.0 ark1680_ts.ko via disassembly (see
+	  docs/ARK1680_TS_REVERSE_ENGINEERING.md).
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ark1680_ts.
+
 source "drivers/input/touchscreen/cyttsp/Kconfig"
 endif

@@ -1,70 +1,98 @@
-ark1668ÏÔÊ¾½Ó¿ÚÏà¹ØËµÃ÷£º
+ark1668æ˜¾ç¤ºæ¥å£ç›¸å…³è¯´æ˜ï¼š
+[EN] ARK1668 Display Interface Notes
 
 
 ---------------------------------------------------------------------------------------------
-Ò»¡¢ÏÔÊ¾²ãËµÃ÷
+ä¸€ã€æ˜¾ç¤ºå±‚è¯´æ˜
+[EN] Section 1: Display Layers
 ---------------------------------------------------------------------------------------------
-ark1668Ò»¹²ÓĞ5¸öÏÔÊ¾²ã£¬¸÷ÏÔÊ¾²ã¹¦ÄÜ·ÖÅäÈçÏÂ£º
+ark1668ä¸€å…±æœ‰5ä¸ªæ˜¾ç¤ºå±‚ï¼Œå„æ˜¾ç¤ºå±‚åŠŸèƒ½åˆ†é…å¦‚ä¸‹ï¼š
+[EN] The ARK1668 has 5 display layers with the following roles:
 
 enum ark1668_disp_layer {
-    PRIMARY_LAYER,      //UIÏÔÊ¾
-    VIDEO_LAYER,        //¶àÃ½ÌåÊÓÆµ£¬ÊÖ»ú»¥Áªcarlife carplayµÈ
-    OVER_LAYER,         //overlay for UI£¬±ÈÈçµ¹³µ¹ì¼££¬µ¹³µ¾¯¸æ»­ÃæµÈ
-    TVOUT_LAYER,        //tvout  Êä³ö
-    AUX_LAYER,          //µ¹³µ£¬ auxin
+    PRIMARY_LAYER,      //UIæ˜¾ç¤º
+    VIDEO_LAYER,        //å¤šåª’ä½“è§†é¢‘ï¼Œæ‰‹æœºäº’è”carlife carplayç­‰
+    OVER_LAYER,         //overlay for UIï¼Œæ¯”å¦‚å€’è½¦è½¨è¿¹ï¼Œå€’è½¦è­¦å‘Šç”»é¢ç­‰
+    TVOUT_LAYER,        //tvout  è¾“å‡º
+    AUX_LAYER,          //å€’è½¦ï¼Œ auxin
+};
+[EN] enum ark1668_disp_layer {
+    PRIMARY_LAYER,      // UI display
+    VIDEO_LAYER,        // Multimedia video, phone-link (CarLife, CarPlay, etc.)
+    OVER_LAYER,         // Overlay for UI (e.g. reverse camera trajectory lines, warning overlays)
+    TVOUT_LAYER,        // TV-out output
+    AUX_LAYER,          // Reverse camera / AUX-in
 };
 
-¶ÔÓÚapp¿ª·¢ÕßÀ´ËµÖ÷ÒªÉæ¼°µ½ĞèÒª´¦ÀíµÄÏÔÊ¾²ãÊÇPRIMARY_LAYER£¬OVER_LAYER£¬VIDEO_LAYER¡£
-TVOUT_LAYER£¬ AUX_LAYERÒ»°ãÓÉµ×²ã´¦Àí£¬Ò»°ãÇé¿öÏÂ²»Òª¹ØĞÄ¡£
+å¯¹äºappå¼€å‘è€…æ¥è¯´ä¸»è¦æ¶‰åŠåˆ°éœ€è¦å¤„ç†çš„æ˜¾ç¤ºå±‚æ˜¯PRIMARY_LAYERï¼ŒOVER_LAYERï¼ŒVIDEO_LAYERã€‚
+TVOUT_LAYERï¼Œ AUX_LAYERä¸€èˆ¬ç”±åº•å±‚å¤„ç†ï¼Œä¸€èˆ¬æƒ…å†µä¸‹ä¸è¦å…³å¿ƒã€‚
+[EN] App developers primarily work with PRIMARY_LAYER, OVER_LAYER, and VIDEO_LAYER.
+TVOUT_LAYER and AUX_LAYER are generally managed by the lower-level system and can be ignored.
 
 
 ---------------------------------------------------------------------------------------------
-¶ş¡¢ÏÔÊ¾²ãÓÅÏÈ¼¶
+äºŒã€æ˜¾ç¤ºå±‚ä¼˜å…ˆçº§
+[EN] Section 2: Display Layer Priority (Z-order)
 ---------------------------------------------------------------------------------------------
 
 
 
-VIDEO_LAYER    AUX_LAYER    PRIMARY_LAYER      OVER_LAYER  
-    0               1            2                  3      
+VIDEO_LAYER    AUX_LAYER    PRIMARY_LAYER      OVER_LAYER
+    0               1            2                  3
 --------------------------------------------------------->
-ÏÔÊ¾²ã°´ÒÔÉÏ´ÎĞò´ÓÉÏÍùÏÂµş¼Ó£¬Êı×ÖÔ½´ó£¬ÏÔÊ¾¾ÍÔÚÔ½ÉÏÃæ¡£
+æ˜¾ç¤ºå±‚æŒ‰ä»¥ä¸Šæ¬¡åºä»ä¸Šå¾€ä¸‹å åŠ ï¼Œæ•°å­—è¶Šå¤§ï¼Œæ˜¾ç¤ºå°±åœ¨è¶Šä¸Šé¢ã€‚
+[EN] Layers are composited in the order shown above. Higher number = rendered on top.
 
 
 
 ---------------------------------------------------------------------------------------------
-Èı¡¢Ïà¹ØÏÔÊ¾½Ó¿ÚËµÃ÷
+ä¸‰ã€ç›¸å…³æ˜¾ç¤ºæ¥å£è¯´æ˜
+[EN] Section 3: Display API Reference
 ---------------------------------------------------------------------------------------------
 
-1¡¢´ò¿ª¹Ø±ÕÏÔÊ¾²ã
+1ã€æ‰“å¼€å…³é—­æ˜¾ç¤ºå±‚
+[EN] 1. Open / Close a display layer
 int arkapi_display_open_layer(enum ark1668_disp_layer layer);
 void arkapi_display_close_layer(int fd);
 int arkapi_display_recycle_layer(enum ark1668_disp_layer layer);
 
-arkapi_display_open_layerÈç¹û·µ»ØÖµÎª-EBUSY±íÊ¾¸Ã²ãÒÑ¾­ÔÚÊ¹ÓÃ£¬¿ÉÒÔÑÓ³¤Ò»¶ÎÊ±¼ä
-µÈ´ı¶Ô·½closeºóÔÙÉêÇë»òÕßµ÷ÓÃarkapi_display_recycle_layerÇ¿ÖÆ¹Ø±Õ²¢ÊÍ·Å¸ÃÏÔÊ¾²ã¡£
+arkapi_display_open_layerå¦‚æœè¿”å›å€¼ä¸º-EBUSYè¡¨ç¤ºè¯¥å±‚å·²ç»åœ¨ä½¿ç”¨ï¼Œå¯ä»¥å»¶é•¿ä¸€æ®µæ—¶é—´
+ç­‰å¾…å¯¹æ–¹closeåå†ç”³è¯·æˆ–è€…è°ƒç”¨arkapi_display_recycle_layerå¼ºåˆ¶å…³é—­å¹¶é‡Šæ”¾è¯¥æ˜¾ç¤ºå±‚ã€‚
+[EN] If arkapi_display_open_layer returns -EBUSY, the layer is already in use. Either wait for the
+current owner to close it and retry, or call arkapi_display_recycle_layer to forcibly release it.
 
-2¡¢ÏÔÊ¾Òş²ØÏÔÊ¾²ã
+2ã€æ˜¾ç¤ºéšè—æ˜¾ç¤ºå±‚
+[EN] 2. Show / Hide a display layer
 int arkapi_display_show_layer(int fd);
 int arkapi_display_hide_layer(int fd);
 int arkapi_display_force_show_layer(enum ark1668_disp_layer layer);
 int arkapi_display_force_hide_layer(enum ark1668_disp_layer layer);
 
-Ó¦ÓÃÓĞµÄÊ±ºòĞèÒªÇ¿ÖÆ¹Ø±ÕÄ³²ã£¬±ÈÈçµ¹³µÊ±¿ÉÒÔ¹Ø±ÕÊÓÆµ²ãÏÔÊ¾À´½µµÍ´ø¿í£¬µ÷ÓÃ
-arkapi_display_force_hide_layerºó£¬¿ÉÒÔÇ¿ÖÆ¸Ã²ã½øĞĞÒş²Ø£¬¸Ã²ãÖ®Ç°µÄÓµÓĞÕßµ÷ÓÃ
-arkapi_display_show_layer²»ÔÙ»áÏÔÊ¾¸Ã²ã£¬Ö»ÊÇ¼ÍÂ¼×´Ì¬£¬µÈµ½µ÷ÓÃarkapi_display_force_show_layer
-ºó»á¸ù¾İ¸Ã²ãÓµÓĞÕßÉèÖÃµÄÏÔÊ¾×´Ì¬À´¾ö¶¨ÊÇ·ñĞèÒªÖØĞÂÏÔÊ¾¡£
+åº”ç”¨æœ‰çš„æ—¶å€™éœ€è¦å¼ºåˆ¶å…³é—­æŸå±‚ï¼Œæ¯”å¦‚å€’è½¦æ—¶å¯ä»¥å…³é—­è§†é¢‘å±‚æ˜¾ç¤ºæ¥é™ä½å¸¦å®½ï¼Œè°ƒç”¨
+arkapi_display_force_hide_layeråï¼Œå¯ä»¥å¼ºåˆ¶è¯¥å±‚è¿›è¡Œéšè—ï¼Œè¯¥å±‚ä¹‹å‰çš„æ‹¥æœ‰è€…è°ƒç”¨
+arkapi_display_show_layerä¸å†ä¼šæ˜¾ç¤ºè¯¥å±‚ï¼Œåªæ˜¯çºªå½•çŠ¶æ€ï¼Œç­‰åˆ°è°ƒç”¨arkapi_display_force_show_layer
+åä¼šæ ¹æ®è¯¥å±‚æ‹¥æœ‰è€…è®¾ç½®çš„æ˜¾ç¤ºçŠ¶æ€æ¥å†³å®šæ˜¯å¦éœ€è¦é‡æ–°æ˜¾ç¤ºã€‚
+[EN] An application may need to forcibly hide a layer â€” for example, hiding the video layer during
+reverse to reduce bandwidth. After calling arkapi_display_force_hide_layer, the layer's owner calling
+arkapi_display_show_layer will no longer show it (only the state is recorded). After
+arkapi_display_force_show_layer is called, the layer's visibility is restored based on the state
+the owner last set.
 
-3¡¢ÏÔÊ¾²ã´°¿Ú²ÎÊıÉèÖÃÁ¢¿ÌÉúĞ§½Ó¿Ú
+3ã€æ˜¾ç¤ºå±‚çª—å£å‚æ•°è®¾ç½®ç«‹åˆ»ç”Ÿæ•ˆæ¥å£
+[EN] 3. Immediate display layer parameter update (takes effect right away)
 int arkapi_display_set_layer_pos(int fd, int x, int y);
 int arkapi_display_set_layer_size(int fd, int width, int height);
 int arkapi_display_set_layer_format(int fd, enum ark1668_disp_format format);
 //int arkapi_display_set_layer_addr(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr);
 int arkapi_display_set_layer_scaler(int fd, struct ark1668_disp_scaler* spara);
 
-×¢Òâ£ºPRIMARY_LAYER£¬OVER_LAYER£¬VIDEO_LAYERÕâÈı²ãÊÇÃ»ÓĞarkapi_display_set_layer_scaler¹¦ÄÜ
-Ö»ÓĞTVOUT_LAYER£¬ AUX_LAYERÕâÁ½²ã²ÅÓĞ¡£
+æ³¨æ„ï¼šPRIMARY_LAYERï¼ŒOVER_LAYERï¼ŒVIDEO_LAYERè¿™ä¸‰å±‚æ˜¯æ²¡æœ‰arkapi_display_set_layer_scaleråŠŸèƒ½
+åªæœ‰TVOUT_LAYERï¼Œ AUX_LAYERè¿™ä¸¤å±‚æ‰æœ‰ã€‚
+[EN] Note: arkapi_display_set_layer_scaler is only available for TVOUT_LAYER and AUX_LAYER.
+It is not supported on PRIMARY_LAYER, OVER_LAYER, or VIDEO_LAYER.
 
-4¡¢ÏÔÊ¾²ã´°¿Ú²ÎÊıÉèÖÃÍ³Ò»ÉúĞ§½Ó¿Ú
+4ã€æ˜¾ç¤ºå±‚çª—å£å‚æ•°è®¾ç½®ç»Ÿä¸€ç”Ÿæ•ˆæ¥å£
+[EN] 4. Atomic display layer parameter update (batched, applied on commit)
 int arkapi_display_set_layer_pos_atomic(int fd, int x, int y);
 int arkapi_display_set_layer_size_atomic(int fd, int width, int height);
 int arkapi_display_set_layer_format_atomic(int fd, enum ark1668_disp_format format);
@@ -72,49 +100,74 @@ int arkapi_display_set_layer_addr_atomic(int fd, unsigned int pyrgbaddr, unsigne
 int arkapi_display_set_layer_scaler_atomic(int fd, struct ark1668_disp_scaler* spara);
 int arkapi_display_layer_update_commit(int fd);
 
-ÒÔÉÏxxx_atomic º¯ÊıÉèÖÃÊ±²»»áÂíÉÏÉúĞ§(¸ù¾İĞèÒªµ÷ÓÃÏà¹ØµÄ½Ó¿Ú)£¬ĞèÒªµ÷ÓÃ
-arkapi_display_layer_update_commitºó²ÅÍ³Ò»ÉúĞ§£¬Ö÷ÒªÓÃÓÚ±ÜÃâÊÓÆµ²¥·Å¹ı³ÌÖĞ¸Ä±äÏÔÊ¾·Ö±æÂÊÔì³ÉµÄ»¨ÆÁ¡£
+ä»¥ä¸Šxxx_atomic å‡½æ•°è®¾ç½®æ—¶ä¸ä¼šé©¬ä¸Šç”Ÿæ•ˆ(æ ¹æ®éœ€è¦è°ƒç”¨ç›¸å…³çš„æ¥å£)ï¼Œéœ€è¦è°ƒç”¨
+arkapi_display_layer_update_commitåæ‰ç»Ÿä¸€ç”Ÿæ•ˆï¼Œä¸»è¦ç”¨äºé¿å…è§†é¢‘æ’­æ”¾è¿‡ç¨‹ä¸­æ”¹å˜æ˜¾ç¤ºåˆ†è¾¨ç‡é€ æˆçš„èŠ±å±ã€‚
+[EN] The _atomic functions stage changes without applying them immediately. Call
+arkapi_display_layer_update_commit to apply all staged changes at once. This is used to
+avoid screen tearing when changing display resolution during video playback.
 
-×¢Òâ£ºPRIMARY_LAYER£¬OVER_LAYER£¬VIDEO_LAYERÕâÈı²ãÊÇÃ»ÓĞarkapi_display_set_layer_scaler_atomic¹¦ÄÜ
-Ö»ÓĞTVOUT_LAYER£¬ AUX_LAYERÕâÁ½²ã²ÅÓĞ¡£
+æ³¨æ„ï¼šPRIMARY_LAYERï¼ŒOVER_LAYERï¼ŒVIDEO_LAYERè¿™ä¸‰å±‚æ˜¯æ²¡æœ‰arkapi_display_set_layer_scaler_atomicåŠŸèƒ½
+åªæœ‰TVOUT_LAYERï¼Œ AUX_LAYERè¿™ä¸¤å±‚æ‰æœ‰ã€‚
+[EN] Note: arkapi_display_set_layer_scaler_atomic is only available for TVOUT_LAYER and AUX_LAYER.
 
-5¡¢ÏÔÊ¾²ãÄÚ´æÉêÇë
+5ã€æ˜¾ç¤ºå±‚å†…å­˜ç”³è¯·
+[EN] 5. Display layer buffer allocation
 
 unsigned int arkapi_display_request_buffer(int fd, unsigned int size);
-ÏÔÊ¾²ãÄÚ´æÉêÇë·µ»ØÊÇÉêÇëµ½µÄÄÚ´æµÄĞéÄâµØÖ·£¬Õâ¿ésizeµÄ´óĞ¡µÄÄÚ´æÔÚÎïÀíÉÏÊÇÁ¬ĞøµÄ£¬
-ÉêÇëµÄsizeµÄ´óĞ¡ÓÉÓÃ»§×Ô¶¨Òå¡£Èç¹û·µ»Ø0£¬ÔòÉêÇë²»³É¹¦¡£
+æ˜¾ç¤ºå±‚å†…å­˜ç”³è¯·è¿”å›æ˜¯ç”³è¯·åˆ°çš„å†…å­˜çš„è™šæ‹Ÿåœ°å€ï¼Œè¿™å—sizeçš„å¤§å°çš„å†…å­˜åœ¨ç‰©ç†ä¸Šæ˜¯è¿ç»­çš„ï¼Œ
+ç”³è¯·çš„sizeçš„å¤§å°ç”±ç”¨æˆ·è‡ªå®šä¹‰ã€‚å¦‚æœè¿”å›0ï¼Œåˆ™ç”³è¯·ä¸æˆåŠŸã€‚
+[EN] Returns the virtual address of a physically contiguous buffer of the requested size.
+Returns 0 on failure.
 
-×¢Òâ£º PRIMARY_LAYERµÄaddrÄ¬ÈÏÇé¿öÏÂÊ¾ÒÑ¾­ÉèÖÃºÃµÄ£¬¸ÃµØÖ·ºÍÉêÇëµ½µÄ»ùµØÖ·Ò»Ñù¡£
-	¸Ã²ãÊµÏÖÁË±ê×¼µÄfbÏà¹Ø¹¦ÄÜ£¬Ã»ÓĞÌØÊâÒªÇóµÄÇé¿öÏÂ¿ÉÒÔ²»ĞèÒªÉêÇëÄÚ´æÖ®ÀàµÄ²Ù×÷¡£
+æ³¨æ„ï¼š PRIMARY_LAYERçš„addré»˜è®¤æƒ…å†µä¸‹ç¤ºå·²ç»è®¾ç½®å¥½çš„ï¼Œè¯¥åœ°å€å’Œç”³è¯·åˆ°çš„åŸºåœ°å€ä¸€æ ·ã€‚
+	è¯¥å±‚å®ç°äº†æ ‡å‡†çš„fbç›¸å…³åŠŸèƒ½ï¼Œæ²¡æœ‰ç‰¹æ®Šè¦æ±‚çš„æƒ…å†µä¸‹å¯ä»¥ä¸éœ€è¦ç”³è¯·å†…å­˜ä¹‹ç±»çš„æ“ä½œã€‚
+[EN] Note: PRIMARY_LAYER already has a default buffer address set up (matching the allocated base address).
+	This layer implements standard framebuffer (/dev/fb) functionality â€” no manual buffer
+	allocation is required in most cases.
 
-6¡¢ÏÔÊ¾²ãÄÚ´æÊ¹ÓÃ·½·¨
-Èç¹ûOVER_LAYERµÄĞèÇóÊÇĞèÒªÁ½¸ö¿ébuffer£¬Ò»¿é´¦ÀíÊı¾İ£¬Ò»¿éÏÔÊ¾£¬Á½buffer¹¦ÄÜ²»Í£µÄÇĞ»»¡£¿ÉÒÔ°´ÈçÏÂ·½·¨ÊµÏÖ:
-(1)ÉêÇësize = buffer_size * 2£¬ÄÚ´æÉêÇë³É¹¦ºó»á·µ»ØĞéÄâµØÖ·virt_base
-(2)ÉèÖÃÁ½¸öbufferµÄ»ùµØÖ·
+6ã€æ˜¾ç¤ºå±‚å†…å­˜ä½¿ç”¨æ–¹æ³•
+[EN] 6. Double-buffer usage for OVER_LAYER
+å¦‚æœOVER_LAYERçš„éœ€æ±‚æ˜¯éœ€è¦ä¸¤ä¸ªå—bufferï¼Œä¸€å—å¤„ç†æ•°æ®ï¼Œä¸€å—æ˜¾ç¤ºï¼Œä¸¤bufferåŠŸèƒ½ä¸åœçš„åˆ‡æ¢ã€‚å¯ä»¥æŒ‰å¦‚ä¸‹æ–¹æ³•å®ç°:
+(1)ç”³è¯·size = buffer_size * 2ï¼Œå†…å­˜ç”³è¯·æˆåŠŸåä¼šè¿”å›è™šæ‹Ÿåœ°å€virt_base
+(2)è®¾ç½®ä¸¤ä¸ªbufferçš„åŸºåœ°å€
    buffer_addr[0] = virt_base;
    buffer_addr[1] = virt_base + buffer_size;
-(3)Ìî³äºÃbuffferÖĞµÄÊı¾İºóÏÔÊ¾
+(3)å¡«å……å¥½buffferä¸­çš„æ•°æ®åæ˜¾ç¤º
 arkapi_display_set_layer_addr(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr)
 arkapi_display_set_layer_addr_atomic(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr);
-											
-pyrgbaddr------------------------¶ÔÓ¦bufferµÄ»ùµØÖ·
-pcbaddr--------------------------0(rgb¸ñÊ½) »òÕß bufferµÄ»ùµØÖ·µÄÆ«ÒÆ(yuvÊı¾İ¸ñÊ½)
-pcraddr--------------------------0(rgb¸ñÊ½) »òÕß bufferµÄ»ùµØÖ·µÄÆ«ÒÆ(yuvÊı¾İ¸ñÊ½)
+
+pyrgbaddr------------------------å¯¹åº”bufferçš„åŸºåœ°å€
+pcbaddr--------------------------0(rgbæ ¼å¼) æˆ–è€… bufferçš„åŸºåœ°å€çš„åç§»(yuvæ•°æ®æ ¼å¼)
+pcraddr--------------------------0(rgbæ ¼å¼) æˆ–è€… bufferçš„åŸºåœ°å€çš„åç§»(yuvæ•°æ®æ ¼å¼)
+[EN] If OVER_LAYER requires double-buffering (one buffer for processing, one for display, alternating):
+(1) Allocate size = buffer_size * 2; on success, returns virtual base address virt_base
+(2) Set up two buffer pointers:
+   buffer_addr[0] = virt_base;
+   buffer_addr[1] = virt_base + buffer_size;
+(3) Fill buffer data then display using:
+arkapi_display_set_layer_addr(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr)
+arkapi_display_set_layer_addr_atomic(int fd, unsigned int pyrgbaddr, unsigned int pcbaddr, unsigned int pcraddr);
+
+pyrgbaddr  -- base address of the buffer (Y plane for YUV, or RGB base)
+pcbaddr    -- 0 for RGB, or byte offset from base for Cb/U plane (YUV)
+pcraddr    -- 0 for RGB, or byte offset from base for Cr/V plane (YUV)
 
 
 ---------------------------------------------------------------------------------------------
-ËÄ¡¢appÓëµ¹³µ½»»¥
+å››ã€appä¸å€’è½¦äº¤äº’
+[EN] Section 4: App / Reverse Camera Interaction
 ---------------------------------------------------------------------------------------------
-1¡¢appÆô¶¯ºóÊ×ÏÈ´ò¿ªcarbackÇı¶¯£¬Í¬Ê±ĞèÒª¸æËßcarbackÇı¶¯£¬appÒÑ¾­Æô¶¯¡£
+1ã€appå¯åŠ¨åé¦–å…ˆæ‰“å¼€carbacké©±åŠ¨ï¼ŒåŒæ—¶éœ€è¦å‘Šè¯‰carbacké©±åŠ¨ï¼Œappå·²ç»å¯åŠ¨ã€‚
+[EN] 1. On startup, open the carback driver and notify it that the app is ready.
 static int carback_open(void)
 {
     int fd, ret;
-    
+
     fd = open("/dev/carback", O_RDWR);
     if (fd < 0) {
         printf("open /dev/carback failed.\n");
         return -ENOENT;
-    } 
+    }
 
     ret = ioctl(fd, CARBACK_IOCTL_SET_APP_READY, NULL);
     if (ret != 0) {
@@ -124,24 +177,34 @@ static int carback_open(void)
     return fd;
 }
 
-2¡¢Í¨¹ıpoll¼àÌıµ±Ç°µ¹³µ×´Ì¬ÊÇ·ñ±ä»¯£¬Èç¹ûµ¹³µ×´Ì¬ÓĞ±ä»¯£¬¶ÁÈ¡µ¹³µ×´Ì¬¡£
+2ã€é€šè¿‡pollç›‘å¬å½“å‰å€’è½¦çŠ¶æ€æ˜¯å¦å˜åŒ–ï¼Œå¦‚æœå€’è½¦çŠ¶æ€æœ‰å˜åŒ–ï¼Œè¯»å–å€’è½¦çŠ¶æ€ã€‚
+[EN] 2. Use poll() to monitor for reverse-gear state changes. Read the state when a change is detected.
 
-3¡¢Èç¹ûµ¹³µ×´Ì¬·¢Éú±ä»¯£¬carbackÇı¶¯×î¶à»áÓĞ500msÊ±¼äÈÃapp´¦ÀíÏà¹ØÊÂÏî
-£¨°üÀ¨Òş²Ø»òÏÔÊ¾uiºÍoverlayÏÔÊ¾£©×¼±¸½øÈë»òÍË³öµ¹³µ¡£
+3ã€å¦‚æœå€’è½¦çŠ¶æ€å‘ç”Ÿå˜åŒ–ï¼Œcarbacké©±åŠ¨æœ€å¤šä¼šæœ‰500msæ—¶é—´è®©appå¤„ç†ç›¸å…³äº‹é¡¹
+ï¼ˆåŒ…æ‹¬éšè—æˆ–æ˜¾ç¤ºuiå’Œoverlayæ˜¾ç¤ºï¼‰å‡†å¤‡è¿›å…¥æˆ–é€€å‡ºå€’è½¦ã€‚
+[EN] 3. When a state change occurs, the carback driver allows up to 500 ms for the app to prepare
+(e.g. hide/show UI layers, set up the overlay) before entering or exiting reverse mode.
 
-4¡¢app×¼±¸ºÃ½øÈëµ¹³µºó£¬µ÷ÓÃ
-ioctl(fd, CARBACK_IOCTL_APP_ENTER_DONE, NULL);carbackÇı¶¯¿ªÊ¼½øÈëµ¹³µ¡£
+4ã€appå‡†å¤‡å¥½è¿›å…¥å€’è½¦åï¼Œè°ƒç”¨
+ioctl(fd, CARBACK_IOCTL_APP_ENTER_DONE, NULL);carbacké©±åŠ¨å¼€å§‹è¿›å…¥å€’è½¦ã€‚
 
-app×¼±¸ºÃÍË³öµ¹³µºó£¬µ÷ÓÃ
-ioctl(fd, CARBACK_IOCTL_APP_EXIT_DONE, NULL);carbackÇı¶¯¿ªÊ¼ÍË³öµ¹³µ
+appå‡†å¤‡å¥½é€€å‡ºå€’è½¦åï¼Œè°ƒç”¨
+ioctl(fd, CARBACK_IOCTL_APP_EXIT_DONE, NULL);carbacké©±åŠ¨å¼€å§‹é€€å‡ºå€’è½¦
+[EN] 4. When the app is ready to enter reverse, call:
+ioctl(fd, CARBACK_IOCTL_APP_ENTER_DONE, NULL);  // driver begins entering reverse mode
+
+When the app is ready to exit reverse, call:
+ioctl(fd, CARBACK_IOCTL_APP_EXIT_DONE, NULL);   // driver begins exiting reverse mode
 
 ---------------------------------------------------------------------------------------------
-Îå¡¢ÆäËû
+äº”ã€å…¶ä»–
+[EN] Section 5: Other
 ---------------------------------------------------------------------------------------------
 
-1¡¢Ôö¼Ólibarkdisp.so£¬´æ·ÅÂ·¾¶/usr/lib
+1ã€å¢åŠ libarkdisp.soï¼Œå­˜æ”¾è·¯å¾„/usr/lib
+[EN] 1. libarkdisp.so is installed to /usr/lib.
 
-2¡¢ÒÔÉÏÏà¹Ø½Ó¿Úµ÷ÓÃ¿ÉÒÔ²Î¿¼demo-displayÔ´´úÂë
-´®¿ÚÖÕ¶ËÔËĞĞ/usr/bin/demo-display£¬¿ÉÒÔ¿´µ½Ğ§¹û
-
-
+2ã€ä»¥ä¸Šç›¸å…³æ¥å£è°ƒç”¨å¯ä»¥å‚è€ƒdemo-displayæºä»£ç 
+ä¸²å£ç»ˆç«¯è¿è¡Œ/usr/bin/demo-displayï¼Œå¯ä»¥çœ‹åˆ°æ•ˆæœ
+[EN] 2. For usage examples of the above APIs, refer to the demo-display source code.
+Run /usr/bin/demo-display from a serial terminal to see the result.

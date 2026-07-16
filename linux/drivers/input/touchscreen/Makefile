@@ -110,4 +110,5 @@ obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
 obj-$(CONFIG_TOUCHSCREEN_COLIBRI_VF50)	+= colibri-vf50-ts.o
 obj-$(CONFIG_TOUCHSCREEN_ROHM_BU21023)	+= rohm_bu21023.o
 obj-$(CONFIG_TOUCHSCREEN_ARK_NOP)	+= ark-nop-ts.o
+obj-$(CONFIG_TOUCHSCREEN_ARK1680)	+= ark1680_ts.o
 obj-y					+= cyttsp/

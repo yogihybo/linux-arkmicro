@@ -1,8 +1,18 @@
 1. 运行build/build.sh　${BOARD_TYPE} build[config/clean] [module] 进行编译,配置或者清除。
     ${BOARD_TYPE}　指定开发平台，例如 ark-cardvr, ark169.
     moudule 可指定为uboot, linux, buildroot, 如果未指定的话编译所有模块。
+[EN] 1. Run build/build.sh ${BOARD_TYPE} build|config|clean [module] to compile, configure, or clean.
+    ${BOARD_TYPE} specifies the target platform, e.g. ark-cardvr, ark169.
+    module can be uboot, linux, or buildroot; if omitted, all modules are built.
+
 2. 编译生成的镜像文件在output/board/${BOARD_TYPE}/images目录下。
+[EN] 2. Built image files are placed under output/board/${BOARD_TYPE}/images/.
+
 3. 按以下步骤编译SDK。使用该SDK时需要先运行目录内的relocate-sdk.sh脚本。
 	1) cd output/board/${BOARD_TYPE}/buildroot
 	2) source ../../../../env.source && make sdk
    SDK目录下./arm-buildroot-linux-gnueabihf/sysroot可以作为编译第三方应用时的sysroot路径。
+[EN] 3. To build the SDK, follow these steps (run relocate-sdk.sh before using the SDK):
+    1) cd output/board/${BOARD_TYPE}/buildroot
+    2) source ../../../../env.source && make sdk
+   The directory ./arm-buildroot-linux-gnueabihf/sysroot inside the SDK can be used as the sysroot path when cross-compiling third-party applications.

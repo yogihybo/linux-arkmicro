@@ -57,7 +57,7 @@
 #include "dwl_defs.h"
 #include "dwl_linux.h"
 #include "dwl.h"
-#include <hx170dec.h>
+#include "hx170dec.h"
 
 //#include <assert.h>
 

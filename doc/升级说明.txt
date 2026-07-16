@@ -1,9 +1,19 @@
 1. ARK1668空片升级，需要将卡格式化后(不要在win10下格式化), 将ARKSDLDR.bin文件作为第一个文件拷贝到SD卡根目录下，
    之后再拷贝剩余文件，之后插卡上电进行升级。
+[EN] 1. Blank chip upgrade (ARK1668): Format the SD card first (do not format under Windows 10), then copy ARKSDLDR.bin
+   as the FIRST file to the SD card root directory, followed by the remaining files. Insert the card and power on to upgrade.
+
 2. 非空片同时支持sd卡和U盘升级，升级时会先判断sd卡内是否存在正确的update-magic文件，没有的话会再检测U盘。
    支持U盘升级可以参考目录内"USB使用说明.txt"文件。
+[EN] 2. Non-blank chip: Supports both SD card and USB drive upgrades. The system first checks for a valid update-magic
+   file on the SD card; if not found, it checks the USB drive. See "USB使用说明.txt" for USB upgrade setup.
+
 3. 非空片升级，将升级文件拷贝到SD卡或者U盘，插卡或者U盘上电后如果没有正常升级的话，需要按空格进入uboot命令行模式，输入
    env default -f -a && saveenv && reset进行升级。
+[EN] 3. Non-blank chip upgrade: Copy upgrade files to an SD card or USB drive. If the upgrade does not start
+   automatically after power-on, press Space to enter the U-Boot command line and run:
+   env default -f -a && saveenv && reset
+
 4. 上面两种情况都会进行完整升级，在开发过程中如果只需要部分升级的话可以在uboot命令行输入命令来完成。输入以下命令之前需要
    设置update_dev_type(mmc or usb)和update_dev_part(sd卡根据自己平台设置为0或者1，U盘不需要设置)环境变量。
 	run updatefromflash NFlash系统update。
@@ -13,3 +23,13 @@
 	run kernelupdate 升级内核。
 	run rootfsupdate 升级文件系统。
 	run bootanimationupdate 升级开机动画文件，如果卡里面没有bootanimation文件，运行该命令会删除之前开机动画。
+[EN] 4. Both methods above perform a full upgrade. During development, partial upgrades can be done from the U-Boot
+   command line. Before running the commands below, set the environment variables update_dev_type (mmc or usb) and
+   update_dev_part (set to 0 or 1 for SD card depending on your platform; not needed for USB):
+	run updatefromflash       # NFlash system update
+	run bootstrapupdate       # Upgrade U-Boot SPL
+	run bootloaderupdate      # Upgrade U-Boot
+	run fdtupdate             # Upgrade device tree file
+	run kernelupdate          # Upgrade kernel
+	run rootfsupdate          # Upgrade root filesystem
+	run bootanimationupdate   # Upgrade boot animation; if no bootanimation file is on the card, this deletes the existing animation

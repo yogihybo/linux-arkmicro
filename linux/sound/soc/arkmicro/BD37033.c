@@ -2055,7 +2055,6 @@ static int bd37033_probe(struct snd_soc_component *component)
 //static int bd37033_remove(struct snd_soc_codec *codec)
 static void bd37033_remove(struct snd_soc_component *component)
 {//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	return 0;
 }
 
 //static int bd37033_suspend(struct snd_soc_codec *codec)

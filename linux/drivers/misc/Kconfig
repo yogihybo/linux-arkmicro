@@ -4,6 +4,18 @@
 
 menu "Misc devices"
 
+config ARK_DISPLAY
+	tristate "ARK1668 /dev/ark_display compat misc device"
+	help
+	  Minimal reimplementation of the stock 3.4.0 ark_display_drv misc
+	  device, providing just the ARKDISP_GET_SCREEN_INFO ioctl that
+	  MsnCoreApp/MsnFirstInit depend on at startup. See
+	  Limcet Hardware/ark_display.c and
+	  docs/ARK1680_TS_REVERSE_ENGINEERING.md for the reverse-engineering
+	  trail.
+
+	  If unsure, say Y.
+
 config SENSORS_LIS3LV02D
 	tristate
 	depends on INPUT

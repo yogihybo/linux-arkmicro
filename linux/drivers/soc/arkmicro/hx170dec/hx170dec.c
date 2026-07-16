@@ -623,54 +623,59 @@ static int vdec_probe(struct platform_device *pdev)
 
 //MFC jpeg decode
 	animres = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	if (IS_ERR(animres)) {
-		return PTR_ERR(animres);
-	}
-
 	p->context.dev = p->dev;
 	p->context.anmation_stats = 0;
-	p->context.animation_data_phyaddr = animres->start;
-	p->context.animation_data_size = resource_size(animres);
-	p->context.animation_data_virtaddr =
-	    (unsigned int)ioremap(p->context.animation_data_phyaddr, resource_size(animres));
-	if (p->context.animation_data_virtaddr) {
-		BANIHEADER *header = (BANIHEADER *) p->context.animation_data_virtaddr;
-		if (header->magic == MKTAG('B', 'A', 'N', 'I')) {
-			vde_jpeg_context = &p->context;
-			p->context.animation_file_phyaddr =
-			    p->context.animation_data_phyaddr + sizeof(BANIHEADER);
-			p->context.animation_file_virtaddr =
-			    p->context.animation_data_virtaddr + sizeof(BANIHEADER);
 
-			p->context.animation_display_size = MAX_ANIMFRAME_SIZE * 2;
-			p->context.animation_display_virtaddr =
-			    (unsigned int)dma_alloc_coherent(&pdev->dev, p->context.animation_display_size,
-							     &p->context.animation_display_phyaddr, GFP_KERNEL);
+	if (animres) {
+		p->context.animation_data_phyaddr = animres->start;
+		p->context.animation_data_size = resource_size(animres);
+		p->context.animation_data_virtaddr =
+		    (unsigned int)ioremap(p->context.animation_data_phyaddr, resource_size(animres));
+		if (p->context.animation_data_virtaddr) {
+			BANIHEADER *header = (BANIHEADER *) p->context.animation_data_virtaddr;
+			if (header->magic == MKTAG('B', 'A', 'N', 'I')) {
+				vde_jpeg_context = &p->context;
+				p->context.animation_file_phyaddr =
+				    p->context.animation_data_phyaddr + sizeof(BANIHEADER);
+				p->context.animation_file_virtaddr =
+				    p->context.animation_data_virtaddr + sizeof(BANIHEADER);
 
-			if (!p->context.animation_display_virtaddr) {
-				dev_err(&pdev->dev, "alloc animation display buffer failed.\n");
-				p->context.animation_end = true;
-			} else {
-				p->context.anmation_stats = 1;
-				p->context.animation_end = false;
-				p->context.animation_dec_finish = false;
-				p->context.animation_initdisplay = false;
-				p->context.animation_queue = create_singlethread_workqueue("animation_queue");
-				if(!p->context.animation_queue) {
-				    printk(KERN_ERR "%s %d: , create_singlethread_workqueue fail.\n",__FUNCTION__, __LINE__);
-				    return -1;
+				p->context.animation_display_size = MAX_ANIMFRAME_SIZE * 2;
+				p->context.animation_display_virtaddr =
+				    (unsigned int)dma_alloc_coherent(&pdev->dev, p->context.animation_display_size,
+								     &p->context.animation_display_phyaddr, GFP_KERNEL);
+
+				if (!p->context.animation_display_virtaddr) {
+					dev_err(&pdev->dev, "alloc animation display buffer failed.\n");
+					p->context.animation_end = true;
+				} else {
+					p->context.anmation_stats = 1;
+					p->context.animation_end = false;
+					p->context.animation_dec_finish = false;
+					p->context.animation_initdisplay = false;
+					p->context.animation_queue = create_singlethread_workqueue("animation_queue");
+					if(!p->context.animation_queue) {
+					    printk(KERN_ERR "%s %d: , create_singlethread_workqueue fail.\n",__FUNCTION__, __LINE__);
+					    return -1;
+					}
+					INIT_WORK(&p->context.animation_work, animation_dec_work);
+					timer_setup(&p->context.animation_timer, animation_timer_handler, 0);
+					p->context.animation_timer.expires = jiffies + 10;
+					add_timer(&p->context.animation_timer);
 				}
-				INIT_WORK(&p->context.animation_work, animation_dec_work);
-				timer_setup(&p->context.animation_timer, animation_timer_handler, 0);
-				p->context.animation_timer.expires = jiffies + 10;
-				add_timer(&p->context.animation_timer);
+			} else {
+				vde_jpeg_context = &p->context;
+				p->context.animation_end = true;
 			}
 		} else {
-			vde_jpeg_context = &p->context;
 			p->context.animation_end = true;
 		}
-	} else
+	} else {
+		p->context.animation_data_phyaddr = 0;
+		p->context.animation_data_size = 0;
+		p->context.animation_data_virtaddr = 0;
 		p->context.animation_end = true;
+	}
 
 	/* Reset Asic (just in case..) */
 	vdec_writel(p, VDEC_DIR, VDEC_DIR_ID | VDEC_DIR_ABORT);

@@ -122,19 +122,46 @@ static int ark_i2s_startup(
 	unsigned int val;
 	void __iomem	*Sys_base;
 	void __iomem	*i2s_base;
+	struct platform_device *pdev = to_platform_device(i2s->dev);
+	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	unsigned long physical_base = res ? res->start : 0;
 
 	Sys_base = ioremap(SYS_BASE, 0x1000);
 	if(!Sys_base)
 		goto unmap_sysreg;
 
-	//printk("==============[sys_base = 0x%08x   i2s->base = 0x%08x]\n",Sys_base,i2s->base);
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-	{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	//val = readl(ARK1680_VA_SYS + ARK_SYS_PAD_CTRL06);
-		//writel(val | ARK_SYS_I2S_DATA_DIR_OUT, ARK1680_VA_SYS + ARK_SYS_PAD_CTRL06);
-		val = readl(Sys_base + ARK_SYS_PAD_CTRL0C);
-		writel(val | ARK_SYS_I2S_MCLK_AUX, Sys_base + ARK_SYS_PAD_CTRL0C);
+	//printk("==============[%s]:[ %d] stream=%d base=0x%08lx\n", __FUNCTION__, __LINE__, substream->stream, physical_base);
+	if (physical_base == 0xe8200000) {
+		// External I2S (I2S2/ADC block) pinmux configuration
+		val = readl(Sys_base + ARK_SYS_PAD_CTRL09);
+		val |= (ARK_SYS_I2S2_BCLK | ARK_SYS_I2S2_SADATA | ARK_SYS_I2S2_SYNC);
+		writel(val, Sys_base + ARK_SYS_PAD_CTRL09);
 
+		val = readl(Sys_base + ARK_SYS_PAD_CTRL0A);
+		val |= (7 << 8);
+		writel(val, Sys_base + ARK_SYS_PAD_CTRL0A);
+
+		val = readl(Sys_base + ARK_SYS_PAD_CTRL0C);
+		val |= ARK_SYS_I2S_MCLK_AUX;
+		writel(val, Sys_base + ARK_SYS_PAD_CTRL0C);
+
+		val = readl(Sys_base + ARK_SYS_PAD_CTRL06);
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			val |= ARK_SYS_I2S_DATA_DIR_OUT; /* output mode for external DAC */
+		} else {
+			val &= ~ARK_SYS_I2S_DATA_DIR_OUT; /* input mode for external ADC */
+		}
+		writel(val, Sys_base + ARK_SYS_PAD_CTRL06);
+	} else {
+		// Internal I2S (I2S1/DAC block)
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			val = readl(Sys_base + ARK_SYS_PAD_CTRL0C);
+			writel(val | ARK_SYS_I2S_MCLK_AUX, Sys_base + ARK_SYS_PAD_CTRL0C);
+		}
+	}
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+	{
 		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
 		val |= ARK_I2SSDDAC_SACR0_I2SEN;//i2s enable
 		// cancel pop noise
@@ -158,10 +185,19 @@ static int ark_i2s_startup(
 				|ARK_I2SSDDAC_SAICR_TUR);
 		writel(val, i2s->base + ARK_I2SSDDAC_SAICR);
 
-		
-//		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
-//		val |= ARK_I2SSDDAC_SACR0_TDMAENA;	// enable tx dma
-//		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
+
+		// Re-enabled (2026-07-13) -- was left commented out, so the I2S
+		// block never asserted its hardware DMA-request line for TX.
+		// devm_snd_dmaengine_pcm_register()'s generic dmaengine PCM
+		// framework can arm/start the DMA *channel*, but without this
+		// bit the peripheral itself never requests a transfer, so the
+		// stream never actually progresses -- matches the observed
+		// ALSA "unable to start PCM stream" failure (clean probe/open/
+		// hw_params, silent failure only at trigger/start). See
+		// docs/AUDIO_SUBSYSTEM_INVESTIGATION.md.
+		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
+		val |= ARK_I2SSDDAC_SACR0_TDMAENA;	// enable tx dma
+		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
 
 		val = readl(i2s->base + ARK_I2SSDDAC_SACR1);
 		val &= ~ARK_I2SSDDAC_SACR1_DIS_PLAY;	//enable play
@@ -173,25 +209,7 @@ static int ark_i2s_startup(
 		writel(val, i2s->base + ARK_I2SSDDAC_DACR1);
 	}
 	else if(substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-	{printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-		//
-		val = readl(Sys_base + ARK_SYS_PAD_CTRL09);
-		val |= (ARK_SYS_I2S2_BCLK
-			|ARK_SYS_I2S2_SADATA
-			|ARK_SYS_I2S2_SYNC);
-		writel(val, Sys_base + ARK_SYS_PAD_CTRL09);
-		val = readl(Sys_base + ARK_SYS_PAD_CTRL0A);
-		val  |= (7<<8);
-		writel(val, Sys_base + ARK_SYS_PAD_CTRL0A);
-		val = readl(Sys_base + ARK_SYS_PAD_CTRL0C);
-		val |= ARK_SYS_I2S_MCLK_AUX;
-		writel(val, Sys_base + ARK_SYS_PAD_CTRL0C);
-		//
-		
-		val = readl(Sys_base + ARK_SYS_PAD_CTRL06);
-		val &= ~ARK_SYS_I2S_DATA_DIR_OUT;
-		writel(val, Sys_base + ARK_SYS_PAD_CTRL06);
-
+	{
 		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
 		val &= ~(ARK_I2SSDDAC_SACR0_SARADC_VREF
 				|ARK_I2SSDDAC_SACR0_SARADC_DATA
@@ -228,9 +246,12 @@ static int ark_i2s_startup(
 				|ARK_I2SSDDAC_SAICR_ROR);
 		writel(val, i2s->base + ARK_I2SSDDAC_SAICR);
 
-//		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
-//		val |= ARK_I2SSDDAC_SACR0_RDMAENA;		 // enable rx dma
-//		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
+		// Re-enabled (2026-07-13), same reasoning as TDMAENA above --
+		// RDMAENA was explicitly cleared a few lines up as part of the
+		// SACR0 mask/set sequence and never re-enabled here.
+		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
+		val |= ARK_I2SSDDAC_SACR0_RDMAENA;		 // enable rx dma
+		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
 
 		val = readl(i2s->base + ARK_I2SSDDAC_SACR1);
 		val &= ~ARK_I2SSDDAC_SACR1_DIS_REC; 	//enable record
@@ -473,6 +494,11 @@ static const struct snd_soc_component_driver ark1668_i2s_component = {
 	.name		= DRV_NAME,
 };
 
+static void ark_i2s_clk_disable(void *data)
+{
+	clk_disable_unprepare(data);
+}
+
 static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 {
 	struct ark_i2s_dev *i2s;
@@ -496,6 +522,23 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 		return PTR_ERR(i2s->base);
 	}
 	printk(KERN_ALERT "dev %s 0x%x.\n", dev_name(&pdev->dev), mem->start);
+
+	// Release I2S controller soft reset (bit 0 for I2S2/ADC, bit 2 for I2S1/DAC)
+	{
+		void __iomem *sys_base = ioremap(SYS_BASE, 0x1000);
+		if (sys_base) {
+			u32 reset_val = readl(sys_base + 0x6c);
+			if (mem->start == 0xe8200000) {
+				reset_val &= ~(1 << 0); /* Release I2S2 reset */
+				printk(KERN_INFO "Releasing soft reset for I2S2 (ADC/external I2S) at 0xe8200000\n");
+			} else if (mem->start == 0xe4000000) {
+				reset_val &= ~(1 << 2); /* Release I2S1 reset */
+				printk(KERN_INFO "Releasing soft reset for I2S1 (DAC/internal I2S) at 0xe4000000\n");
+			}
+			writel(reset_val, sys_base + 0x6c);
+			iounmap(sys_base);
+		}
+	}
 	
 	if (!of_property_read_u32(pdev->dev.of_node, "nco-reg", &val))
 		i2s->nco_reg = val;
@@ -505,6 +548,16 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	if (IS_ERR(i2s->clk)) {
 		dev_err(&pdev->dev, "Cannot get the i2s clock\n");
 		return PTR_ERR(i2s->clk);
+	}
+
+	ret = clk_prepare_enable(i2s->clk);
+	if (ret) {
+		dev_err(&pdev->dev, "Cannot enable the i2s clock\n");
+		return ret;
+	}
+	ret = devm_add_action_or_reset(&pdev->dev, ark_i2s_clk_disable, i2s->clk);
+	if (ret) {
+		return ret;
 	}
 
 	/* DMA parameters */

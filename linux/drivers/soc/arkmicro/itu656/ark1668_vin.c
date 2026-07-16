@@ -1990,7 +1990,7 @@ static void vin_driver_init(struct device *dev)
        if (g_ark168_vin->dvr_dev == NULL) {
         	dev_err(dev, "%s %d: failed to allocate memory\n",
         	    __FUNCTION__, __LINE__);
-        	return -ENOMEM;
+        	return;
        }
 
 	g_ark168_vin->dvr_dev->work_status = 0;
@@ -2066,7 +2066,7 @@ static int vin_parse_dt(struct device *dev, struct ark1668_vin_device *ark_vin)
 		flags = v4l2_epn.bus.parallel.flags;
 
 		subdev_entity->asd->match_type = V4L2_ASYNC_MATCH_FWNODE;
-		subdev_entity->asd->match.fwnode.fwnode = of_fwnode_handle(rem);
+		subdev_entity->asd->match.fwnode = of_fwnode_handle(rem);
 		/* Adds an instance to the linked list*/
 		list_add_tail(&subdev_entity->list, &ark_vin->subdev_entities);
 	}
@@ -2118,12 +2118,16 @@ static int ark1668_vin_probe(struct platform_device *pdev)
 		ret = -ENODEV;
 	}
 	/*find and prepare the async subdev notifier and register it */
+	{
+		static const struct v4l2_async_notifier_operations vin_async_ops = {
+			.bound    = vin_async_bound,
+			.unbind   = vin_async_unbind,
+			.complete = vin_async_complete,
+		};
 	list_for_each_entry(subdev_entity, &ark_vin->subdev_entities, list) {
 		subdev_entity->notifier.subdevs = &subdev_entity->asd;
 		subdev_entity->notifier.num_subdevs = 1;
-		subdev_entity->notifier.bound = vin_async_bound;
-		subdev_entity->notifier.unbind = vin_async_unbind;
-		subdev_entity->notifier.complete = vin_async_complete;
+		subdev_entity->notifier.ops = &vin_async_ops;
 
 		ret = v4l2_async_notifier_register(&ark_vin->v4l2_dev,
 						   &subdev_entity->notifier);
@@ -2133,6 +2137,7 @@ static int ark1668_vin_probe(struct platform_device *pdev)
 
 		if (video_is_registered(&ark_vin->video_dev))
 			break;
+	}
 	}
 	vin_driver_init(dev);
 	ARKVIN_DBGPRTK("g_ark168_vin->pdata.g_arkvin_client->name = %s.\n",g_ark168_vin->pdata.g_arkvin_client->name);

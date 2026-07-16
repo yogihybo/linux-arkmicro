@@ -1,18 +1,30 @@
-﻿
+
 ark1668芯片USB使用说明：
+[EN] ARK1668 Chip USB Usage Guide
 
 
 一、uboot中配置支持USB升级
+[EN] Section 1: Configure USB Upgrade Support in U-Boot
 
      uboot配置添加usb：
+[EN]      Add USB support via make menuconfig:
 	1、ARM architecture  --->
 		[*] usb support
 			(0)   usb dev part 	//0:usb0; 1:usb1（必选）
 			(127) usb power gpio	//配置usb复位引脚（必选，usb0和usb1的复位脚不同，切换usb升级时注意切换此IO（未使用或内部接死则配置-1））
 			(76)  usb id gpio	//配置usb id引脚（必选，usb0和us1b的id脚不同，切换usb升级时注意切换此IO（未使用或内部接死则配置-1））
 			(-1)  usb sw gpio	//配置usb sw引脚（可选：没有配置-1）
+[EN]	1. ARM architecture  --->
+		[*] usb support
+			(0)   usb dev part	//0=usb0, 1=usb1 (required)
+			(127) usb power gpio	//USB reset pin (required; usb0 and usb1 have different reset pins — switch this IO when switching USB port; use -1 if unused or hardwired internally)
+			(76)  usb id gpio	//USB ID pin (required; usb0 and usb1 have different ID pins — switch this IO when switching USB port; use -1 if unused or hardwired internally)
+			(-1)  usb sw gpio	//USB SW pin (optional; use -1 if unused)
 
 	2、Command line interface  --->
+		Device access commands  --->
+			[*] usb
+[EN]	2. Command line interface  --->
 		Device access commands  --->
 			[*] usb
 
@@ -34,18 +46,46 @@ ark1668芯片USB使用说明：
 			Device Drivers  --->
 				[*] USB support  --->
 					MUSB Controller Driver Select (Old MUSB Controller Driver)  --->
-						 (X) Old MUSB Controller Driver					
+						 (X) Old MUSB Controller Driver
 					[*]   Legacy MUSB Host Controller
 					[*]   Legacy MUSB Arkmicro
 					//[*]   Disable DMA (always use PIO) //旧版本驱动没有此选项
 					[*]   USB Mass Storage support
 
-			
+[EN]	3. Driver selection:
+		Case 1: With SPL (standard for ARK1668)
+			SPL / TPL  --->
+				[ ]   Support new Mentor Graphics USB	//new driver (not yet supported)
+				[*]   Support old Mentor Graphics USB	//old driver (working)
+
+			Device Drivers  --->
+				[*] USB support  --->
+					[*]   Legacy MUSB Host Controller
+					[*]   Legacy MUSB Arkmicro
+					//[*]   Disable DMA (always use PIO) //this option does not exist in the old driver
+					[*]   USB Mass Storage support
+		Case 2: Without SPL (not currently used for ARKN141)
+			SPL / TPL  ----		//not used
+
+			Device Drivers  --->
+				[*] USB support  --->
+					MUSB Controller Driver Select (Old MUSB Controller Driver)  --->
+						 (X) Old MUSB Controller Driver
+					[*]   Legacy MUSB Host Controller
+					[*]   Legacy MUSB Arkmicro
+					//[*]   Disable DMA (always use PIO) //this option does not exist in the old driver
+					[*]   USB Mass Storage support
+
+
 	【注】：升级操作参考 "doc/升级说明.txt"。
+[EN]	[Note]: For upgrade procedures, refer to "doc/升级说明.txt".
 
 
 二、内核中配置USB
+[EN] Section 2: Configure USB in the Kernel
+
 	linux内核配置支持USB：
+[EN]	Enable USB support in the Linux kernel config:
 		Device Drivers
 			[*] USB support  --->
 				<*>   Support for Host-side USB
@@ -70,6 +110,9 @@ ark1668芯片USB使用说明：
 	【注】：
 		上述配置会编译出USB内核模块（musb_hdrc.ko和musb_ark.ko），系统启动后需要自行加载。
 		如果要直接编译进内核，则上述两项<M>改为<*>
+[EN]	[Note]:
+		The above config builds USB as kernel modules (musb_hdrc.ko and musb_ark.ko) that must be loaded manually after boot.
+		To build them directly into the kernel, change the two <M> entries to <*>.
 
 	如果上面配置中没有 < > USB Attached SCSI选项，则需要配置SCSI,如下：
 		Device Drivers  --->
@@ -79,15 +122,30 @@ ark1668芯片USB使用说明：
 				//<*> SCSI CDROM support
 				//<*> SCSI generic support
 				//[*] Asynchronous SCSI scanning
-				[*] SCSI low-level drivers  ---> 
+				[*] SCSI low-level drivers  --->
 
 	【注】：具体配置可以参考ark169里面的配置。
+[EN]	If the "USB Attached SCSI" option is not available, enable SCSI support as follows:
+		Device Drivers  --->
+			SCSI device support  --->
+				[*] legacy /proc/scsi/ support
+				<*> SCSI disk support
+				//<*> SCSI CDROM support
+				//<*> SCSI generic support
+				//[*] Asynchronous SCSI scanning
+				[*] SCSI low-level drivers  --->
+
+	[Note]: Refer to the ark169 configuration for a concrete example.
 
 
 三、配置设备树文件
+[EN] Section 3: Configure the Device Tree
+
 	参考linux/arch/arm/boot/dts/ark169.dts文件里的usb和usb phy的配置，添加到自己对应的dts文件里。
+[EN]	Reference the USB and USB PHY configuration in linux/arch/arm/boot/dts/ark169.dts and add the following to your board's DTS file:
 
 	添加部分如下：
+[EN]	Add the following nodes:
 
 	&usb0_phy {
 		compatible = "usb-nop-xceiv";
@@ -102,42 +160,61 @@ ark1668芯片USB使用说明：
 	};
 
 	&usb0 {
-		status = "okay";	//使用USB0则配置“okay”,屏蔽USB0则配置“disabled”
+		status = "okay";	//使用USB0则配置"okay",屏蔽USB0则配置"disabled"
 	};
 
 	&usb1 {
-		status = "okay";	//使用USB1则配置“okay”,屏蔽USB1则配置“disabled”
+		status = "okay";	//使用USB1则配置"okay",屏蔽USB1则配置"disabled"
 	};
+[EN]	// Set status = "okay" to enable a port, "disabled" to disable it.
 
 
 四、编译并升级系统
+[EN] Section 4: Build and Flash the System
+
 	升级操作参考 "doc/升级说明.txt"。
+[EN]	For upgrade procedures, refer to "doc/升级说明.txt".
 
 
 五、进入系统后加载驱动并挂在U盘
+[EN] Section 5: Load Drivers and Mount a USB Drive After Boot
 
 	第一步：加载驱动(USB编译成内核模块是才需要加载)
+[EN]	Step 1: Load drivers (only required if USB was compiled as kernel modules)
 		//先加载
 			insmod lib/modules/4.14.88/kernel/drivers/usb/musb/musb_hdrc.ko
 		//后加载
 			insmod lib/modules/4.14.88/kernel/drivers/usb/musb/musb_ark.ko
+[EN]		//Load first:
+			insmod lib/modules/4.14.88/kernel/drivers/usb/musb/musb_hdrc.ko
+		//Load second:
+			insmod lib/modules/4.14.88/kernel/drivers/usb/musb/musb_ark.ko
 
 	第二步：置otg
+[EN]	Step 2: Set OTG mode
 		使用usb0时需要先置usb0的otg模式：
 			echo otg > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
 		使用usb1时需要先置usb1的otg模式：
 			echo otg > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
+[EN]		For USB0:
+			echo otg > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
+		For USB1:
+			echo otg > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
 
 		【注】：切换usb0和usb1做U盘时，需要置对应的otg。
+[EN]		[Note]: When switching between USB0 and USB1 for USB drive use, set OTG mode on the corresponding port.
 
 		此时插拔U盘，在/dev/目录下会有节点生成：/dev/sd*
+[EN]		After this, inserting a USB drive will create a /dev/sd* node.
 
 		插入U盘log参考如下：
+[EN]		Sample log when inserting a USB drive:
 			/ # dmesg -c
 			usb 1-1: new high-speed USB device number 5 using musb-hdrc
 			usb-storage 1-1:1.0: USB Mass Storage device detected
 			scsi host1: usb-storage 1-1:1.0
 		拔掉U盘log参考如下：
+[EN]		Sample log when removing a USB drive:
 			/ # dmesg -c
 			scsi 1:0:0:0: Direct-Access              SD Card Reader   1.00 PQ: 0 ANSI: 6
 			sd 1:0:0:0: Attached scsi generic sg0 type 0
@@ -152,22 +229,39 @@ ark1668芯片USB使用说明：
 
 	第三步：手动挂载测试（按照上述参考节点：/dev/sdb1）
 		命令：mount /dev/sdb1 /mnt
+[EN]	Step 3: Manually mount for testing (using the example node /dev/sdb1):
+		Command: mount /dev/sdb1 /mnt
 
 		挂在成功后可以看到U盘下的文件。
+[EN]		After a successful mount, the files on the USB drive will be accessible.
 
 六、启动ncm模式
+[EN] Section 6: Enable NCM Mode (USB Ethernet)
+
 	加载ncm驱动：
 		在第五步中加载完成musb_hdrc.ko和musb_ark.ko后，再加载ncm驱动，如下：
 		insmod lib/modules/4.14.88/kernel/drivers/usb/gadget/g_ncm.ko
+[EN]	Load the NCM driver (after loading musb_hdrc.ko and musb_ark.ko from Step 5):
+		insmod lib/modules/4.14.88/kernel/drivers/usb/gadget/g_ncm.ko
+
 	切换为device模式：
 		usb0:
 			echo peripheral > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
 		usb1:
 			echo peripheral > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
+[EN]	Switch to device mode:
+		usb0:
+			echo peripheral > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
+		usb1:
+			echo peripheral > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
+
 	切换回host模式：
 		usb0:
 			echo otg > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
 		usb1:
 			echo otg > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode
-		
-
+[EN]	Switch back to host mode:
+		usb0:
+			echo otg > /sys/devices/platform/ahb/e0100000.usb/musb-hdrc.0/mode
+		usb1:
+			echo otg > /sys/devices/platform/ahb/e0400000.usb/musb-hdrc.1/mode

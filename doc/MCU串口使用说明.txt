@@ -10,6 +10,18 @@
 	make savedefconfig
 	cp defconfig ../../../../u-boot/configs/xxx_defconfig
 	其中xxx_defconfig文件为linux-arkmicro/build/$(BOARD_TYPE).config文件内UBOOT_CONFIG_FILE变量的值。
+[EN] 1. To configure MCU UART communication in U-Boot, run make menuconfig:
+	cd linux-arkmicro/output/board/$(BOARD_TYPE)/u-boot
+	source ../../../../env.source
+	make menuconfig
+	Then set the following options (mcu serial port = UART number, mcu serial baud rate = baud rate):
+	ARM architecture  --->
+		(2) mcu serial port
+		(115200) mcu serial baud rate
+	After configuring:
+	make savedefconfig
+	cp defconfig ../../../../u-boot/configs/xxx_defconfig
+	where xxx_defconfig is the value of the UBOOT_CONFIG_FILE variable in linux-arkmicro/build/$(BOARD_TYPE).config.
 
 2. uboot中使用MCU串口通信接口
 	包含头文件
@@ -22,6 +34,17 @@
 	void mcu_serial_send(const unsigned char *buf, int len);
 	int mcu_serial_read(unsigned char *buf);
 	接收数据前一定要调用mcu_serial_init进行初始化。
+[EN] 2. MCU serial communication API in U-Boot:
+	Include the header:
+	#include <asm/arch/ark-common.h>
+	Available functions:
+	int mcu_serial_init(void);
+	void mcu_serial_putc(const char c);
+	void mcu_serial_puts(const char *s);
+	int mcu_serial_getc(void);
+	void mcu_serial_send(const unsigned char *buf, int len);
+	int mcu_serial_read(unsigned char *buf);
+	Always call mcu_serial_init() before receiving data.
 
 3. kernel中使用串口和MCU进行通讯需要修改设备树文件
 	如果linux-arkmicro/build/$(BOARD_TYPE).config文件内DTB_FILE_NAME变量的值为xxx.dtb文件，
@@ -39,6 +62,24 @@
 		use-in-kernel;
 		use-for-mcu;
 	};
+[EN] 3. To use MCU UART communication in the kernel, modify the device tree file.
+	If DTB_FILE_NAME in linux-arkmicro/build/$(BOARD_TYPE).config is xxx.dtb,
+	edit linux-arkmicro/linux/arch/arm/boot/dts/xxx.dts. For example, to use UART2
+	as the MCU serial port:
+	/ {
+		...
+
+		mcu_serial: mcu-serial@0 {
+			compatible = "arkmicro,ark-mcu-serial";
+		};
+	};
+
+	&uart2 {
+		use-in-kernel;
+		use-for-mcu;
+	};
 
 4. kernel中使用串口和MCU进行通讯可以查看linux-arkmicro/linux/drivers/tty/serial/ark_mcu_serial.c文件
    数据接收在mcu_serial_rx_task中处理，数据发送调用mcu_serial_send接口。
+[EN] 4. For kernel MCU serial communication, see linux-arkmicro/linux/drivers/tty/serial/ark_mcu_serial.c.
+   Data reception is handled in mcu_serial_rx_task; data transmission uses the mcu_serial_send() function.

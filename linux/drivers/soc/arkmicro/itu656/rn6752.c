@@ -1107,13 +1107,15 @@ static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_i
 
 		queue_work(dvr_rn6752->eq_queue, &dvr_rn6752->eq_work);
 
-		gpio_direction_input(dvr_rn6752->gpio_irq);
-		//gpio_set_debounce(dvr_rn6752->gpio_irq, 20);
-		ret = devm_request_irq(&client->dev, gpio_to_irq(dvr_rn6752->gpio_irq), rn6752_intr_handler, IRQF_TRIGGER_FALLING, "rn6752", (void *)dvr_rn6752);
-		if (ret)
-		{
-			printk(KERN_ERR "***ERR: %s: request irq error\n", __FUNCTION__);
-			goto err_request_irq;
+		if (dvr_rn6752->gpio_irq != -1) {
+			gpio_direction_input(dvr_rn6752->gpio_irq);
+			//gpio_set_debounce(dvr_rn6752->gpio_irq, 20);
+			ret = devm_request_irq(&client->dev, gpio_to_irq(dvr_rn6752->gpio_irq), rn6752_intr_handler, IRQF_TRIGGER_FALLING, "rn6752", (void *)dvr_rn6752);
+			if (ret)
+			{
+				printk(KERN_ERR "***ERR: %s: request irq error\n", __FUNCTION__);
+				goto err_request_irq;
+			}
 		}
 
 #ifdef RN6752_USE_TIMER
