@@ -393,6 +393,50 @@ static int ark_nand_read_page_syndrome(struct mtd_info *mtd, struct nand_chip *c
 }
 
 /**
+ * ark_nand_read_oob - read just the OOB region of a page, without decoding
+ *                     any data/ECC
+ * @mtd:        mtd info structure
+ * @chip:       nand chip info structure
+ * @page:       page number to read
+ *
+ * NAND_ECC_HW_SYNDROME's generic default (nand_read_oob_syndrome(),
+ * drivers/mtd/nand/raw/nand_base.c) assumes ECC bytes are physically
+ * interleaved with data at regular ecc.size intervals -- its column-offset
+ * formula for step i>1 lands mid-page (e.g. offset 1024 on this chip),
+ * still well inside the real data area. This chip's actual physical
+ * layout is the standard non-interleaved one instead (confirmed via
+ * ark_nand_read_page_syndrome() above, which itself sets
+ * `oob_pos = mtd->writesize` before adding the ECC region's offset --
+ * see also docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md section 1):
+ * all mtd->writesize data bytes first, contiguous, then all mtd->oobsize
+ * OOB bytes, contiguous. Because this driver never overrode ecc.read_oob,
+ * every OOB-only read (critically, nand_block_bad()'s factory bad-block
+ * marker check during a bbt scan) was going through the wrong-layout
+ * generic function and reading garbage from the wrong physical offset --
+ * the actual root cause of the ~417 false "bad block" count that
+ * persisted even after the ECC scheme and BBT-write fixes elsewhere in
+ * this file. Confirmed by inspection against the correct addressing
+ * already used in ark_nand_read_page_syndrome()'s own oob_required
+ * branch below -- this function is that same, correct sequence, factored
+ * out for standalone OOB reads. */
+static int ark_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
+			      int page)
+{
+	int oob_pos = mtd->writesize;
+
+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
+
+	if (mtd->writesize > 512)
+		chip->cmdfunc(mtd, NAND_CMD_RNDOUT, oob_pos, -1);
+	else
+		chip->cmdfunc(mtd, NAND_CMD_READ0, oob_pos, page);
+
+	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
+
+	return 0;
+}
+
+/**
  * ark_nand_write_page_syndrome - hardware ecc syndrom based page write
  * @mtd:        mtd info structure
  * @chip:       nand chip info structure
@@ -488,6 +532,7 @@ static int ark_nand_hw_syndrome_ecc_ctrl_init(struct mtd_info *mtd, struct nand_
     ecc->correct = ark_nand_correct_data;
 	ecc->read_page = ark_nand_read_page_syndrome;
 	ecc->write_page = ark_nand_write_page_syndrome;
+	ecc->read_oob = ark_nand_read_oob;
 
 	if (mtd->oobsize == 64) {
 		ecc->size = 1024;
