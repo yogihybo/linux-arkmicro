@@ -222,7 +222,23 @@
 };
 
 &usb1 {
-	interrupts = <40>, <39>; /* Correct IRQs for ark1668e architectural layout on Prado */
+	/* interrupts = <40>, <39> (added 2026-07-16, bundled into an
+	 * unrelated I2S commit with no explanation) was wrong -- vich
+	 * (arch/arm/boot/dts/ark1668.dtsi's interrupt-parent for this node)
+	 * is a single arm,pl192-vic with only 32 lines (#interrupt-cells=1,
+	 * valid range 0-31). 40 and 39 are out of range for that domain.
+	 * 40-32=8 and 39-32=7 exactly match ark1668.dtsi's original values
+	 * for this node -- this override looks like a global/SoC-wide
+	 * interrupt-numbering reference (where vich's lines might be
+	 * documented as a conceptual 32-63) mistakenly used as the raw,
+	 * VIC-local interrupt number this property actually needs. This is
+	 * the direct cause of "musb-ark e0400000.usb: Failed to get irq" /
+	 * "probe of e0400000.usb failed with error -22", seen in every
+	 * single boot log since this override was added -- confirmed the
+	 * onboard WiFi module and the external-facing USB port are on
+	 * separate physical controllers (usb0/usb1), and this is why they
+	 * couldn't work at the same time: usb1 never successfully probed at
+	 * all. Dropping the override restores the known-good base values. */
 	status = "okay";
 };
 
