@@ -131,7 +131,12 @@ static int ark_mcu_serial_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 
-	printk(KERN_ALERT "enable get mcu data\n");
+	/* Probe succeeded -- this is routine confirmation, not a real alert.
+	 * Was KERN_ALERT with no device name, which several serial terminals
+	 * render in red, making a completely benign line look like an error
+	 * at every boot. dev_info() matches the "device-name: message"
+	 * convention every other driver on this board uses. */
+	dev_info(&pdev->dev, "probe done, rx handler registered\n");
 
 	return 0;	
 }
