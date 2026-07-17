@@ -285,6 +285,25 @@
 	status = "okay";
 };
 
+// nand-on-flash-bbt (set in ark1668.dtsi) makes the kernel cache its own
+// bad-block table to a reserved flash area and trust it on every later
+// boot instead of rescanning -- stock's own driver never does this (it
+// always rescans real factory OOB markers at boot instead of trusting a
+// persisted cache), and a boot where this driver's ECC config couldn't
+// correctly decode the existing cache didn't just fail to read it, it
+// silently rescanned AND wrote a fresh, wrong table back to physical
+// flash -- confirmed happening for real, reproducing the historical
+// "417 false bad blocks" bug exactly (see
+// prado-firmware-reconstruction's
+// docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md section 1's
+// follow-up). Dropping the property here disables flash-based BBT
+// caching entirely for this board -- every boot always does a fresh
+// factory-marker scan, kept in RAM only, matching stock's own
+// self-healing behavior and never persisting anything to flash again.
+&nfc {
+	/delete-property/ nand-on-flash-bbt;
+};
+
 // SDIO WiFi Controller
 &mmc1 {
 	status = "okay";
