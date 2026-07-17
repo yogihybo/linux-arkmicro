@@ -181,3 +181,15 @@ CONFIG_DEBUG_LL=y
 CONFIG_DEBUG_ARKMICRO_UART=y
 CONFIG_EARLY_PRINTK=y
 CONFIG_PRINTK_TIME=y
+
+# RTC support -- the device tree already declares the real hardware
+# (rtc@40406000, compatible "arkmicro,ark-rtc") and drivers/rtc/rtc-ark.c
+# already exists, but RTC_CLASS was never enabled, so the whole RTC
+# subsystem was compiled out entirely -- no /dev/rtc0 ever appeared,
+# causing "hwclock: can't open '/dev/misc/rtc'" at every boot (busybox's
+# hwclock tries /dev/rtc, /dev/rtc0, then /dev/misc/rtc in order, and
+# all three failed since none existed). RTC_HCTOSYS came along for free
+# via olddefconfig -- syncs system time from the hardware RTC at boot.
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_DRV_ARK=y
