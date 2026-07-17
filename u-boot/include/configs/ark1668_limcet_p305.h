@@ -129,6 +129,17 @@
 		"nand read ${kerneladdr} kernel; " \
 		"bootz ${kerneladdr}\0"
 
+/* ATAGS buffer for the kernel boot params list (setup_start_tag() et al,
+ * arch/arm/lib/bootm.c). Without this defined, initr_malloc_bootparams()
+ * (common/board_r.c) never runs and gd->bd->bi_boot_params is never set
+ * to a real heap address -- it stays at its zero-initialized value, so
+ * ATAGS get written to (and the kernel is handed r2 pointing at) physical
+ * address 0x0, colliding with the exception vector table there (SCTLR.V=0,
+ * low vectors). Root-caused via a live register/ATAGS-pointer dump right
+ * at the kernel jump instant -- see
+ * docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md §5. */
+#define CONFIG_SYS_BOOTPARAMS_LEN	SZ_4K
+
 /* Environment */
 #define CONFIG_ENV_SIZE			0x40000	// 256K (2 erase blocks)
 
