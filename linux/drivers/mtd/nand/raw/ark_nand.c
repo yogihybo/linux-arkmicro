@@ -836,14 +836,54 @@ static void ark_nand_chips_cleanup(struct ark_nfc *nfc)
 	nand_release(&nfc->nand);
 }
 
+/* Same pattern as the U-Boot fork's ark_bbt_main_descr/ark_bbt_mirror_descr
+ * (board/arkmicro/ark1668_limcet_p305/ark_nand.c) -- identical to the
+ * generic bbt_main_no_oob_descr/bbt_mirror_no_oob_descr in nand_bbt.c
+ * except NAND_BBT_WRITE is dropped. Without this, nand_create_bbt() only
+ * installs board-specific descriptors when nand->bbt_td is still NULL, so
+ * it falls back to the generic write-enabled ones -- meaning any boot
+ * where this driver's ECC config can't correctly validate the existing
+ * on-flash BBT (still-being-verified territory, see
+ * prado-firmware-reconstruction's
+ * docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md section 1's
+ * follow-up) doesn't just fail to read it -- it silently rescans and
+ * writes a fresh, potentially wrong table back to physical flash.
+ * Confirmed happening for real: a 2026-07-17 boot log reproduced exactly
+ * 417 "Bad eraseblock" entries (matching the historical false-bad-block
+ * count) followed by "Bad block table written" to two real flash
+ * addresses, on a boot that didn't even use NAND for anything (kernel+
+ * rootfs both from USB). This override stops the write; the scan can
+ * still read an existing table or fall back to real factory bad-block
+ * markers in RAM, it just never persists anything back to flash. */
+static struct nand_bbt_descr ark_bbt_main_no_oob_descr = {
+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_2BIT |
+		   NAND_BBT_VERSION | NAND_BBT_PERCHIP | NAND_BBT_NO_OOB,
+	.len = 4,
+	.veroffs = 4,
+	.maxblocks = NAND_BBT_SCAN_MAXBLOCKS,
+	.pattern = (uint8_t *)"Bbt0",
+};
+
+static struct nand_bbt_descr ark_bbt_mirror_no_oob_descr = {
+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_2BIT |
+		   NAND_BBT_VERSION | NAND_BBT_PERCHIP | NAND_BBT_NO_OOB,
+	.len = 4,
+	.veroffs = 4,
+	.maxblocks = NAND_BBT_SCAN_MAXBLOCKS,
+	.pattern = (uint8_t *)"1tbB",
+};
+
 static int ark_nand_attach_chip(struct nand_chip *nand)
 {
 	struct mtd_info *mtd = nand_to_mtd(nand);
 	struct ark_nfc *nfc = container_of(nand, struct ark_nfc, nand);
 	int ret;
 
-	if (nand->bbt_options & NAND_BBT_USE_FLASH)
+	if (nand->bbt_options & NAND_BBT_USE_FLASH) {
 		nand->bbt_options |= NAND_BBT_NO_OOB;
+		nand->bbt_td = &ark_bbt_main_no_oob_descr;
+		nand->bbt_md = &ark_bbt_mirror_no_oob_descr;
+	}
 
 	nand->options |= NAND_NO_SUBPAGE_WRITE;
 
