@@ -292,10 +292,35 @@ void ark_display_init(int screen_id)
 	 * same outside-U-Boot's-64MB-DRAM category that caused real memory
 	 * corruption elsewhere (see docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md).
 	 * Removing the call removes that write entirely rather than just
-	 * relocating it. OSD2 is left disabled here; ark_show_bootlogo()/
-	 * ark_lcd_console_init() manage OSD1/OSD2 themselves afterward. */
-        ark_osd_en_layer(OSD2_LAYER, 0);
+	 * relocating it. */
         ark_osd_en_layer(OSD1_LAYER, 0);
+
+	/* OSD2 — unlike OSD1 (bootlogo, transient, managed by
+	 * ark_show_bootlogo() below), the real stock U-Boot always leaves
+	 * OSD2 fully configured and enabled here, pointing at a fixed
+	 * framebuffer address ABOVE the kernel's own "mem=180M" ceiling
+	 * (0x0be00000, ~190MB) — i.e. memory the kernel's own allocator
+	 * never manages, so its display driver can build on a
+	 * pre-reserved OSD2 layer instead of allocating one itself.
+	 *
+	 * This build previously left OSD2 fully disabled/zeroed
+	 * (SIZE/ADDR/CTL all 0, OSD2 bit clear in rLCD_CONTROL) — the
+	 * likely root cause of the real stock kernel's ark_disp driver
+	 * failing to register /dev/ark_display (and MsnCoreApp/DirectFB
+	 * failing right after) when booted via `bootnand` directly,
+	 * instead of chainloading the real stock U-Boot via `bootstock`.
+	 * Confirmed via a live md.l register comparison against a working
+	 * stock unit — see
+	 * docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md §5.
+	 *
+	 * Values below are the exact ones read live from stock, not
+	 * derived from ark_set_osd_image()'s partial-bitfield helper (which
+	 * only touches a subset of CTL's bits), to guarantee a byte-for-byte
+	 * match rather than an approximation. */
+	rLCD_OSD2_SIZE = 0x001e0320;   /* 800x480, same format as OSD1 */
+	rLCD_OSD2_ADDR = 0x0be00000;   /* fixed, outside kernel-managed RAM */
+	rLCD_OSD2_CTL  = 0x002320ff;   /* enabled + format/order bits matching stock */
+        ark_osd_en_layer(OSD2_LAYER, 1);
 	if (IS_TVENC_SCREEN(screen) && interlace) {
 		ark_set_osd_frame_mode(OSD2_LAYER, 1);
 	} 
