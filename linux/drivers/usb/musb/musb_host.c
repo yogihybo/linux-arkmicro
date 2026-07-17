@@ -119,7 +119,7 @@ static void musb_h_tx_flush_fifo(struct musb_hw_ep *ep)
 		if (dev_WARN_ONCE(musb->controller, retries-- < 1,
 				"Could not flush host TX%d fifo: csr: %04x\n",
 				ep->epnum, csr)){
-			printk(KERN_ALERT "Host TX FIFONOTEMPTY csr: %02x\n", csr);
+			printk(KERN_ALERT "[musb] %s: host TX FIFONOTEMPTY csr: %02x\n", __func__, csr);
 			return;
 		}
 		mdelay(1);
@@ -213,7 +213,7 @@ musb_start_urb(struct musb *musb, int is_in, struct musb_qh *qh)
 
 	if(epnum >= MUSB_C_NUM_EPS)	//add++
 	{
-		printk(KERN_ERR "ERR: %s, Invalid epnum:%d, exit.\n.", __FUNCTION__, epnum);
+		printk(KERN_ERR "[musb] %s: invalid epnum %d, exit\n", __func__, epnum);
 		return;
 	}
 
@@ -456,7 +456,7 @@ musb_host_packet_rx(struct musb *musb, struct urb *urb, u8 epnum, u8 iso_err)
 			urb->transfer_buffer, qh->offset,
 			urb->transfer_buffer_length);
 	if (rx_count > 512) {
-		printk(KERN_ALERT "ERR: %s rx_count = %d\n", __FUNCTION__, rx_count);
+		printk(KERN_ALERT "[musb] %s: rx_count = %d\n", __func__, rx_count);
 	}
 
 	/* unload FIFO */
@@ -1759,7 +1759,7 @@ static int musb_rx_dma_in_inventra_cppi41(struct dma_controller *dma,
 	pipe = urb->pipe;
 
 	if (rx_count > 512) {
-		printk(KERN_ALERT "ERR: %s rx_count = %d\n", __FUNCTION__, rx_count);
+		printk(KERN_ALERT "[musb] %s: rx_count = %d\n", __func__, rx_count);
 	}
 
 	if (usb_pipeisoc(pipe)) {

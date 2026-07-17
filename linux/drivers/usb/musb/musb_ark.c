@@ -111,7 +111,7 @@ static void ark_musb_enable(struct musb *musb)
 	musb_readb(musb->ctrl_base, MUSB_INTRUSB);
 
 	if (is_dma_capable() && !dma_off)
-		printk(KERN_WARNING "%s %s: dma not reactivated\n",	__FILE__, __func__);
+		printk(KERN_WARNING "[musb] %s: dma not reactivated\n", __func__);
 	else
 		dma_off = 0;
 }
@@ -287,14 +287,14 @@ static int ark_musb_init(struct musb *musb)
 		sprintf(name, "usb%d-phy", parent->id);
 		phynode = of_find_node_by_name(phynode, name);
 		if (NULL == phynode) {
-			printk(KERN_ERR "*** ERROR: Failed to of_find_node_by_name \n");
+			printk(KERN_ERR "[musb] %s: failed to of_find_node_by_name(%s)\n", __func__, name);
 			return PTR_ERR(musb->xceiv);
 		}
 
 		musb->xceiv = devm_usb_get_phy_by_node(&parent->dev, phynode, NULL);
 		of_node_put(phynode);
 		if (IS_ERR(musb->xceiv)) {
-			printk(KERN_ERR "*** ERROR: Failed to usb_get_phy\n");
+			printk(KERN_ERR "[musb] %s: failed to usb_get_phy_by_node\n", __func__);
 			return PTR_ERR(musb->xceiv);
 		}
 	}

@@ -37,9 +37,26 @@ int cleanup_before_linux_select(int flags)
 
 	if (flags & CBL_DISABLE_CACHES) {
 		/*
-		* turn off D-cache
-		* dcache_disable() in turn flushes the d-cache and disables MMU
-		*/
+		 * Order matches the stock 2012.10 U-Boot binary's own
+		 * cleanup-before-jump sequence, traced live via Ghidra/objdump
+		 * against the real dumped uboot.bin (see
+		 * docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md §5):
+		 * I-cache is disabled+invalidated FIRST, D-cache (and MMU)
+		 * SECOND, with the extra full-cache invalidate pass done once
+		 * at the end -- not mainline's default D-cache-first ordering
+		 * with an invalidate interleaved between the two disables.
+		 * This fork's own bootz-based `bootnand` hangs silently right
+		 * after "Starting kernel ..." using mainline's ordering; the
+		 * real stock binary (which reliably boots this exact kernel
+		 * image via `bootstock`) uses this ordering instead -- being
+		 * tried here as the untested lead from that investigation.
+		 *
+		 * turn off D-cache
+		 * dcache_disable() in turn flushes the d-cache and disables MMU
+		 */
+		icache_disable();
+		invalidate_icache_all();
+
 		dcache_disable();
 		v7_outer_cache_disable();
 
@@ -54,9 +71,6 @@ int cleanup_before_linux_select(int flags)
 		* to avoid coherency problems for kernel
 		*/
 		invalidate_dcache_all();
-
-		icache_disable();
-		invalidate_icache_all();
 	} else {
 		/*
 		 * Turn off I-cache and invalidate it
