@@ -12,14 +12,20 @@
 		reg = <0x0 0x8000000>; // 128MB RAM
 	};
 
-	// Reversing Signal (Mapped but Prado uses UART protocol via MCUAdapter)
-	carback: carback@0 {
-		compatible = "arkmicro,ark-carback";
-		interrupt-parent = <&gpio0>;
-		interrupts = <5 IRQ_TYPE_EDGE_BOTH>;
-		detect-gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
-		debounce-detect = <20>;
-	};
+	// Reversing signal detection -- NOT a SoC GPIO on this product, and
+	// the carback node above (removed 2026-07-17) never should have had
+	// one. docs/HARDWARE_AND_SOC_REFERENCE.md §7 traced this to ground:
+	// the real kernel's `carback` platform_device has an all-zero
+	// platform_data struct (no GPIO baked in), and MsnCoreApp's active
+	// MCU adapter for this product (MCUAdapter_BoxP300, McuType=6) never
+	// touches GPIOOperater for it -- reverse-gear detection happens
+	// entirely on the companion STM32F105 MCU (wired directly to the
+	// vehicle's reverse-light circuit, confirmed by physical board
+	// inspection too), which just sends a `backcar enable/disable`
+	// command to the SoC over the existing HS-UART arktool link
+	// (mcu_serial below). Its former detect-gpios (&gpio0 5) was
+	// pinctrl pin 5 = LCD r3 on real hardware -- a silent conflict with
+	// the display, for a GPIO that was never real in the first place.
 
 	// ARK1680 on-SoC resistive ADC touchscreen — this is the touch path
 	// this unit's stock firmware actually selects (see
@@ -59,7 +65,20 @@
 			carback-config = <1>;
 		};
 
-		// Goodix GT911 Touchscreen Controller
+		// Goodix GT911 Touchscreen Controller -- disabled (2026-07-17).
+		// This unit's real touch path is the ARK1680 on-SoC resistive
+		// controller (tsc@e4500000 above), not this node -- already
+		// documented there. A full pin audit against real stock
+		// hardware confirmed it further: every one of this node's four
+		// GPIO/pin assignments lands on a pin something else genuinely
+		// owns on real hardware -- irq-gpios (&gpio0 4) is pinctrl pin
+		// 4 = LCD r2, reset-gpios (&gpio2 16) is pinctrl pin 80 =
+		// pwm-2, and its I2C bus (i2c-gpio-0 below) sits on LCD r0/r1.
+		// Not "slightly wrong wiring" -- a node with zero legitimate
+		// pins on this board, almost certainly carried over unmodified
+		// from a different board variant. Left in place but disabled
+		// rather than deleted, in case pins are ever confirmed for a
+		// real capacitive-touch variant of this board.
 		gt911: touchscreen@5d {
 			compatible = "goodix,gt911";
 			reg = <0x5d>;
@@ -68,6 +87,7 @@
 			irq-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
 			reset-gpios = <&gpio2 16 GPIO_ACTIVE_HIGH>;
 			touchscreen-inverted-x;
+			status = "disabled";
 		};
 
 	};
@@ -259,10 +279,37 @@
 };
 
 // LCD Framebuffer Configuration
+//
+// pinctrl-0 reverted to the stock full pinctrl_lcd_rgb888 group
+// (2026-07-17). A previous commit (cce2b32e7) swapped this for a custom
+// pinctrl_lcd_prado group that dropped r0, r1, and r7 -- 3 of the 8
+// red-channel pins, including the MSB -- to free GPIO 2/3/9 for
+// i2c-gpio-0/i2c-gpio-1 bit-banging. That justification cited a doc
+// (docs/I2C_GPIO0_LCD_PIN_CONFLICT.md) that was never actually created
+// -- the pin choice was never validated against real board wiring, it
+// was just assumed from the DTS file's first commit onward. Losing the
+// red MSB while green/blue stayed full 8-bit produced visible red
+// banding/overlay on real hardware. Since the framebuffer is still
+// programmed as 32bpp/RGB888 (bits-per-pixel below), the LCD controller
+// was never told to actually run at a reduced depth either -- pins were
+// just silently dropped from pinctrl while the peripheral kept shifting
+// out a full 24-bit-wide signal.
+//
+// This also very likely explains the chronic i2c-gpio-0/i2c-gpio-1
+// unreliability seen throughout this project (Goodix-TS i2c failures,
+// bd37033 i2c_transfer timeouts on every boot) -- those buses share
+// GPIO 2/3/9 with the LCD's red channel, so the LCD controller actively
+// toggling those pins as pixel timing and the kernel bit-banging I2C on
+// them at the same time would corrupt both. The SoC has a real, separate
+// hardware I2C controller (i2c0 @ 0xe4300000, pinctrl_i2c0 on
+// ARK_PBANK_2 pins 6/7, see ark1668-pinctrl.dtsi) that doesn't touch any
+// LCD pin -- moving GT911/RN6752/BD37033 onto it is a promising follow-up
+// but needs an i2c-scan on hardware first to confirm those devices are
+// actually wired to i2c0's pins before committing to it.
 &lcdc {
 	display = <&display0>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_prado>;
+	pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
 
 	display0: display@0 {
 		interface-type = "TTL";
@@ -347,36 +394,24 @@
 	clock-frequency = <100000>;
 };
 
+// gpio0's full 0-31 range restored (2026-07-17, reverting an earlier
+// change from later the same day). docs/HARDWARE_AND_SOC_REFERENCE.md's
+// static disassembly of the real stock 3.4 kernel's own board file (zero
+// live-hardware risk, not a guess) confirms pins 2/3 (i2c-gpio-0, RN6752
+// reversing-camera decoder) and pin 9 (i2c-gpio-1 SDA, BD37033 sound amp)
+// are a DELIBERATE, vendor-accepted pin-share with LCD r0/r1/r7 on real
+// hardware -- not a wiring mistake. Stock's own firmware has the exact
+// same rn6752_eq_work-reset retry loop and BD37033 write-timeout log
+// lines seen in every one of this project's own boot logs; those are
+// stock's known, accepted quirk from this sharing, not bugs introduced
+// here. Restricting this range (as briefly tried earlier the same day)
+// would stop RN6752/BD37033 from probing at all -- a real regression
+// versus matching stock, not a fix. What *was* a genuine bug is separate:
+// the old pinctrl_lcd_prado override (removed earlier, see &lcdc below)
+// permanently/statically dropped r0/r1/r7 from the LCD's own pinctrl-0
+// claim, unlike stock which keeps the full RGB888 group continuously
+// claimed and only briefly steals these specific pads for GPIO duty
+// during actual i2c-gpio bit-bang activity.
 &gpio0 {
 	gpio-ranges = <&pinctrl0 0 0 32>;
-};
-
-&pinctrl0 {
-	lcd {
-		pinctrl_lcd_prado: lcd-prado {
-			ark,pins =
-				<ARK_PBANK_0 4 ARK_PVAL_1		/* r2 */
-				 ARK_PBANK_0 5 ARK_PVAL_1		/* r3 */
-				 ARK_PBANK_0 6 ARK_PVAL_1		/* r4 */
-				 ARK_PBANK_0 7 ARK_PVAL_1		/* r5 */
-				 ARK_PBANK_0 8 ARK_PVAL_1		/* r6 */
-				 /* Exclude r0, r1 (pins 2, 3) and r7 (pin 9) for I2C use */
-				 ARK_PBANK_0 10 ARK_PVAL_1		/* g0 */
-				 ARK_PBANK_0 11 ARK_PVAL_1		/* g1 */
-				 ARK_PBANK_0 12 ARK_PVAL_1		/* g2 */
-				 ARK_PBANK_0 13 ARK_PVAL_1		/* g3 */
-				 ARK_PBANK_0 14 ARK_PVAL_1		/* g4 */
-				 ARK_PBANK_0 15 ARK_PVAL_1		/* g5 */
-				 ARK_PBANK_0 16 ARK_PVAL_1		/* g6 */
-				 ARK_PBANK_0 17 ARK_PVAL_1		/* g7 */
-				 ARK_PBANK_0 18 ARK_PVAL_1		/* b0 */
-				 ARK_PBANK_0 19 ARK_PVAL_1		/* b1 */
-				 ARK_PBANK_0 20 ARK_PVAL_1		/* b2 */
-				 ARK_PBANK_0 21 ARK_PVAL_1		/* b3 */
-				 ARK_PBANK_0 22 ARK_PVAL_1		/* b4 */
-				 ARK_PBANK_0 23 ARK_PVAL_1		/* b5 */
-				 ARK_PBANK_0 24 ARK_PVAL_1		/* b6 */
-				 ARK_PBANK_0 25 ARK_PVAL_1>;	/* b7 */
-		};
-	};
 };
