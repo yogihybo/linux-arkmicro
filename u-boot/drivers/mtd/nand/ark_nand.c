@@ -175,7 +175,39 @@ static struct nand_bbt_descr Ark_OOB64_bbt_mirror_descr = {
 	.pattern = mirror_pattern
 };*/
 
+/* Same shape as nand_bbt.c's generic bbt_main_no_oob_descr /
+ * bbt_mirror_no_oob_descr (this driver sets NAND_BBT_NO_OOB), minus
+ * NAND_BBT_WRITE: read an existing on-flash BBT, or build one in memory
+ * from a factory-bad-block-marker scan if none is found, but never
+ * persist it back to flash. nand_default_bbt() (nand_bbt.c) only installs
+ * the generic write-enabled descriptors when chip->bbt_td is still NULL,
+ * so setting these before nand_scan_tail() overrides them board-wide.
+ * Needed because the automatic flash-BBT scan runs on every single boot
+ * (CONFIG_SYS_NAND_USE_FLASH_BBT) -- letting it write is how a still-being-
+ * verified ECC/OOB-layout bug quietly wrote a polluted table over the real
+ * factory one in the past (see ark_hwecc_nand_init_param()'s comment). */
+static uint8_t ark_bbt_pattern[] = { 'B', 'b', 't', '0' };
+static uint8_t ark_bbt_mirror_pattern[] = { '1', 't', 'b', 'B' };
 
+static struct nand_bbt_descr ark_bbt_main_descr = {
+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE
+		| NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP
+		| NAND_BBT_NO_OOB,
+	.len = 4,
+	.veroffs = 4,
+	.maxblocks = NAND_BBT_SCAN_MAXBLOCKS,
+	.pattern = ark_bbt_pattern
+};
+
+static struct nand_bbt_descr ark_bbt_mirror_descr = {
+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE
+		| NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP
+		| NAND_BBT_NO_OOB,
+	.len = 4,
+	.veroffs = 4,
+	.maxblocks = NAND_BBT_SCAN_MAXBLOCKS,
+	.pattern = ark_bbt_mirror_pattern
+};
 
 struct ark_nand {
 	struct mtd_info		mtd;
@@ -1033,14 +1065,36 @@ static int ark_hwecc_nand_init_param(struct nand_chip *chip, struct mtd_info *mt
 	chip->ecc.size = 512;
 
 	if (mtd->oobsize == 64) {
+		/* This runs unconditionally at every boot's board_nand_init(),
+		 * BEFORE nand_scan_tail()'s automatic flash-BBT scan (this
+		 * board sets CONFIG_SYS_NAND_USE_FLASH_BBT) and before any
+		 * user-invoked `switchecc` command. It used to leave
+		 * chip->ecc.size at its 512-byte default and configure the
+		 * 512-byte-step "bootstrap" layout/BCH_CR value here — but
+		 * that does NOT match this chip's real on-flash format,
+		 * confirmed via live register/OOB comparison against stock
+		 * U-Boot (see nand_hw_eccoob_64_2seg13b's comment above and
+		 * `switchecc 2` below): 1024-byte step (2 segments/page),
+		 * 13-byte/7-bit BCH, BCH_CR = bit8|bit7|bit1. Because the BBT
+		 * scan ran with the wrong scheme, it could not decode the
+		 * real factory bad-block markers and — since NAND_BBT_CREATE
+		 * | NAND_BBT_WRITE are on by default for a flash BBT — it
+		 * silently rebuilt and wrote a fresh, polluted BBT flagging
+		 * good blocks bad on every single boot, independent of and
+		 * ahead of the `switchecc 2` fix (which only ever ran on an
+		 * already-corrupted BBT). This is the actual root cause of
+		 * the historical "417 false bad blocks" symptom. Fixed by
+		 * using the same, hardware-confirmed parameters as
+		 * `switchecc 2` here at probe time. */
+		chip->ecc.size = 1024;
 		chip->ecc.bytes = BIT_7_ECC_BYTE;
 		chip->ecc.strength = 7;
-		chip->ecc.layout = &nand_hw_eccoob_bootstrap;
-		chip->ecc.prepad = nand_hw_eccoob_bootstrap.eccpos[0];
-		chip->ecc.postpad = nand_hw_eccoob_bootstrap.oobfree[0].offset;
+		chip->ecc.layout = &nand_hw_eccoob_64_2seg13b;
+		chip->ecc.prepad = nand_hw_eccoob_64_2seg13b.eccpos[0];
+		chip->ecc.postpad = nand_hw_eccoob_64_2seg13b.oobfree[0].offset;
 		val = readl(rBCH_CR);
-		val &= ~((1 << 7) | (0x7 << 4));
-		val |= (1 << 8) | (1 << 0);
+		val &= ~(0x7 << 4);
+		val |= (1 << 8) | (1 << 7) | (1 << 1);
 		writel(val, rBCH_CR);
 	} else if(mtd->oobsize >= 128 && mtd->oobsize < 256) {
 		chip->ecc.bytes = BIT_24_ECC_BYTE; // should be 13 bytes but the ECC encoder register is in 32 bit word
@@ -1091,6 +1145,12 @@ static int ark_nand_init(struct nand_chip *chip, int devnum)
 
 #ifdef CONFIG_SYS_NAND_USE_FLASH_BBT
     chip->bbt_options |= NAND_BBT_USE_FLASH | NAND_BBT_NO_OOB;
+    /* Use our own bbt_td/bbt_md (see their definitions above) instead of
+     * letting nand_default_bbt() install the generic write-enabled ones --
+     * this makes the automatic flash-BBT scan read-only, never writing a
+     * (possibly wrong) table back to flash. */
+    chip->bbt_td = &ark_bbt_main_descr;
+    chip->bbt_md = &ark_bbt_mirror_descr;
 #endif
 	chip->options |= NAND_NO_SUBPAGE_WRITE;//refer kernel
 	chip->cmd_ctrl = ark_nand_hwcontrol;
