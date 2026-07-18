@@ -539,4 +539,18 @@ source "drivers/misc/echo/Kconfig"
 source "drivers/misc/cxl/Kconfig"
 source "drivers/misc/ocxl/Kconfig"
 source "drivers/misc/cardreader/Kconfig"
+
+config ARK_TOOL
+	tristate "Arkmicro ARK1668 arktool register/proc interface"
+	help
+	  Port of stock's arktool_reg_init()/ark_tool_handle() subsystem:
+	  ioremaps the LCD controller and shared pinmux register blocks
+	  into a fixed table and exposes /proc/arktool, gated on the
+	  first open of uart0 (the console UART), matching stock kernel
+	  behaviour byte-for-byte on the confirmed parts. See
+	  drivers/misc/ark_tool.c for what is and isn't yet implemented.
+
+	  If unsure, say Y -- this only maps registers and creates a
+	  procfs node, matching stock's own always-on behaviour.
+
 endmenu

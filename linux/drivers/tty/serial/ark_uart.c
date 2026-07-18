@@ -58,6 +58,7 @@
 #include <linux/sizes.h>
 #include <linux/io.h>
 #include <linux/acpi.h>
+#include <linux/ark_tool.h>
 
 #include "amba-pl011.h"
 
@@ -1751,6 +1752,11 @@ static int pl011_startup(struct uart_port *port)
 		pl011_dma_startup(uap);
 
 	pl011_enable_interrupts(uap);
+
+	/* Stock kernel triggers arktool_reg_init() the first time this
+	 * port (uart0, line 0 -- the console) completes a successful
+	 * startup(). See drivers/misc/ark_tool.c. */
+	ark_tool_notify_uart_open(uap->port.line);
 
 	return 0;
 
