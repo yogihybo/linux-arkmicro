@@ -1477,7 +1477,25 @@ static int ark_hsuart_startup(struct uart_port *port)
 		hsuart_port = 5;
 	}
 
-	uap->port.uartclk = clk_get_rate(uap->clk);
+	/* Stock's driver hardcodes this to 24000000 directly and never
+	 * calls any clock-framework API at all (confirmed via Ghidra
+	 * decompile of ark1680_hsuart_startup, 2026-07-18) -- it doesn't
+	 * resolve this from a clk_get_rate() call the way we do. Matching
+	 * that here rather than trusting clk_get_rate(uap->clk): our own
+	 * boot log shows every other registered clock printing its
+	 * resolved rate via clk_sys_recalc_rate()'s banner (cpupll,
+	 * uart4clk, uart5clk, etc.) except hsuart0clk/hsuart1clk, which
+	 * never print at all, anywhere in any capture -- strong evidence
+	 * this call was returning something other than the correct 24MHz
+	 * for the two high-speed UART ports specifically (the two-parent
+	 * "arkmicro,ark-clk-sys" clocks, unlike their single-parent uart4/
+	 * uart5clk siblings which do print correctly). A wrong uartclk
+	 * here means every UBMR baud divisor for both ttyHS0 (MCU) and
+	 * ttyHS1 (Bluetooth) would be computed wrong -- mistimed
+	 * bit-level UART signaling that looks exactly like "the
+	 * peripheral never responds", identically on both ports, which
+	 * matches the symptom this was found while investigating. */
+	uap->port.uartclk = 24000000;
 
 	/* Clear pending error and receive interrupts */
 	ark_hsuart_clear_interrupt(uap, HSUART_INT_RXD | HSUART_INT_RXTIMEOUT |
