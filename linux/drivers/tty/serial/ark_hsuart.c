@@ -1443,6 +1443,16 @@ static void ark_hsuart_set_mctrl(struct uart_port *port, unsigned int sigs)
 		ucr4 &= ~(0x3F << 10);
 		ucr4 |= (uap->fifosize * 3 / 4) << 10;
 		writew(ucr4, port->membase + HSUART_UCR4);
+	} else {
+		/* The sibling ark_uart.c driver (pl011_set_mctrl(), which
+		 * works) handles both directions symmetrically via a
+		 * set/clear macro applied to every mctrl bit. This function
+		 * only ever had the assert path -- once anything called it
+		 * with TIOCM_RTS set, RTS/auto-flow-control bit 13 could
+		 * never be deasserted again through this entry point. */
+		ucr2 = readw(port->membase + HSUART_UCR2);
+		ucr2 &= ~(1 << 13);
+		writew(ucr2, port->membase + HSUART_UCR2);
 	}
 }
 
@@ -1497,6 +1507,24 @@ static int ark_hsuart_startup(struct uart_port *port)
 	 * matches the symptom this was found while investigating. */
 	uap->port.uartclk = 24000000;
 
+	/* uap->clk (uart4clk/uart5clk) is fetched in probe() via
+	 * devm_clk_get() but was never actually turned on anywhere in this
+	 * driver -- no clk_prepare_enable() call existed at all, in probe()
+	 * or here. clk-sys.c's clk_sys_ops has real .enable/.disable
+	 * callbacks that write an actual gate-enable bit to a system
+	 * register (not a no-op rate-only clock), and the sibling
+	 * ark_uart.c driver (ttyS0-3, which works) does call
+	 * clk_prepare_enable() in its own startup(). With nothing ever
+	 * enabling it, Linux's common clock framework's boot-time
+	 * "disable unused clocks" pass would gate this off outright --
+	 * these ports are only ever opened later by userspace
+	 * (blueware/MsnCoreApp), long after that pass runs, so the HS UART
+	 * peripheral could be sitting on a genuinely disabled clock the
+	 * entire time anything tries to talk over it. */
+	retval = clk_prepare_enable(uap->clk);
+	if (retval)
+		return retval;
+
 	/* Clear pending error and receive interrupts */
 	ark_hsuart_clear_interrupt(uap, HSUART_INT_RXD | HSUART_INT_RXTIMEOUT |
 		HSUART_INT_TXD | HSUART_INT_ERR);
@@ -1544,6 +1572,7 @@ static int ark_hsuart_startup(struct uart_port *port)
 	return 0;
 
  clk_dis:
+	clk_disable_unprepare(uap->clk);
 	return retval;
 }
 
@@ -1584,6 +1613,7 @@ static void ark_hsuart_shutdown(struct uart_port *port)
 	/*
 	 * Shut down the clock producer
 	 */
+	clk_disable_unprepare(uap->clk);
 }
 
 static void
