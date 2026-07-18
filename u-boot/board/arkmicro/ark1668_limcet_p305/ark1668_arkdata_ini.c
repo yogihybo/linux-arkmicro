@@ -29,6 +29,7 @@
 #define DEBUG
 
 #include "ark1668_lcd.h"
+#include <fdt_support.h>
 
 /* Was 0xfe00000 — moved for the same reason as BOOTLOGO_SD_ADDR in
  * ark1668_display_cfg.c (outside U-Boot's declared 64MB DRAM; real
@@ -211,6 +212,114 @@ void arkdata_apply_lcd_timing(struct screen_info *screen)
 	       overridden, screen->vbp, screen->vfp, screen->vsw, screen->hbp,
 	       screen->hfp, screen->hsw, screen->clk_freq, screen->clk_div1,
 	       screen->clk_div2);
+}
+
+/* fdt_setprop_u32() a value read from arkdata.ini's `key`, at `node_path`'s
+ * `prop`. Leaves the DTB's existing (compiled-in) value untouched if the
+ * key isn't found or the node doesn't exist -- same fail-safe philosophy
+ * as apply_field() above, just targeting the kernel's DTB instead of
+ * U-Boot's own in-memory screen_info. Returns 1 if the property was
+ * written, 0 otherwise. */
+static int fdt_apply_field(void *blob, const char *node_path,
+			    const char *prop, const char *key, int base)
+{
+	int nodeoff, v;
+
+	if (arkdata_ini_get_int(key, base, &v) != 0)
+		return 0;
+
+	nodeoff = fdt_path_offset(blob, node_path);
+	if (nodeoff < 0) {
+		printf("[arkdata.ini]   %s: node '%s' not found in DTB, skipping %s\n",
+		       key, node_path, prop);
+		return 0;
+	}
+
+	if (fdt_setprop_u32(blob, nodeoff, prop, (uint32_t)v) != 0) {
+		printf("[arkdata.ini]   %s: fdt_setprop_u32 failed for %s at %s\n",
+		       key, prop, node_path);
+		return 0;
+	}
+
+	printf("[arkdata.ini]   %s='%d' -> DTB %s/%s\n", key, v, node_path, prop);
+	return 1;
+}
+
+/* U-Boot's standard board hook (CONFIG_OF_BOARD_SETUP): called
+ * automatically on every bootm/bootz, right before jumping to the kernel,
+ * with the already-loaded kernel DTB in `blob`. This is what actually
+ * lets arkdata.ini reach the *kernel's* display-timings node -- the
+ * existing arkdata_apply_lcd_timing() above only ever affected U-Boot's
+ * own splash-screen screen_info, never the DTB the kernel boots with.
+ *
+ * Node paths are the real ark1668_limcet_p305.dtb layout, confirmed by
+ * decompiling the compiled DTB (dtc -I dtb -O dts):
+ *   /ahb/lcd@e0500000/display@0                       -- lvds-con, dithering-con
+ *   /ahb/lcd@e0500000/display@0/display-timings/timing0 -- everything else
+ *
+ * Only fields with a real DT-consuming driver property get wired here.
+ * arkdata.ini's VP (contrast/brightness/saturation/hue) section is
+ * deliberately NOT included -- confirmed via drivers/misc/ark_display.c
+ * that those are hardcoded compile-time defaults, entirely runtime-
+ * controlled by MsnCoreApp's own ARKDISP_GET/SET_VDE_CFG ioctls instead,
+ * with no DT property at all. Same for GAMMA_VAL and ITU656_BYP_* --
+ * no corresponding DT-consumed property exists in this kernel's driver,
+ * so patching the DTB with those values would have no effect without new
+ * driver code first. */
+int ft_board_setup(void *blob, bd_t *bd)
+{
+	static const char *timing_path =
+		"/ahb/lcd@e0500000/display@0/display-timings/timing0";
+	static const char *display_path =
+		"/ahb/lcd@e0500000/display@0";
+	int overridden = 0;
+	int clk_freq, clk_div1;
+
+	if (arkdata_ini_load() != 0) {
+		printf("[arkdata.ini] ft_board_setup: not available, kernel DTB keeps "
+		       "compiled-in display-timings\n");
+		return 0;
+	}
+
+	printf("[arkdata.ini] ft_board_setup: patching kernel DTB display-timings from arkdata.ini\n");
+
+	overridden += fdt_apply_field(blob, timing_path, "hactive", "Width", 10);
+	overridden += fdt_apply_field(blob, timing_path, "vactive", "Height", 10);
+	overridden += fdt_apply_field(blob, timing_path, "vback-porch", "VBP", 10);
+	overridden += fdt_apply_field(blob, timing_path, "vfront-porch", "VFP", 10);
+	overridden += fdt_apply_field(blob, timing_path, "vsync-len", "VSW", 10);
+	overridden += fdt_apply_field(blob, timing_path, "hback-porch", "HBP", 10);
+	overridden += fdt_apply_field(blob, timing_path, "hfront-porch", "HFP", 10);
+	overridden += fdt_apply_field(blob, timing_path, "hsync-len", "HSW", 10);
+	overridden += fdt_apply_field(blob, timing_path, "hsync-active", "IHS", 10);
+	overridden += fdt_apply_field(blob, timing_path, "vsync-active", "IVS", 10);
+	overridden += fdt_apply_field(blob, timing_path, "de-active", "IOE", 10);
+
+	/* clock-frequency is CLKFreq/CLKDIV1 (Hz), not a direct field copy --
+	 * both need to be present together or neither is applied, since a
+	 * frequency computed from only one of them (mixed with the compiled
+	 * default for the other) would be meaningless. */
+	if (arkdata_ini_get_int("CLKFreq", 10, &clk_freq) == 0 &&
+	    arkdata_ini_get_int("CLKDIV1", 10, &clk_div1) == 0 && clk_div1 > 0) {
+		int nodeoff = fdt_path_offset(blob, timing_path);
+		uint32_t hz = (uint32_t)(clk_freq / clk_div1);
+
+		if (nodeoff >= 0 && fdt_setprop_u32(blob, nodeoff, "clock-frequency", hz) == 0) {
+			printf("[arkdata.ini]   CLKFreq/CLKDIV1=%d/%d -> DTB clock-frequency=%u\n",
+			       clk_freq, clk_div1, hz);
+			overridden++;
+		}
+	} else {
+		printf("[arkdata.ini]   CLKFreq/CLKDIV1 not both present, keeping compiled clock-frequency\n");
+	}
+
+	overridden += fdt_apply_field(blob, display_path, "lvds-con", "LVDSCfg", 16);
+	overridden += fdt_apply_field(blob, display_path, "dithering-con", "dithering", 10);
+
+	printf("[arkdata.ini] ft_board_setup: done, %d DTB propert%s overridden from arkdata.ini\n",
+	       overridden, overridden == 1 ? "y" : "ies");
+
+	return 0;
 }
 
 int do_arkdatatest(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
