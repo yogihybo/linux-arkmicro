@@ -260,6 +260,25 @@ static void ark_hsuart_enable_interrupt(struct ark_hsuart_port *uap, u32 intr)
 
 static void ark_hsuart_clear_interrupt(struct ark_hsuart_port *uap, u32 intr)
 {
+	/* HSUART_INT_RXD (bit 9, "RX data available") was missing from
+	 * this function -- every sibling status bit below (RXTIMEOUT,
+	 * the error bits, RTSD) gets an explicit write-1-to-clear, but
+	 * this one never did. Confirmed via the reference driver this
+	 * file was adapted from (amba-pl011.c, same tree): real PL011-
+	 * derived hardware requires an explicit clear of the equivalent
+	 * RXIS bit as part of normal interrupt handling
+	 * (`pl011_write(UART011_RTIS | UART011_RXIS, uap, REG_ICR)`) --
+	 * it is not self-clearing via FIFO reads. Leaving it unacked
+	 * means ark_hsuart_irq()'s drain loop (see ARK_ISR_PASS_LIMIT)
+	 * can never fully clear pending status under sustained RX
+	 * traffic, matching the lockup workaround's own description
+	 * ("uart interrupt registers cannot be cleared... uart transfer
+	 * gets blocked") -- found while investigating a Bluetooth
+	 * firmware-download failure that only manifests on bulk/sustained
+	 * transfer, not short AT commands (2026-07-18). */
+	if(intr & HSUART_INT_RXD)
+		writew(readl(uap->port.membase + HSUART_USR1) | (1<<9), uap->port.membase + HSUART_USR1);
+
 	if(intr & HSUART_INT_RXTIMEOUT)
 		writew(readl(uap->port.membase + HSUART_USR1) | (1<<8), uap->port.membase + HSUART_USR1);
 
