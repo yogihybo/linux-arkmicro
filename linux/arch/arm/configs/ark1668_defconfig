@@ -46,7 +46,22 @@ CONFIG_PACKET=y
 CONFIG_PACKET_DIAG=y
 CONFIG_UNIX=y
 CONFIG_UNIX_DIAG=y
-# CONFIG_WIRELESS is not set
+# CONFIG_INET/CONFIG_IPV6/CONFIG_WIRELESS/CONFIG_WLAN below were all
+# previously only ever set by hand in a stale .config that never got
+# regenerated from this file (build_kernel.sh skips defconfig
+# application whenever .config already exists) -- until 2026-07-19,
+# when a --defconfig rebuild silently dropped all four along with the
+# RTL8xxx WiFi drivers, RN6752 camera decoder, and ARK1668_ITU656
+# capture pipeline, and they'd never actually been captured here.
+# Recovered by cross-referencing the stale (but proven-working)
+# rtl*.ko build artifacts still sitting in the source tree, plus the
+# confirmed-real "IPv6: ADDRCONF" and hostapd/DHCP boot-log evidence
+# that depends on INET/IPV6 being on -- see docs/WIRELESS_AND_INIT.md.
+CONFIG_INET=y
+CONFIG_IPV6=y
+CONFIG_WIRELESS=y
+CONFIG_CFG80211=m
+CONFIG_MAC80211=m
 # CONFIG_UEVENT_HELPER is not set
 CONFIG_DEVTMPFS=y
 CONFIG_DEVTMPFS_MOUNT=y
@@ -77,7 +92,11 @@ CONFIG_USB_USBNET=y
 # CONFIG_USB_NET_NET1080 is not set
 # CONFIG_USB_BELKIN is not set
 CONFIG_USB_IPHETH=y
-# CONFIG_WLAN is not set
+CONFIG_WLAN=y
+CONFIG_RTL8XXXU=m
+CONFIG_RTL8821CU=m		# despite the Kconfig symbol name, builds rtl8811cu.ko (see drivers/net/wireless/realtek/rtl8811cu/Kconfig)
+CONFIG_RTL8821CS=m
+CONFIG_RTL8192CU=m		# selects RTLWIFI/RTLWIFI_USB/RTL8192C_COMMON automatically
 CONFIG_INPUT_EVDEV=y
 # CONFIG_INPUT_KEYBOARD is not set
 # CONFIG_INPUT_MOUSE is not set
@@ -148,7 +167,8 @@ CONFIG_SYNC_FILE=y
 CONFIG_ARK_HX170DEC=y
 CONFIG_ARK_JPEG_DEC=y
 CONFIG_ARK1668_ITU656=y
-CONFIG_ARK7116=y
+# CONFIG_ARK7116 is not set
+CONFIG_RN6752=y
 CONFIG_ARK_TOOL=y
 CONFIG_PWM=y
 CONFIG_PWM_ARK=y
