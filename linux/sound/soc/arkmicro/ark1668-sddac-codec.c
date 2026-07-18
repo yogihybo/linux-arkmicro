@@ -111,6 +111,21 @@ static int ark_sddac_hw_params(struct snd_pcm_substream *substream,
 
 static int ark_sddac_mute(struct snd_soc_dai *dai, int mute)
 {
+	struct snd_soc_component *component = dai->component;
+	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
+
+	/* Was a no-op stub -- confirmed via stock's own boot log
+	 * (2026-07-18, "ark_audio_mute" lines) that real hardware writes
+	 * this register on every mute/unmute: 0 to mute, the configured
+	 * L/R gain to unmute. Same expression ark_sddac_codec_probe()
+	 * already uses at init; DACR0_LVOL/DACR0_RVOL (ark_i2s.h) already
+	 * had the correct real-hardware bit layout, this function just
+	 * never called them. */
+	if (mute)
+		writel(0, dac->base + I2S_DACR0);
+	else
+		writel(DACR0_RVOL(dac->vol_r) | DACR0_LVOL(dac->vol_l), dac->base + I2S_DACR0);
+
 	return 0;
 }
 
