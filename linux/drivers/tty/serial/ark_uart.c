@@ -364,7 +364,14 @@ static void pl011_dma_probe(struct uart_amba_port *uap)
 
 		/* We need platform data */
 		if (!plat || !plat->dma_filter) {
-			dev_info(uap->port.dev, "no TX platform data\n");
+			/* Expected on this board: this port has no DT-declared
+			 * DMA channel and no platform_data dma_filter fallback
+			 * either, so TX just uses PIO/interrupt-driven writes
+			 * instead of DMA -- not an error, and not something a
+			 * fix would change without adding an actual DMA
+			 * channel binding for this UART in the device tree. */
+			dev_info(uap->port.dev,
+				"no TX DMA channel available (no platform data) -- using PIO/interrupt-driven TX instead, this is expected on this board\n");
 		} else {
 			/* Try to acquire a generic DMA engine slave TX channel */
 			dma_cap_zero(mask);
@@ -400,6 +407,17 @@ static void pl011_dma_probe(struct uart_amba_port *uap)
 			dev_err(uap->port.dev, "no RX DMA channel!\n");
 			return;
 		}
+	}
+
+	if (!chan) {
+		/* Same situation as the TX side above: no DT-declared RX
+		 * DMA channel and no platform_data fallback, so RX uses
+		 * PIO/interrupt-driven reads instead. Expected on this
+		 * board -- was previously silent here, unlike the TX path,
+		 * which made it look like RX DMA setup was just skipped by
+		 * accident rather than falling back deliberately. */
+		dev_info(uap->port.dev,
+			"no RX DMA channel available (no platform data) -- using PIO/interrupt-driven RX instead, this is expected on this board\n");
 	}
 
 	if (chan) {
