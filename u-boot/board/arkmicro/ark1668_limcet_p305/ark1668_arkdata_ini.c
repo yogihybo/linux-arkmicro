@@ -245,6 +245,79 @@ static int fdt_apply_field(void *blob, const char *node_path,
 	return 1;
 }
 
+/* fdt_setprop_string() `str` at `node_path`'s `prop`. Shared plumbing for
+ * the two enum-to-string translators below (interface-type, lcd-wiring-
+ * mode) -- unlike fdt_apply_field(), the caller has already done the
+ * arkdata.ini lookup and enum translation, since both of those need
+ * driver-specific logic apply_field()'s generic int-copy can't express. */
+static int fdt_setprop_string_field(void *blob, const char *node_path,
+				     const char *prop, const char *str)
+{
+	int nodeoff = fdt_path_offset(blob, node_path);
+
+	if (nodeoff < 0) {
+		printf("[arkdata.ini]   node '%s' not found in DTB, skipping %s\n",
+		       node_path, prop);
+		return 0;
+	}
+	if (fdt_setprop_string(blob, nodeoff, prop, str) != 0) {
+		printf("[arkdata.ini]   fdt_setprop_string failed for %s at %s\n",
+		       prop, node_path);
+		return 0;
+	}
+	printf("[arkdata.ini]   -> DTB %s/%s=\"%s\"\n", node_path, prop, str);
+	return 1;
+}
+
+/* arkdata.ini's RgbMode only ever documents two values (see the format
+ * comment block at the top of arkdata.ini: "RgbMode | BGR: 0  RGB: 5"),
+ * even though the kernel driver's lcd-wiring-mode property actually
+ * accepts 6 (BGR/GBR/RBG/BRG/GRB/RGB, see
+ * ark1668_lcdfb_get_of_wiring_modes() in ark1668_lcdfb.c) -- only
+ * translating the two arkdata.ini actually encodes, matching its own
+ * documented value space rather than guessing at the other four. */
+static int fdt_apply_wiring_mode(void *blob, const char *node_path)
+{
+	int v;
+
+	if (arkdata_ini_get_int("RgbMode", 10, &v) != 0)
+		return 0;
+
+	if (v == 0)
+		return fdt_setprop_string_field(blob, node_path, "lcd-wiring-mode", "BGR");
+	if (v == 5)
+		return fdt_setprop_string_field(blob, node_path, "lcd-wiring-mode", "RGB");
+
+	printf("[arkdata.ini]   RgbMode=%d: not 0 (BGR) or 5 (RGB), leaving lcd-wiring-mode unchanged\n", v);
+	return 0;
+}
+
+/* arkdata.ini's ScreenType is a bitmask (RGB565:1 RGB888:2 LVDS:4 VGA:8
+ * CVBS:16 YPBPR:32 ITU656:64 ITU601:128, per the format comment block),
+ * but the kernel driver's interface-type property only ever accepts
+ * "TTL" or "LVDS" (ark1668_lcdfb_get_of_interface_types()) -- there's no
+ * DT-consumed property at all for VGA/CVBS/YPBPR/ITU656/ITU601 on this
+ * LCD-panel driver, so only the LVDS bit and the two parallel-RGB bits
+ * (RGB565/RGB888, both electrically "TTL" as far as this property cares
+ * -- the actual bit-depth/packing difference is the separate Format
+ * field, not interface-type) are translated; anything else is left
+ * alone rather than guessing. */
+static int fdt_apply_interface_type(void *blob, const char *node_path)
+{
+	int v;
+
+	if (arkdata_ini_get_int("ScreenType", 10, &v) != 0)
+		return 0;
+
+	if (v & 0x4)
+		return fdt_setprop_string_field(blob, node_path, "interface-type", "LVDS");
+	if (v & 0x3)
+		return fdt_setprop_string_field(blob, node_path, "interface-type", "TTL");
+
+	printf("[arkdata.ini]   ScreenType=%d: no RGB565/RGB888/LVDS bit set, leaving interface-type unchanged\n", v);
+	return 0;
+}
+
 /* U-Boot's standard board hook (CONFIG_OF_BOARD_SETUP): called
  * automatically on every bootm/bootz, right before jumping to the kernel,
  * with the already-loaded kernel DTB in `blob`. This is what actually
@@ -265,7 +338,9 @@ static int fdt_apply_field(void *blob, const char *node_path,
  * with no DT property at all. Same for GAMMA_VAL and ITU656_BYP_* --
  * no corresponding DT-consumed property exists in this kernel's driver,
  * so patching the DTB with those values would have no effect without new
- * driver code first. */
+ * driver code first. RgbMode/ScreenType ARE included (via
+ * fdt_apply_wiring_mode()/fdt_apply_interface_type() above) -- string
+ * properties needing enum translation, not a direct numeric copy. */
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	static const char *timing_path =
@@ -315,6 +390,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	overridden += fdt_apply_field(blob, display_path, "lvds-con", "LVDSCfg", 16);
 	overridden += fdt_apply_field(blob, display_path, "dithering-con", "dithering", 10);
+	overridden += fdt_apply_wiring_mode(blob, display_path);
+	overridden += fdt_apply_interface_type(blob, display_path);
 
 	printf("[arkdata.ini] ft_board_setup: done, %d DTB propert%s overridden from arkdata.ini\n",
 	       overridden, overridden == 1 ? "y" : "ies");
