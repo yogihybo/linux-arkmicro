@@ -326,15 +326,32 @@
 		display-timings {
 			native-mode = <&timing0>;
 			timing0: timing0 {
-				clock-frequency = <33000000>;
+				/* Was guessed/wrong -- corrected 2026-07-18 to match
+				 * Prado's own real, dumped panel timing exactly:
+				 * firmware_source/prado_reconstructed/mtd4_arkdata/
+				 * arkdata.ini, [LCD_TIMMING]/[LCD_CLOCK] for
+				 * ScreenId=0 (the authoritative Stage-1 timing
+				 * source, see docs/DISPLAY_SUBSYSTEM.md). hfront-porch
+				 * was 210 here vs the real HFP=25 -- 8x too large --
+				 * and every other porch/sync-length value was also
+				 * off by a large margin. Wrong back-porch/sync-length
+				 * shifts where the active video window starts
+				 * relative to the sync pulses, which is exactly what
+				 * produces a visibly offset image. clock-frequency
+				 * corrected to CLKFreq/CLKDIV1 = 330000000/11 =
+				 * 30000000 (was 33000000). Sync polarities
+				 * (hsync-active/vsync-active/de-active) were already
+				 * correct, matching IHS=1/IVS=1/IOE=0 in the same
+				 * arkdata.ini block -- left unchanged. */
+				clock-frequency = <30000000>;
 				hactive = <800>;
 				vactive = <480>;
-				hback-porch = <16>;
-				hfront-porch = <210>;
-				vback-porch = <12>;
-				vfront-porch = <22>;
-				hsync-len = <30>;
-				vsync-len = <13>;
+				hback-porch = <32>;
+				hfront-porch = <25>;
+				vback-porch = <29>;
+				vfront-porch = <25>;
+				hsync-len = <54>;
+				vsync-len = <16>;
 				hsync-active = <1>;
 				vsync-active = <1>;
 				de-active = <0>;
