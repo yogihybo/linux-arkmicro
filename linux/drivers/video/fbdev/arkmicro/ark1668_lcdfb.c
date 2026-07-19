@@ -486,7 +486,27 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_SOURCE_SIZE, value);
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_POS, 0);
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_WIN_POINT, 0);
-	value = (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
+	/* Read-modify-write, preserving rgb_order/yuv_order (bits 18-22) --
+	 * was a flat literal assignment that unconditionally zeroed them on
+	 * every fb_set_par() call (every FBIOPUT_VSCREENINFO, including
+	 * DirectFB's mode-set), clobbering whatever ark1668_lcdc_funcs.c's
+	 * ark1668_lcdc_set_osd_format() (the ioctl path's own correct RMW
+	 * helper) had set via the ARKFB_SET_WINDOW_FORMAT/atomic layer-fmt
+	 * ioctls. Confirmed via Ghidra comparison against stock's real
+	 * ark_disp_set_osd_format() (vmlinux.elf @ 0x802ddf98) as the root
+	 * cause of skewed colors specifically on alpha-blended UI elements
+	 * (2026-07-19) -- rgb_order controls channel routing in the
+	 * blend-unit's actual compositor math, which only runs for
+	 * partial-alpha pixels; opaque pixels (alpha=255) pass through
+	 * largely unaffected by a wrong value here, matching the reported
+	 * symptom exactly (flat background fine, blended icons/widgets
+	 * wrong). bit16 (rgb_ycbcr_bypass) is intentionally cleared to 0
+	 * here, not preserved -- 0 is the format-correct value for
+	 * RGBA888 per ark1668_lcdc_set_osd_format()'s own switch statement,
+	 * not something the ioctl path should be setting independently. */
+	value = lcdc_readl(sinfo, ARK1668_LCDC_OSD1_CTL);
+	value &= (0x1F << 18);	/* keep only rgb_order/yuv_order (bits 18-22) */
+	value |= (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_CTL, value);
 
 	/* Open OSD1 layer. Deliberately unconditional (not gated by set_par
