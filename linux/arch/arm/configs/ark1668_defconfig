@@ -191,7 +191,23 @@ CONFIG_USB_G_NCM=y
 CONFIG_MMC=y
 CONFIG_MMC_DW=y
 CONFIG_DMADEVICES=y
-CONFIG_DW_DMAC=y
+# CONFIG_ARK_DMA was also missing here -- discovered 2026-07-19 while
+# chasing "ALSA device list: #0: Dummy 1" (no real sound card) after
+# the CONFIG_SND_SOC_ARK fix from 95783755f still didn't produce
+# working audio. The actual driver behind our DTS's dwdma0 node
+# (compatible = "arkmicro,ark-dma", drivers/dma/ark-dma.c) was never
+# enabled -- boot log showed the I2S driver getting all the way
+# through soft-reset and clock-gate setup, then failing at
+# "Could not register PCM" for both the DAC and ADC, because the DMA
+# controller their dmas= properties point at had no matching driver
+# and never probed. CONFIG_DW_DMAC (the generic Synopsys DesignWare
+# DMA driver, unrelated -- nothing in this board's DTS uses its
+# "snps,dma-spear1340"/"snps,dmac" compatible strings at all) was
+# disabled instead: ark-dma.c is a vendor fork of that same driver and
+# defines several identically-named symbols (dw_dma_filter,
+# dw_dma_enable, dw_dma_disable), causing a link error when both were
+# built in together.
+CONFIG_ARK_DMA=y
 CONFIG_SYNC_FILE=y
 # CONFIG_IOMMU_SUPPORT is not set
 CONFIG_ARK_HX170DEC=y
