@@ -143,6 +143,22 @@ CONFIG_SOUND=y
 CONFIG_SND=y
 CONFIG_SND_DUMMY=y
 CONFIG_SND_SOC=y
+# CONFIG_SND_SOC_ARK and everything under it were also missing here --
+# a fifth instance of the same --defconfig-regeneration pattern from
+# 2026-07-19 (INET/WLAN, MUSB, RN6752/ITU656/ARK_CARBACK, ARK_DISPLAY,
+# now this). Discovered via "new uboot new kernel baseline v9.txt":
+# "ALSA device list: #0: Dummy 1" -- only the dummy placeholder ever
+# registered, no real sound card, since as early as v7 (predates v9,
+# just not noticed until now). v4's log, by contrast, shows a real
+# "#0: ARK-SDDAC" card. Without this, the whole audio path (ark1668
+# I2S, the internal DAC ark_sddac_mute() fix from 1c3e87e50, and the
+# external BD37033 amp MsnCoreApp's Sound_BD37033::muteSpeakerAtts
+# talks to) was compiled out entirely.
+CONFIG_SND_SOC_ARK=y
+CONFIG_SND_SOC_ARK1668_I2S=y
+CONFIG_SND_SOC_ARK1668_ADC=y
+CONFIG_SND_SOC_ARK1668_DAC=y
+CONFIG_SND_SOC_BD37033=y
 # CONFIG_HID_GENERIC is not set
 # CONFIG_USB_HID is not set
 CONFIG_USB=y
