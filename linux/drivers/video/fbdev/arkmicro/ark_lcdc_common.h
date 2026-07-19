@@ -162,6 +162,16 @@ struct ark_disp_atomic {
 #define ARKFB_GET_VP_INFO				ARK_IOW(55, struct ark_disp_vp)
 #define ARKFB_SET_WINDOW_PRIORITY		ARK_IOW(63, unsigned int)
 
+/* Stock's real vendor ioctl numbering (confirmed via vmlinux.elf disassembly,
+ * see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md) assigns bare ARK_IO(44) as
+ * ARKFB_HIDE_WINDOW -- not our reconstructed ARK_IO(40). This collides in
+ * name only with ARKFB_SET_WINDOW_ADDR above (that's an _IOW encoding, a
+ * different 32-bit value, so no actual numeric collision). Userspace
+ * (MsnCoreApp/libarkcmn.so) was built against the real headers and calls
+ * this number, so we must also handle it.
+ */
+#define ARKFB_HIDE_WINDOW_REAL			ARK_IO(44)
+
 
 #define VIN_SHOW_WINDOW	        			ARK_IO(55)
 #define VIN_HIDE_WINDOW	        			ARK_IO(56)

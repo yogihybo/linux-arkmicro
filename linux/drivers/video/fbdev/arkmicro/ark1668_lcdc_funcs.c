@@ -1065,6 +1065,14 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 break;
             
         case ARKFB_HIDE_WINDOW:
+        case ARKFB_HIDE_WINDOW_REAL:
+                /* ARKFB_HIDE_WINDOW_REAL (real vendor ioctl 0x4f2c) is stock's
+                 * actual HIDE_WINDOW number; stock gates it on carback (reversing
+                 * camera) status, refusing to hide while carback is active. We
+                 * have no CONFIG_ARK_CARBACK support built in (see .config), so
+                 * always hide -- matches stock behavior for the non-carback case,
+                 * which is the only case this build can hit anyway.
+                 */
                 if(layer <= OSD_LAYER3)
                         ark1668_lcdc_set_osd_en(layer, 0);
                 else
