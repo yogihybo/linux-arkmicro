@@ -948,31 +948,41 @@ static int ark1668_lcdc_dev_init(struct ark1668_lcdfb_info *sinfo)
 
 	/* set layer priority and blend mode.
 	 *
-	 * bits[15:12] of MODE_LCD_REG0 are OSD1's 4-bit "blend mode" field
-	 * (confirmed via Ghidra: stock's ark_disp_set_osd_blend_mode_lcd(),
-	 * vmlinux.elf @ 0x802deb08, RMWs exactly this nibble for layer 0 --
-	 * shift=12, mask=0xf). Neither branch below ever set it (the DTS
-	 * "lcd-priority" formula only ORs into bits[3:0]/[11:8]/[19:16]/
-	 * [27:24]; the fallback literal 0x03000204 also has 0 in this
-	 * nibble), leaving OSD1 stuck at blend mode 0 regardless of
-	 * MODE_LCD_REG1's alpha_blend_en/per_pix_alpha_blend_en bits
-	 * (both confirmed live via devmem on hardware, 2026-07-19:
-	 * REG1=0x3001). That's the actual root cause of per-pixel alpha
-	 * having no visible effect (fb-alpha-test's opaque-red and
-	 * half-alpha-red bands rendering identically) -- mode 0 means
-	 * "ignore per-pixel alpha", confirmed by stock's own
-	 * ark_disp_dev_init() (vmlinux.elf @ 0x802ddde4-802ddde8)
-	 * hardcoding every layer's *default* blend_mode struct field to 1,
-	 * not 0, before any DTS/ioctl override. OR blend mode 1 into bits
-	 * [15:12] here to match that default. */
+	 * bits[15:12] of MODE_LCD_REG0 are OSD1's 4-bit "blend mode" field.
+	 * An earlier session (2026-07-19) spent considerable effort trying
+	 * to find the "correct" non-zero value here via Ghidra tracing and
+	 * live hardware register sweeps (finding 9/10/14 "enable" visible
+	 * per-pixel blending but with wrong hues on every candidate
+	 * rgb_order/yuv_order/format value tried) before finally probing
+	 * REAL STOCK FIRMWARE directly (msn_autocopy telnetd payload,
+	 * `devmem` while stock correctly renders a blended UI) and finding
+	 * stock's own LIVE register value is MODE_LCD_REG0=0x03000204 --
+	 * blend_mode=0, the exact value this driver already produces via
+	 * the flat literal below. OSD1_CTL also matched byte-for-byte
+	 * (0x260ff on both). This proves the LCDC hardware register
+	 * configuration was never the bug -- our original, unmodified
+	 * register state already matched stock's working configuration
+	 * exactly. The real difference is almost certainly at the pixel-
+	 * data level: stock uses QWS_DISPLAY=directfb (software
+	 * compositing, writes fully pre-blended opaque pixels to the
+	 * framebuffer, never exercises real hardware alpha blending at
+	 * all), while this build uses QWS_DISPLAY=linuxfb (switched away
+	 * from directfb specifically to avoid a GPU/galcore crash class --
+	 * see firmware_overlay/prado/README.md) -- Qt's LinuxFB path may
+	 * be writing genuinely semi-transparent pixel data that this
+	 * hardware's blend engine can't correctly composite regardless of
+	 * register value. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+	 * section 1b for the full investigation history. Do NOT re-attempt
+	 * a non-zero blend_mode fix without new evidence -- this was
+	 * already tried exhaustively and ruled out. */
 	if (!of_property_read_u32_array(dev->of_node, "lcd-priority", prio, ARRAY_SIZE(prio))) {
 		u32 val = (prio[0] & 0xf) | ((prio[1] & 0xf) << 8) | ((prio[2] & 0xf) << 16)
-					| ((prio[3] & 0xf) << 24) | (1 << 12);
+					| ((prio[3] & 0xf) << 24);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, val);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG1, 0x00003000 | (prio[4] & 0xf));
 	}
 	else {
-		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, 0x03001204);
+		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, 0x03000204);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG1, 0x00003001);
 	}
 
