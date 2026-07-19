@@ -216,6 +216,20 @@ CONFIG_ARK_JPEG_DEC=y
 # CONFIG_ARK7116 is not set
 # CONFIG_RN6752 is not set
 # CONFIG_ARK_CARBACK is not set
+# CONFIG_ARK_DISPLAY was also missing here -- discovered 2026-07-19
+# when "open /dev/ark_display fail" started appearing repeatedly in
+# MsnCoreApp's own log (baseline v7). Same INET/WLAN/MUSB/RN6752
+# pattern documented above and in the linux-arkmicro README: this
+# driver (drivers/misc/ark_display.c, the ARKDISP_GET_SCREEN_INFO/
+# ARKDISP_GET_SET_VDE_CFG misc device MsnCoreApp depends on at
+# startup to avoid a ~9KB fallback/default-init branch -- see that
+# file's own header comment) had never been captured in this
+# defconfig at all, so it silently vanished the moment --defconfig
+# got force-reapplied for the ITU656 work, and has been missing from
+# every kernel build since -- including the one with today's earlier
+# ARKDISP_SET_VDE_CFG real-register-write changes (fd6e03414), which
+# have therefore never actually run on real hardware yet.
+CONFIG_ARK_DISPLAY=y
 CONFIG_ARK_TOOL=y
 CONFIG_PWM=y
 CONFIG_PWM_ARK=y
