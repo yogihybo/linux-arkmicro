@@ -158,7 +158,13 @@ CONFIG_LCD_CLASS_DEVICE=y
 # CONFIG_BACKLIGHT_GENERIC is not set
 CONFIG_SOUND=y
 CONFIG_SND=y
-CONFIG_SND_DUMMY=y
+# CONFIG_SND_DUMMY disabled 2026-07-19: now that ARK-SDDAC (the real
+# card, see SND_SOC_ARK/ARK_DMA/SND_SIMPLE_CARD below) registers
+# successfully and was confirmed working on hardware (audio-test.sh's
+# static-noise playback + BD37033 bus check), the Dummy placeholder
+# card is no longer needed and only added confusion to `aplay -l`
+# output (card 0: Dummy, card 1: ARK-SDDAC).
+# CONFIG_SND_DUMMY is not set
 CONFIG_SND_SOC=y
 # CONFIG_SND_SOC_ARK and everything under it were also missing here --
 # a fifth instance of the same --defconfig-regeneration pattern from
