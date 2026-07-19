@@ -180,9 +180,42 @@ CONFIG_SYNC_FILE=y
 # CONFIG_IOMMU_SUPPORT is not set
 CONFIG_ARK_HX170DEC=y
 CONFIG_ARK_JPEG_DEC=y
-CONFIG_ARK1668_ITU656=y
+# CONFIG_ARK1668_ITU656 is not set -- reverted 2026-07-19, hard-disabled
+# again after enabling it (linux-arkmicro 5f9fde926) caused a full kernel
+# panic on every single boot, not just a failed camera feature.
+# MsnCoreApp's arkapi_open_dvr() -> dvr_ioctl() reads a function pointer
+# from dvr_dev->start/->stop (ark1668_itu656.h struct dvr_dev, fields at
+# byte offset 0x200) and calls through it with only a non-NULL check --
+# no other validation. dvr_dev is devm_kzalloc()'d (should be all-zero
+# unless explicitly written), but at panic time that field held a
+# non-NULL value that happened to decode to devm_kmalloc's real kernel
+# address, called with garbage arguments -> NULL deref inside
+# devm_kmalloc -> corrupted kernel stack -> panic. This is a real
+# memory-corruption bug somewhere in ~2269 lines of decades-old vendor
+# code (drivers/soc/arkmicro/itu656/ark1668_itu656.c), not something fixed
+# by this config flag alone -- needs a dedicated Ghidra/source
+# investigation to find what's actually corrupting that struct field
+# before re-enabling. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+# item 7 in the main repo for the full crash trace.
+#
+# RN6752 (I2C camera decoder chip driver) and ARK_CARBACK (reverse-gear
+# integration, drivers/soc/arkmicro/ark-carback.c) turned out to also
+# need disabling here -- both reference symbols
+# (dvr_detect_carback_signal/dvr_enter_carback/dvr_exit_carback/
+# dvr_get_pragressive/dvr_restart/dvr_exit_wait) defined only inside
+# ark1668_itu656.c, so vmlinux fails to link with ITU656 off unless
+# these are off too. They are NOT independently toggleable -- this
+# whole group needs to be enabled or disabled together. RN6752's own
+# probe (dvr_rn6752_probe) was safely succeeding on its own in every
+# boot log before today (proving RN6752+ITU656+ARK_CARBACK were
+# already silently enabled together in some past session's lost
+# .config, same pattern as the INET/WLAN/MUSB regressions above) --
+# the crash is specifically in ark1668_itu656.c's dvr_ioctl, not in
+# rn6752.c or ark-carback.c themselves, but they can't be separated at
+# link time as currently structured.
 # CONFIG_ARK7116 is not set
-CONFIG_RN6752=y
+# CONFIG_RN6752 is not set
+# CONFIG_ARK_CARBACK is not set
 CONFIG_ARK_TOOL=y
 CONFIG_PWM=y
 CONFIG_PWM_ARK=y
