@@ -578,24 +578,30 @@
 			interrupt-parent = <&vicl>;
             interrupts = <14>, <13>; /* <usb0 int>, <usb0_dma_int> */
             interrupt-names = "mc", "dma";
-            /* Was "otg" -- changed 2026-07-19 to boot straight into
-             * host mode, skipping the ID-pin OTG negotiation that
-             * otherwise costs several seconds of "Cannot enable...
-             * attempt power cycle" retries at every single boot
-             * (confirmed via boot-log analysis: the negotiation
-             * literally is ark_musb_set_mode() being called
-             * repeatedly, toggling the ID-pin GPIO between host and
-             * peripheral until it settles -- see
-             * docs/WIRELESS_AND_INIT.md). This is the port shared
-             * between USB-boot/storage-stick testing and wired
-             * CarPlay's gadget mode, so OTG capability isn't gone --
-             * firmware_overlay/prado/etc/switchotg.sh now switches it
-             * to "otg" at runtime via the driver's own sysfs mode
-             * attribute (musb_core.c's DEVICE_ATTR_RW(mode), which
-             * calls this same set_mode() function) once userspace is
-             * up, but only when root isn't actively mounted from this
-             * same port. */
-            dr_mode = "host";
+            /* REVERTED 2026-07-19 -- was briefly "host" (see
+             * linux-arkmicro 83ab185e6), reverted back to "otg" after
+             * on-device testing found a worse, unexplained
+             * regression. Full writeup in
+             * docs/WIRELESS_AND_INIT.md ("usb0 dr_mode=host attempt,
+             * reverted") -- summary: with dr_mode="host", usb0 itself
+             * registered perfectly cleanly (no negotiation at all,
+             * immediate), but the physical USB boot stick -- on the
+             * *same physical port*, confirmed by the user, every time
+             * -- stopped enumerating on usb0/bus1 (where every prior
+             * log without exception had shown it) and instead showed
+             * up on usb1/bus2 several seconds later, going through the
+             * *same* "Cannot enable... attempt power cycle" cycling
+             * usb0 used to have, this time ending in an apparent dead
+             * end ("port already enabled, skipping disruptive VBUS
+             * reset" with no further progress -- boot hung). Root
+             * cause not understood: usb0's own registration gave no
+             * indication anything was wrong, so whatever's actually
+             * happening (bus/device renumbering tied to usb0's probe
+             * timing? some shared hardware dependency between the two
+             * controllers this DTS doesn't capture?) needs real
+             * investigation before trying this again, not just
+             * flipping the value back. */
+            dr_mode = "otg";
             multipoint = <1>;
             num-eps = <6>;
             ram-bits = <12>;
