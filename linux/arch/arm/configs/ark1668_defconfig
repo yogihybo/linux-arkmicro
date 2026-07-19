@@ -158,7 +158,22 @@ CONFIG_SND_SOC_ARK=y
 CONFIG_SND_SOC_ARK1668_I2S=y
 CONFIG_SND_SOC_ARK1668_ADC=y
 CONFIG_SND_SOC_ARK1668_DAC=y
-CONFIG_SND_SOC_BD37033=y
+# CONFIG_SND_SOC_BD37033 was briefly y here, disabled again 2026-07-19
+# once the ARK_DMA fix below got the I2S/PCM path working and exposed
+# the real remaining blocker: BD37033's own probe() does real
+# i2c_transfer() calls and fails (a genuine, apparently-unfixable I2C
+# communication problem, confirmed present on stock firmware too, not
+# something this reconstruction introduced) -- and
+# soc_probe_aux_devices() (sound/soc/soc-core.c) aborts the ENTIRE
+# card's registration if any aux-dev's probe() fails, which is exactly
+# how ark1668_limcet_p305.dts had BD37033 wired
+# (simple-audio-card,aux-devs = <&amp>；removed in the same commit as
+# this). Disabling the driver entirely (not just removing the DTS
+# aux-dev reference) avoids any ambiguity around deferred-probe
+# behavior for an of_node with no bound driver -- both changes
+# together guarantee the "ARK-SDDAC" card can never depend on BD37033
+# to register.
+# CONFIG_SND_SOC_BD37033 is not set
 # CONFIG_HID_GENERIC is not set
 # CONFIG_USB_HID is not set
 CONFIG_USB=y

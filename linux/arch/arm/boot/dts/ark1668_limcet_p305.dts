@@ -180,18 +180,30 @@
 		// not required for function.
 		simple-audio-card,name = "ARK-SDDAC";
 
-		// BD37033 (&amp) is control-only from this card's point of view --
-		// no I2S DAI stream of its own, just I2C-driven mixer controls
-		// ("PA Volume" etc, see sound/soc/arkmicro/BD37033.c). Without
-		// listing it as an aux-dev, devm_snd_soc_register_component()
-		// still registers the component driver (see bd37033_drv_probe),
-		// but its controls are only ever added to a card's kcontrol list
-		// when the component is bound into that card -- which never
-		// happened here, since no dai-link below references &amp. That's
-		// why "PA Volume"/"PA Mute" never appeared in `amixer scontrols`
-		// even on boots where the I2S data path and I2C bus were both
-		// fine (2026-07-14, see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md).
-		simple-audio-card,aux-devs = <&amp>;
+		// BD37033 (&amp) aux-dev wiring REMOVED 2026-07-19. Was added
+		// 2026-07-14 (see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md) to
+		// expose "PA Volume"/"PA Mute" mixer controls -- control-only
+		// from this card's point of view, no I2S DAI stream of its own.
+		// The problem: soc_probe_aux_devices() (sound/soc/soc-core.c)
+		// aborts the ENTIRE card's registration if any aux-dev's own
+		// probe() fails, and confirmed via BD37033.c's own
+		// bd37033_drv_probe() path that it does real i2c_transfer()
+		// calls during probe and returns an error if they fail. BD37033
+		// has a genuine, apparently-unfixable I2C communication
+		// failure (confirmed present on stock firmware too, not
+		// something introduced by this reconstruction) -- with this
+		// wired as a hard aux-dev dependency, that failure was taking
+		// the whole "ARK-SDDAC" card down with it, leaving only the
+		// ALSA "Dummy" placeholder ("ALSA device list: #0: Dummy 1"),
+		// even though CONFIG_SND_SOC_ARK/I2S/DAC/ADC were all correctly
+		// enabled and the I2S driver itself was probing successfully.
+		// Since BD37033's I2C failure can't be fixed and was never a
+		// hard requirement for basic playback/capture to work (stock
+		// itself has the same I2C failure and still shows a working
+		// "ARK-SDDAC" card), removing this dependency is the correct
+		// fix -- loses "PA Volume"/"PA Mute" mixer exposure (which
+		// never actually worked reliably anyway per the note above),
+		// but restores actual card registration and audio function.
 
 		// DAC/playback link listed FIRST (2026-07-13) so it lands on
 		// PCM device 0, matching /etc/asound.conf's hardcoded
