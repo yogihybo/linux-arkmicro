@@ -100,7 +100,24 @@ CONFIG_RTL8192CU=m		# selects RTLWIFI/RTLWIFI_USB/RTL8192C_COMMON automatically
 CONFIG_INPUT_EVDEV=y
 # CONFIG_INPUT_KEYBOARD is not set
 # CONFIG_INPUT_MOUSE is not set
+# CONFIG_TOUCHSCREEN_ARK1680 was also missing here -- a seventh
+# instance of the same --defconfig-regeneration pattern from
+# 2026-07-19. Discovered via "new uboot new kernel baseline v10.txt":
+# no "ark1680_ts e4500000.tsc: probe:"/"ARK1680 resistive touchscreen
+# registered" line anywhere in the whole log (present in every prior
+# successful boot, very early during kernel init, since this is a
+# built-in driver -- entirely independent of any userspace insmod/
+# modprobe activity). The only touch-related line at all was a
+# harmless, expected-to-fail legacy insmod attempt at the stale
+# 3.4.0-era module path ("version magic '3.4.0 ...' should be
+# '4.19.192 ...'"), which was never the real touch-loading mechanism
+# anyway (see firmware_overlay/prado/etc/rc.d/rcS's own
+# `modprobe ark1680_ts` line and its history). Every "touch not
+# working" test since v7 has actually been this -- the driver was
+# never in the kernel at all, not a downstream consequence of
+# ark_display or anything else that was investigated in the meantime.
 CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_ARK1680=y
 # CONFIG_SERIO is not set
 CONFIG_VT_HW_CONSOLE_BINDING=y
 CONFIG_LEGACY_PTY_COUNT=16
