@@ -518,7 +518,16 @@ static void ark1668_lcdc_set_osd_format(int id, int format, int yuv_order, int r
 
 	val = readl(lcdc_base + reg);
 	val &= ~(0x7ff << 12);
-	val |= ((yuv_order & 3) << 21) | ((rgb_order & 7) << 18) | (yuv_ycbcr_bypass << 17) |
+	/* yuv_order/rgb_order shift amounts were swapped here -- confirmed via
+	 * Ghidra against stock's real ark_disp_set_osd_format() (vmlinux.elf
+	 * @ 0x802ddf98): "orr r2,r1,r7,lsl #18" (r7=yuv_order, 3rd arg) then
+	 * "orr r3,r2,r6,lsl #21" (r6=rgb_order, 4th arg) -- yuv_order is the
+	 * 3-bit field at bits[20:18], rgb_order is only a 2-bit field at
+	 * bits[22:21], not the other way around (2026-07-19). This function
+	 * isn't on the live boot path (nothing calls the vendor ioctl that
+	 * reaches it) so this alone doesn't fix the live per-pixel-alpha hue
+	 * bug, but it was wrong regardless and worth correcting. */
+	val |= ((yuv_order & 7) << 18) | ((rgb_order & 3) << 21) | (yuv_ycbcr_bypass << 17) |
 		(rgb_ycbcr_bypass << 16) | ((format & 0xf) << 12);
 	writel(val, lcdc_base + reg);
 }
