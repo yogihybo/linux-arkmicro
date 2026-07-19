@@ -191,6 +191,19 @@ CONFIG_SND_SOC_ARK1668_DAC=y
 # together guarantee the "ARK-SDDAC" card can never depend on BD37033
 # to register.
 # CONFIG_SND_SOC_BD37033 is not set
+# CONFIG_SND_SIMPLE_CARD was missing here too -- an 8th instance of the
+# same --defconfig-regeneration pattern, found 2026-07-19 during a
+# proactive audit (grepping every CONFIG_ symbol mentioned in docs/*.md
+# against the checked-in .config) prompted by "many of our commits from
+# yesterday didn't stick". ark1668_limcet_p305.dts's sound node uses
+# compatible = "simple-audio-card" -- this is the actual machine-driver
+# framework (sound/soc/generic/simple-card.c) that binds that DTS node
+# and instantiates the "ARK-SDDAC" card at all. Without it, none of the
+# SND_SOC_ARK / ARK_DMA / BD37033-removal fixes above matter -- the DTS
+# sound node has no driver to bind to and the card never appears, same
+# symptom ("#0: Dummy 1", no real card) as all three prior sound bugs.
+CONFIG_SND_SIMPLE_CARD_UTILS=y
+CONFIG_SND_SIMPLE_CARD=y
 # CONFIG_HID_GENERIC is not set
 # CONFIG_USB_HID is not set
 CONFIG_USB=y
