@@ -578,7 +578,24 @@
 			interrupt-parent = <&vicl>;
             interrupts = <14>, <13>; /* <usb0 int>, <usb0_dma_int> */
             interrupt-names = "mc", "dma";
-            dr_mode = "otg";
+            /* Was "otg" -- changed 2026-07-19 to boot straight into
+             * host mode, skipping the ID-pin OTG negotiation that
+             * otherwise costs several seconds of "Cannot enable...
+             * attempt power cycle" retries at every single boot
+             * (confirmed via boot-log analysis: the negotiation
+             * literally is ark_musb_set_mode() being called
+             * repeatedly, toggling the ID-pin GPIO between host and
+             * peripheral until it settles -- see
+             * docs/WIRELESS_AND_INIT.md). This is the port shared
+             * between USB-boot/storage-stick testing and wired
+             * CarPlay's gadget mode, so OTG capability isn't gone --
+             * firmware_overlay/prado/etc/switchotg.sh now switches it
+             * to "otg" at runtime via the driver's own sysfs mode
+             * attribute (musb_core.c's DEVICE_ATTR_RW(mode), which
+             * calls this same set_mode() function) once userspace is
+             * up, but only when root isn't actively mounted from this
+             * same port. */
+            dr_mode = "host";
             multipoint = <1>;
             num-eps = <6>;
             ram-bits = <12>;
