@@ -946,15 +946,33 @@ static int ark1668_lcdc_dev_init(struct ark1668_lcdfb_info *sinfo)
         lcdc_writel(sinfo, ARK1668_LCDC_VIDEO_VP_REG_1, p->video1_vp);
         lcdc_writel(sinfo, ARK1668_LCDC_VIDEO2_VP_REG_1, p->video2_vp);
 
-	/* set layer priority and blend mode */
+	/* set layer priority and blend mode.
+	 *
+	 * bits[15:12] of MODE_LCD_REG0 are OSD1's 4-bit "blend mode" field
+	 * (confirmed via Ghidra: stock's ark_disp_set_osd_blend_mode_lcd(),
+	 * vmlinux.elf @ 0x802deb08, RMWs exactly this nibble for layer 0 --
+	 * shift=12, mask=0xf). Neither branch below ever set it (the DTS
+	 * "lcd-priority" formula only ORs into bits[3:0]/[11:8]/[19:16]/
+	 * [27:24]; the fallback literal 0x03000204 also has 0 in this
+	 * nibble), leaving OSD1 stuck at blend mode 0 regardless of
+	 * MODE_LCD_REG1's alpha_blend_en/per_pix_alpha_blend_en bits
+	 * (both confirmed live via devmem on hardware, 2026-07-19:
+	 * REG1=0x3001). That's the actual root cause of per-pixel alpha
+	 * having no visible effect (fb-alpha-test's opaque-red and
+	 * half-alpha-red bands rendering identically) -- mode 0 means
+	 * "ignore per-pixel alpha", confirmed by stock's own
+	 * ark_disp_dev_init() (vmlinux.elf @ 0x802ddde4-802ddde8)
+	 * hardcoding every layer's *default* blend_mode struct field to 1,
+	 * not 0, before any DTS/ioctl override. OR blend mode 1 into bits
+	 * [15:12] here to match that default. */
 	if (!of_property_read_u32_array(dev->of_node, "lcd-priority", prio, ARRAY_SIZE(prio))) {
 		u32 val = (prio[0] & 0xf) | ((prio[1] & 0xf) << 8) | ((prio[2] & 0xf) << 16)
-					| ((prio[3] & 0xf) << 24);
+					| ((prio[3] & 0xf) << 24) | (1 << 12);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, val);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG1, 0x00003000 | (prio[4] & 0xf));
 	}
 	else {
-		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, 0x03000204);
+		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, 0x03001204);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG1, 0x00003001);
 	}
 
