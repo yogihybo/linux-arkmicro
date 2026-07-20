@@ -77,8 +77,12 @@ const char * _VERSION = "\n\0$VERSION$"
 \******************************************************************************/
 
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
-#define gcmDEFINE2TEXT(d) #d
-gctCONST_STRING _DispatchText[] =
+/* Designated initializers keyed by enum value, not array position --
+ * gceHAL_COMMAND_CODES now has explicit "= N" values with intentional
+ * gaps (reserved/unhandled-in-stock slots), so a plain sequential literal
+ * would silently misalign after the first gap. See gc_hal_driver.h. */
+#define gcmDEFINE2TEXT(d) [d] = #d
+gctCONST_STRING _DispatchText[gcvHAL_COMMAND_CODE_COUNT] =
 {
     gcmDEFINE2TEXT(gcvHAL_QUERY_VIDEO_MEMORY),
     gcmDEFINE2TEXT(gcvHAL_QUERY_CHIP_IDENTITY),
@@ -98,7 +102,7 @@ gctCONST_STRING _DispatchText[] =
     gcmDEFINE2TEXT(gcvHAL_EVENT_COMMIT),
     gcmDEFINE2TEXT(gcvHAL_USER_SIGNAL),
     gcmDEFINE2TEXT(gcvHAL_SIGNAL),
-    gcmDEFINE2TEXT(gcvHAL_WRITE_DATA),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_18),
     gcmDEFINE2TEXT(gcvHAL_COMMIT),
     gcmDEFINE2TEXT(gcvHAL_STALL),
     gcmDEFINE2TEXT(gcvHAL_READ_REGISTER),
@@ -114,7 +118,7 @@ gctCONST_STRING _DispatchText[] =
     gcmDEFINE2TEXT(gcvHAL_SET_IDLE),
     gcmDEFINE2TEXT(gcvHAL_QUERY_KERNEL_SETTINGS),
     gcmDEFINE2TEXT(gcvHAL_RESET),
-    gcmDEFINE2TEXT(gcvHAL_MAP_PHYSICAL),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_33),
     gcmDEFINE2TEXT(gcvHAL_DEBUG),
     gcmDEFINE2TEXT(gcvHAL_CACHE),
     gcmDEFINE2TEXT(gcvHAL_TIMESTAMP),
@@ -123,31 +127,41 @@ gctCONST_STRING _DispatchText[] =
     gcmDEFINE2TEXT(gcvHAL_CHIP_INFO),
     gcmDEFINE2TEXT(gcvHAL_ATTACH),
     gcmDEFINE2TEXT(gcvHAL_DETACH),
+    gcmDEFINE2TEXT(gcvHAL_COMPOSE),
     gcmDEFINE2TEXT(gcvHAL_SET_TIMEOUT),
     gcmDEFINE2TEXT(gcvHAL_GET_FRAME_INFO),
-    gcmDEFINE2TEXT(gcvHAL_DUMP_GPU_PROFILE),
-    gcmDEFINE2TEXT(gcvHAL_QUERY_COMMAND_BUFFER),
-    gcmDEFINE2TEXT(gcvHAL_COMMIT_DONE),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_45),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_46),
     gcmDEFINE2TEXT(gcvHAL_DUMP_GPU_STATE),
     gcmDEFINE2TEXT(gcvHAL_DUMP_EVENT),
     gcmDEFINE2TEXT(gcvHAL_ALLOCATE_VIRTUAL_COMMAND_BUFFER),
     gcmDEFINE2TEXT(gcvHAL_FREE_VIRTUAL_COMMAND_BUFFER),
     gcmDEFINE2TEXT(gcvHAL_SET_FSCALE_VALUE),
     gcmDEFINE2TEXT(gcvHAL_GET_FSCALE_VALUE),
-    gcmDEFINE2TEXT(gcvHAL_EXPORT_VIDEO_MEMORY),
     gcmDEFINE2TEXT(gcvHAL_NAME_VIDEO_MEMORY),
     gcmDEFINE2TEXT(gcvHAL_IMPORT_VIDEO_MEMORY),
     gcmDEFINE2TEXT(gcvHAL_QUERY_RESET_TIME_STAMP),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_56),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_57),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_58),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_59),
+    gcmDEFINE2TEXT(gcvHAL_RESERVED_60),
+    gcmDEFINE2TEXT(gcvHAL_SHBUF),
+    gcmDEFINE2TEXT(gcvHAL_CONFIG_POWER_MANAGEMENT),
+    gcmDEFINE2TEXT(gcvHAL_EXPORT_VIDEO_MEMORY),
+    gcmDEFINE2TEXT(gcvHAL_WRITE_DATA),
+    gcmDEFINE2TEXT(gcvHAL_MAP_PHYSICAL),
+    gcmDEFINE2TEXT(gcvHAL_DUMP_GPU_PROFILE),
+    gcmDEFINE2TEXT(gcvHAL_QUERY_COMMAND_BUFFER),
+    gcmDEFINE2TEXT(gcvHAL_COMMIT_DONE),
     gcmDEFINE2TEXT(gcvHAL_READ_REGISTER_EX),
     gcmDEFINE2TEXT(gcvHAL_WRITE_REGISTER_EX),
     gcmDEFINE2TEXT(gcvHAL_CREATE_NATIVE_FENCE),
     gcmDEFINE2TEXT(gcvHAL_WAIT_NATIVE_FENCE),
     gcmDEFINE2TEXT(gcvHAL_DESTROY_MMU),
-    gcmDEFINE2TEXT(gcvHAL_SHBUF),
     gcmDEFINE2TEXT(gcvHAL_GET_GRAPHIC_BUFFER_FD),
     gcmDEFINE2TEXT(gcvHAL_SET_VIDEO_MEMORY_METADATA),
     gcmDEFINE2TEXT(gcvHAL_GET_VIDEO_MEMORY_FD),
-    gcmDEFINE2TEXT(gcvHAL_CONFIG_POWER_MANAGEMENT),
     gcmDEFINE2TEXT(gcvHAL_WRAP_USER_MEMORY),
     gcmDEFINE2TEXT(gcvHAL_WAIT_FENCE),
 #if gcdDEC_ENABLE_AHB
@@ -2166,6 +2180,17 @@ gckKERNEL_Dispatch(
     gcmkVERIFY_OBJECT(Kernel, gcvOBJ_KERNEL);
     gcmkVERIFY_ARGUMENT(Interface != gcvNULL);
 
+    /* Bound-check the command value. Stock's real galcore.ko enforces this
+     * in hardware-adjacent code via `cmp r3, #63` before its 64-entry jump
+     * table; our switch below has no equivalent implicit bound, and
+     * _DispatchText[] below is only sized to gcvHAL_COMMAND_CODE_COUNT, so
+     * an out-of-range value (negative, or >= COUNT) would be an
+     * out-of-bounds read here. */
+    if ((gctUINT32) Interface->command >= (gctUINT32) gcvHAL_COMMAND_CODE_COUNT)
+    {
+        gcmkONERROR(gcvSTATUS_INVALID_ARGUMENT);
+    }
+
 #if gcmIS_DEBUG(gcdDEBUG_TRACE)
     gcmkTRACE_ZONE(gcvLEVEL_INFO, gcvZONE_KERNEL,
                    "Dispatching command %d (%s)",
@@ -2981,6 +3006,22 @@ gckKERNEL_Dispatch(
                               gcmNAME_TO_PTR(Interface->u.Detach.context)));
 
         gcmRELEASE_NAME(Interface->u.Detach.context);
+        break;
+
+    case gcvHAL_COMPOSE:
+        /* NOT IMPLEMENTED -- stock's real galcore.ko has a working handler
+         * here (calls gckEVENT_Compose, which in turn calls
+         * gckHARDWARE_Compose), but neither of those functions exists
+         * anywhere in this source tree. Reimplementing them would require
+         * a separate, substantially larger reverse-engineering pass (see
+         * the _gcsHAL_COMPOSE struct comment in gc_hal_driver.h for what
+         * was and wasn't identified from stock's disassembly). Rather than
+         * fabricate untested logic for a real hardware code path, this
+         * intentionally returns NOT_SUPPORTED. The enum value (42) and the
+         * union's 64-byte budget for this command are still correctly
+         * reserved so this can be implemented later without another ABI
+         * renumbering. */
+        status = gcvSTATUS_NOT_SUPPORTED;
         break;
 
     case gcvHAL_GET_FRAME_INFO:
