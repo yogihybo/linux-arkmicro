@@ -106,8 +106,7 @@ gctCONST_STRING _DispatchText[] =
     gcmDEFINE2TEXT(gcvHAL_GET_PROFILE_SETTING),
     gcmDEFINE2TEXT(gcvHAL_SET_PROFILE_SETTING),
     gcmDEFINE2TEXT(gcvHAL_PROFILE_REGISTERS_2D),
-    gcmDEFINE2TEXT(gcvHAL_READ_ALL_PROFILE_REGISTERS_PART1),
-    gcmDEFINE2TEXT(gcvHAL_READ_ALL_PROFILE_REGISTERS_PART2),
+    /* PART1/PART2 entries removed to match the enum, see gc_hal_driver.h */
     gcmDEFINE2TEXT(gcvHAL_READ_PROFILER_REGISTER_SETTING),
     gcmDEFINE2TEXT(gcvHAL_SET_POWER_MANAGEMENT_STATE),
     gcmDEFINE2TEXT(gcvHAL_QUERY_POWER_MANAGEMENT_STATE),
@@ -2713,13 +2712,8 @@ gckKERNEL_Dispatch(
 #endif
         break;
 
-    case gcvHAL_READ_ALL_PROFILE_REGISTERS_PART1:
-    case gcvHAL_READ_ALL_PROFILE_REGISTERS_PART2:
-        /* RegisterProfileData_part1/part2 removed from gcsHAL_INTERFACE,
-         * see gc_hal_driver.h -- stock's real driver doesn't have these
-         * commands at all. */
-        status = gcvSTATUS_NOT_SUPPORTED;
-        break;
+    /* gcvHAL_READ_ALL_PROFILE_REGISTERS_PART1/PART2 case removed --
+     * the enum values themselves no longer exist, see gc_hal_driver.h. */
 
     case gcvHAL_GET_PROFILE_SETTING:
 #if VIVANTE_PROFILER

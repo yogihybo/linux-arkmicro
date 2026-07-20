@@ -127,8 +127,14 @@ typedef enum _gceHAL_COMMAND_CODES
     gcvHAL_SET_PROFILE_SETTING,
 
     gcvHAL_PROFILE_REGISTERS_2D,
-    gcvHAL_READ_ALL_PROFILE_REGISTERS_PART1,
-    gcvHAL_READ_ALL_PROFILE_REGISTERS_PART2,
+    /* gcvHAL_READ_ALL_PROFILE_REGISTERS_PART1/PART2 removed here (not just
+     * their union fields, see below) -- these VIVANTE_PROFILER/multi-core-
+     * era commands don't exist in stock's real enum at all, and leaving
+     * them declared here was silently shifting every later command's
+     * auto-numbered value by 2, including ATTACH (0x28 in stock's real
+     * decompiled dispatch, but landing at 0x2a here before this fix) --
+     * root cause of the ATTACH-time crash. See
+     * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 1b. */
     gcvHAL_READ_PROFILER_REGISTER_SETTING,
 
     /* Power management. */
