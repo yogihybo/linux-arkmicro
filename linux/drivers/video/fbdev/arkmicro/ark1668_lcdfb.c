@@ -339,8 +339,44 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 		var->red.length = var->blue.length = 5;
 		break;
 	case 32:
-		var->transp.offset = 24;
-		var->transp.length = 8;
+		/* Deliberately NOT declaring a transp field here (left at
+		 * offset=length=0 from the unconditional reset above, same
+		 * as every other depth). Qt4 QWS's QLinuxFbScreen::
+		 * setPixelFormat() (libQtGui.so.4.7.4, decompiled) does an
+		 * exact byte-for-byte memcmp of the reported red/green/
+		 * blue/transp fb_bitfield triples against a small table of
+		 * known layouts: a full 48-byte match against its "RGB
+		 * 16/8/0 + transp 24/8" template selects QImage::
+		 * Format_ARGB32 == 5, i.e. *straight* (non-premultiplied)
+		 * alpha -- Qt's LinuxFB backend never offers
+		 * Format_ARGB32_Premultiplied for this template set. Qt4's
+		 * raster paint engine's fast SourceOver composition paths
+		 * assume premultiplied alpha; painting translucent content
+		 * (anti-aliased icons/widgets) onto a straight-ARGB32
+		 * on-screen surface produces exactly the "opaque pixels
+		 * fine, alpha-blended pixels skewed" symptom this project
+		 * has been chasing at the LCDC register level -- this bug
+		 * never touches LCDC hardware at all, which is why the
+		 * earlier register-level investigation (see
+		 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 1b)
+		 * conclusively found the LCDC register state to be
+		 * byte-identical to stock's correctly-rendering config.
+		 *
+		 * Previously this case set transp.offset=24/length=8,
+		 * which (matched byte-for-byte against our own declared
+		 * red/green/blue below) hits that exact template. Leaving
+		 * transp undeclared instead makes Qt's 48-byte match fail
+		 * and fall through to its 36-byte RGB-only comparison,
+		 * which still matches on red/green/blue and selects
+		 * Format_RGB32 == 4 (fully opaque) -- forcing Qt's own
+		 * software compositor to flatten all translucent content
+		 * before it ever reaches /dev/fb0, matching how stock's
+		 * DirectFB path produces fully opaque scanout data and
+		 * never actually depends on this SoC's LCDC hardware alpha
+		 * blend circuit (already shown to behave unpredictably
+		 * regardless of blend_mode/rgb_order register value).
+		 * NOT YET HARDWARE-TESTED.
+		 */
 		/* fall through */
 	case 24:
 		var->red.offset = 16;
@@ -968,12 +1004,21 @@ static int ark1668_lcdc_dev_init(struct ark1668_lcdfb_info *sinfo)
 	 * framebuffer, never exercises real hardware alpha blending at
 	 * all), while this build uses QWS_DISPLAY=linuxfb (switched away
 	 * from directfb specifically to avoid a GPU/galcore crash class --
-	 * see firmware_overlay/prado/README.md) -- Qt's LinuxFB path may
-	 * be writing genuinely semi-transparent pixel data that this
-	 * hardware's blend engine can't correctly composite regardless of
-	 * register value. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+	 * see firmware_overlay/prado/README.md) -- Qt's LinuxFB path was
+	 * writing genuinely semi-transparent pixel data, confirmed via
+	 * decompiling QLinuxFbScreen::setPixelFormat() in libQtGui.so.4.7.4:
+	 * declaring a transp field here made Qt select QImage::Format_ARGB32
+	 * (straight, non-premultiplied alpha -- Qt4 QWS never offers
+	 * Format_ARGB32_Premultiplied for a LinuxFB screen), and Qt's raster
+	 * compositor's fast paths assume premultiplied alpha, producing
+	 * skewed colors on every translucent pixel while leaving opaque
+	 * pixels untouched. Fixed in ark1668_lcdfb_check_var() (this file)
+	 * by no longer declaring transp for 32bpp, forcing Qt to select
+	 * Format_RGB32 instead so it flattens alpha in software before
+	 * writing to /dev/fb0 -- see the comment there for the full
+	 * decompile evidence. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
 	 * section 1b for the full investigation history. Do NOT re-attempt
-	 * a non-zero blend_mode fix without new evidence -- this was
+	 * a non-zero blend_mode fix without new evidence -- that axis was
 	 * already tried exhaustively and ruled out. */
 	if (!of_property_read_u32_array(dev->of_node, "lcd-priority", prio, ARRAY_SIZE(prio))) {
 		u32 val = (prio[0] & 0xf) | ((prio[1] & 0xf) << 8) | ((prio[2] & 0xf) << 16)
