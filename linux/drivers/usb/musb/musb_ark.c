@@ -46,6 +46,7 @@
 #include <linux/of_irq.h>
 #include <linux/usb/of.h>
 #include <linux/gpio.h>
+#include <linux/jiffies.h>
 #include <linux/debugfs.h>
 #include <linux/usb/musb.h>
 #include <linux/usb.h>
@@ -269,6 +270,35 @@ static irqreturn_t ark_musb_interrupt(int irq, void *hci)
 	return ret;
 }
 
+/*
+ * DIAGNOSTIC ONLY -- added for the usb0 dr_mode=host regression
+ * investigation (docs/WIRELESS_AND_INIT.md sec 7). Reads both ports'
+ * soft-reset registers and both ports' known id/pwr GPIOs regardless of
+ * which glue instance is calling, to check for any cross-port coupling
+ * when one port's negotiation (or its absence) changes timing. The DTS
+ * softrest reg-offset/bit-offset values (usb0: 0x74 bit 5, usb1: 0x78
+ * bit 6) are distinct words/bits, so no register collision is expected
+ * here -- this is to catch anything the DTS values don't capture
+ * (shared rail, PHY reference, bus-probe-order-driven renumbering).
+ * Remove once the regression is understood; not for production.
+ */
+static void ark_musb_dump_cross_port_state(struct ark_glue *glue, int port_id, const char *tag)
+{
+	u32 rest0, rest1;
+
+	if (!glue->sys_base)
+		return;
+
+	rest0 = readl((void __iomem *)((unsigned int)glue->sys_base + 0x74));
+	rest1 = readl((void __iomem *)((unsigned int)glue->sys_base + 0x78));
+
+	pr_info("ark_musb_diag[port%d %s] t=%u ms: softrest0(0x74)=0x%08x softrest1(0x78)=0x%08x "
+		"usb0_id(gpio76)=%d usb0_pwr(gpio126)=%d usb1_id(gpio1)=%d usb1_pwr(gpio117)=%d\n",
+		port_id, tag, jiffies_to_msecs(jiffies), rest0, rest1,
+		gpio_get_value(76), gpio_get_value(126),
+		gpio_get_value(1), gpio_get_value(117));
+}
+
 static int ark_musb_init(struct musb *musb)
 {
 	struct device *dev = musb->controller;
@@ -325,6 +355,7 @@ static int ark_musb_init(struct musb *musb)
 		} 
 		gpio_direction_output(glue->gpio_id, 0);
 	}
+	ark_musb_dump_cross_port_state(glue, parent->id, "init-done");
 	return 0;
 
 fail:
@@ -377,6 +408,7 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 {
 	struct device *dev = musb->controller;
 	struct ark_glue *glue = dev_get_drvdata(dev->parent);
+	struct platform_device *parent = to_platform_device(dev->parent);
 	int gpio_pwr = glue->gpio_pwr;
 	int gpio_id = glue->gpio_id;
 	int usb_id_reg = glue->usb_id_reg;
@@ -385,6 +417,8 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 	u32 phybitoffset = glue->usbphy_softrest_bit_offset;
 	void __iomem *sys_softrest_base = (void __iomem *)((unsigned int)glue->sys_base + glue->usb_softrest_reg_offset);
 	u32 regval;
+
+	ark_musb_dump_cross_port_state(glue, parent->id, "set_mode-entry");
 
 	/*usb_hcd_resume_root_hub(musb->hcd);
 	musb_root_disconnect(musb);
@@ -496,6 +530,7 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 			return -EINVAL;
 	}
 
+	ark_musb_dump_cross_port_state(glue, parent->id, "set_mode-exit");
 	return 0;
 }
 
