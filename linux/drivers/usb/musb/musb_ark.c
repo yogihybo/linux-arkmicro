@@ -426,6 +426,45 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 
 	switch (mode) {
 		case MUSB_HOST:
+			/*
+			 * Pure host-mode ports (dr_mode="host") never negotiate
+			 * an OTG role, so this used to be a no-op -- but that also
+			 * meant no VBUS power-cycle ever ran for this port. The
+			 * MUSB_OTG case's power-cycle isn't just about role
+			 * switching: it's what forces the SoC's hub controller to
+			 * see a fresh disconnect/reconnect edge. A device that's
+			 * already been continuously connected since before the
+			 * kernel booted (as confirmed happens here -- U-Boot's own
+			 * "usb 0:1" success moments earlier proves the device was
+			 * present and powered the whole time) never generates a
+			 * connect event on its own, so it was never enumerating at
+			 * all in host mode (confirmed on hardware: bus1's hub
+			 * registered with "1 port detected" but no device ever
+			 * appeared on it, while root wait for /dev/sda2 stalled
+			 * indefinitely). Do the same controller soft-reset + VBUS
+			 * power-cycle as MUSB_OTG below, just without the ID-pin
+			 * GPIO/role-state changes that only matter for role
+			 * switching.
+			 */
+			dev_info(musb->controller, "+Switch host (no negotiation) %d  %d=== \n", gpio_id, gpio_pwr);
+			regval = readl(sys_softrest_base);
+			regval &= (~(1 << bitoffset));
+			writel(regval, sys_softrest_base);
+			mdelay(1);
+			regval = readl(sys_softrest_base);
+			regval |= ((1 << bitoffset));
+			writel(regval, sys_softrest_base);
+
+			mdelay(1);
+
+			musb_writeb(musb->mregs, MUSB_INTRUSBE, 0xf4);
+			musb_writeb(musb->mregs, MUSB_DEVCTL, 0x99);
+			if (gpio_pwr >= 0) {
+				gpio_set_value(gpio_pwr, 0);
+				mdelay(10);
+				gpio_set_value(gpio_pwr, 1);
+				mdelay(300);
+			}
 			break;
 		case MUSB_PERIPHERAL:
 			dev_info(musb->controller, "+Switch peripheral %d  %d=== \n", gpio_id, gpio_pwr);
