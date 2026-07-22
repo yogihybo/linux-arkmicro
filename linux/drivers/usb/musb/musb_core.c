@@ -2310,7 +2310,7 @@ static void musb_irq_work(struct work_struct *data)
 			musb_platform_try_idle(musb, jiffies
 				+ msecs_to_jiffies(musb->a_wait_bcon));
 
-		dev_alert(musb->controller, "%s: reset otg\n", __func__);
+		dev_dbg(musb->controller, "%s: reset otg\n", __func__);
 		spin_lock_irqsave(&musb->lock, flags);
 		musb_platform_set_mode(musb, MUSB_PERIPHERAL);
 		spin_unlock_irqrestore(&musb->lock, flags);
@@ -2582,12 +2582,12 @@ static void musb_recovery_usb_proc(struct work_struct *work)
 	spin_unlock_irqrestore(&musb->lock, flags);
 
 	if (port1_status & USB_PORT_STAT_ENABLE) {
-		dev_alert(musb->controller, "%s: port already enabled, skipping "
+		dev_dbg(musb->controller, "%s: port already enabled, skipping "
 		       "disruptive VBUS reset\n", __func__);
 		return;
 	}
 
-	dev_alert(musb->controller, "%s: reset otg\n", __func__);
+	dev_dbg(musb->controller, "%s: reset otg\n", __func__);
 	spin_lock_irqsave(&musb->lock, flags);
 	musb_platform_set_mode(musb, MUSB_PERIPHERAL);
 	spin_unlock_irqrestore(&musb->lock, flags);
@@ -2608,7 +2608,7 @@ static void musb_reset_timer_handler(struct timer_list *t)
 	if (NULL == musb)
 		return;
 
-	dev_alert(musb->controller, "%s: reset timer fired\n", __func__);
+	dev_dbg(musb->controller, "%s: reset timer fired\n", __func__);
 	schedule_work(&musb->recovery_usb_work);
 }
 
