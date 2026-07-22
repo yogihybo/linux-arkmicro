@@ -612,20 +612,19 @@
 			interrupt-parent = <&vich>;
             interrupts = <8>, <7>; /* <usb1 int>, <usb1_dma_int> */
             interrupt-names = "mc", "dma";
-            /* DIAGNOSTIC TEST 2026-07-22 -- was "otg", set to "host" to
-             * eliminate ALL OTG negotiation on both usb0 and usb1 at
-             * once, to isolate whether the userspace "can't run '/bin/"
-             * exec failures seen after the usb0 dr_mode=host fix
-             * (d56d5a750) are somehow triggered by OTG negotiation
-             * activity (on either port) rather than the fix itself.
-             * KNOWN REGRESSION while this is in place: musb_core.c's
-             * init switch (~line 2828-2848) only calls
-             * musb_gadget_setup() for MUSB_PERIPHERAL/MUSB_OTG, never
-             * for pure MUSB_HOST -- so usb1's g_ncm gadget (CarPlay's
-             * wired networking interface per docs/WIRELESS_AND_INIT.md)
-             * will NOT register at all while this is "host". Revert to
-             * "otg" once this test is done, whichever way it goes. */
-            dr_mode = "host";
+            /* usb1 stays "otg": it provides the g_ncm gadget (CarPlay's
+             * wired networking interface, see
+             * docs/WIRELESS_AND_INIT.md) which needs
+             * musb_gadget_setup() -- only called for MUSB_PERIPHERAL/
+             * MUSB_OTG, never for pure MUSB_HOST (musb_core.c's init
+             * switch, ~line 2828-2848). A 2026-07-22 test briefly set
+             * this to "host" to rule out OTG negotiation as the cause
+             * of an unrelated boot failure (turned out to be a stale
+             * CRLF line ending in a flashed rootfs's inittab, not a
+             * kernel/USB issue -- see docs/WIRELESS_AND_INIT.md sec 7)
+             * and was reverted back to "otg" here once that was
+             * confirmed. */
+            dr_mode = "otg";
             multipoint = <1>;
             num-eps = <6>;
             ram-bits = <12>;
