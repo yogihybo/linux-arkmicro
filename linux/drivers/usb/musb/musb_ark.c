@@ -411,8 +411,19 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 			 * indefinitely). Do the same controller soft-reset + VBUS
 			 * power-cycle as MUSB_OTG below, just without the ID-pin
 			 * GPIO/role-state changes that only matter for role
-			 * switching.
+			 * switching. Do set otg->state (MUSB_OTG's case does
+			 * too) even though a boot-time dr_mode="host" port
+			 * never needs it (is_otg_enabled() is false for it, so
+			 * ark_musb_otg_timer never arms in the first place) --
+			 * this case also runs when a genuinely dr_mode="otg"
+			 * port gets switched to "host" at runtime (e.g. via the
+			 * sysfs mode attribute), where port_mode stays MUSB_OTG
+			 * and that poll timer stays armed. Leaving state at
+			 * B_IDLE there would let the timer's B_IDLE branch try
+			 * to renegotiate a role change again on the next poll,
+			 * undoing this switch.
 			 */
+			musb->xceiv->otg->state = OTG_STATE_A_HOST;
 			dev_info(musb->controller, "switch host (no negotiation): gpio_id=%d gpio_pwr=%d\n", gpio_id, gpio_pwr);
 			regval = readl(sys_softrest_base);
 			regval &= (~(1 << bitoffset));
