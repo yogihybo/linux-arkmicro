@@ -1613,7 +1613,12 @@ static struct usb_function_instance *ncm_alloc_inst(void)
 		return ERR_PTR(-ENOMEM);
 	mutex_init(&opts->lock);
 	opts->func_inst.free_func_inst = ncm_free_inst;
-	opts->net = gether_setup_default();
+	/* Default "usb%d" naming collides with the ark-musb DTS nodes' own
+	 * "usb0"/"usb1" labels in kernel log messages -- easy to misread as
+	 * the same thing when they're not (this is a net device, those are
+	 * MUSB controller instances). Name it after what it actually is:
+	 * the CarPlay wired-networking gadget interface. */
+	opts->net = gether_setup_name_default("carplay-ncm");
 	if (IS_ERR(opts->net)) {
 		struct net_device *net = opts->net;
 		kfree(opts);
