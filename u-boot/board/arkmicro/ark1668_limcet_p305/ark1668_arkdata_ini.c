@@ -54,9 +54,16 @@ static int arkdata_ini_load(void)
 		return arkdata_loaded == 1 ? 0 : -1;
 	}
 
+	run_command("mmc dev 0; mmc rescan", 0);
+
 	sprintf(cmd, "fatload mmc 0:1 0x%x arkdata.ini", ARKDATA_BUF_ADDR);
 	printf("[arkdata.ini] loading -> `%s`\n", cmd);
 	ret = run_command(cmd, 0);
+	if (ret != 0) {
+		sprintf(cmd, "fatload mmc 0:1 0x%x ARKDATA.INI", ARKDATA_BUF_ADDR);
+		ret = run_command(cmd, 0);
+	}
+
 	if (ret != 0) {
 		printf("[arkdata.ini] fatload from SD failed — attempting NAND fallback (offset 0x160000)...\n");
 		sprintf(cmd, "switchecc 2; nand read 0x%x 0x160000 0x%x", ARKDATA_BUF_ADDR, ARKDATA_BUF_MAXLEN);
