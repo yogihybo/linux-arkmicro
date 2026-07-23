@@ -291,37 +291,3 @@ U_BOOT_CMD(
 	"bootusb\n"
 );
 
-int do_bootstockkernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	char cmd[192];
-	unsigned long kerneladdr = env_or_default_hex("kerneladdr", 0x1000000);
-	const char *kernelfile = env_or_default("stockkernelfile", "zImage_stock");
-	const char *bootargs_common = env_or_default("bootargs_common",
-		"console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait ro screen=0 user_debug=8");
-	unsigned long machid = env_or_default_hex("machid", 0x1068);
-
-	printf("[bootstockkernel] booting stock 3.4 kernel via ATAGS from mmc 0:1 (%s)...\n", kernelfile);
-
-	sprintf(cmd, "setenv bootargs %s", bootargs_common);
-	run_command(cmd, 0);
-
-	sprintf(cmd, "setenv machid 0x%lx", machid);
-	run_command(cmd, 0);
-
-	sprintf(cmd, "fatload mmc 0:1 0x%lx %s", kerneladdr, kernelfile);
-	if (run_command(cmd, 0) != 0) {
-		printf("[bootstockkernel] failed to load %s from mmc 0:1\n", kernelfile);
-		return 1;
-	}
-
-	/* 2-argument bootz passes ATAGS (not DTB) to stock 3.4 kernel */
-	sprintf(cmd, "bootz 0x%lx", kerneladdr);
-	return run_command(cmd, 0);
-}
-
-U_BOOT_CMD(
-	bootstockkernel, 1, 0, do_bootstockkernel,
-	"boot stock 3.4 kernel directly from SD card using legacy ATAGS (no DTB)",
-	"bootstockkernel\n"
-);
-

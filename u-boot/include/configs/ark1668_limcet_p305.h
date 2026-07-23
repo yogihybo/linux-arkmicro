@@ -123,11 +123,15 @@
 	 * 8 bit" failure this fixes, showing that regression was unrelated
 	 * (most likely bootstock's old NAND-read-at-0x30000 path, since
 	 * removed — see ark1668_boot_cmds.c). */ \
-	"nandboot=echo Booting from nand ...; " \
+	"nandboot=echo Booting stock kernel ...; " \
 		"run nandargs; " \
 		"switchecc 2; " \
 		"setenv machid 1068; " \
-		"nand read ${kerneladdr} kernel; " \
+		"if fatload mmc 0:1 ${kerneladdr} zImage_stock; then " \
+			"echo Loaded zImage_stock from SD card; " \
+		"else " \
+			"nand read ${kerneladdr} kernel; " \
+		"fi; " \
 		"bootz ${kerneladdr}\0"
 
 /* ATAGS buffer for the kernel boot params list (setup_start_tag() et al,
