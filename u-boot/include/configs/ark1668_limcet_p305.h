@@ -189,28 +189,19 @@
 	"dtbfile=ark1668_limcet_p305.dtb\0" \
 	"mmcroot=/dev/mmcblk0p2\0" \
 	"usbroot=/dev/sda2\0" \
-	"stockubootfile=stock_uboot.bin\0" \
+	"hybridubootfile=uboot_hybrid.bin\0" \
+	"stockubootfile=uboot_stock.bin\0" \
 	"machid=1068\0" \
 	"bootargs_common=console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8\0" \
 	NANDARGS
 
 /* Default (non-interrupted) autoboot, in priority order:
- *   1. bootusb    — kernel+DTB from a USB stick, rootfs on the SD card.
- *   2. bootstockusb — chainload the original stock U-Boot from a USB
- *      stick (stock_uboot.bin), letting IT boot NAND with its own
- *      field-proven driver. Confirmed working end-to-end on real
- *      hardware (2026-07-13) via the SD variant — see the bootstock
- *      comment block in ark1668_boot_cmds.c for the full story.
- *   3. bootstock  — same chainload, sourced from the SD card instead.
- *   4. run nandboot — last-resort direct NAND kernel boot using THIS
- *      build's own NAND driver, only reached if stock_uboot.bin is
- *      missing from both USB and SD. Known to hang at kernel entry
- *      (see docs/HANDOFF_nand_ecc_uboot_vs_kernel.md §5) — kept only
- *      as a fallback of last resort, not expected to fully succeed.
- * Deliberately does NOT fall back to the SD-card uEnv.txt flow — SD is
- * meant to hold only U-Boot itself now (see
- * docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md §8.2); `bootmmc` remains available
- * to run manually if needed. */
+ *   1. bootusb     — kernel+DTB from a USB stick, rootfs on the SD card.
+ *   2. boothybrid  — chainload the patched hybrid U-Boot (uboot_hybrid.bin)
+ *      from the SD card FAT partition 1.
+ *   3. bootstock   — chainload the original stock U-Boot (uboot_stock.bin)
+ *      from the SD card FAT partition 1.
+ *   4. run nandboot — last-resort direct NAND kernel boot using THIS build. */
 /* Import uEnv.txt from the SD card first, if present — this can override
  * ANY env var (bootargs, kernelfile, mmcroot, bootcmd itself, etc.)
  * without recompiling. If bootcmd wasn't overridden by that import, this
@@ -220,8 +211,9 @@
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
 	"if bootusb; then true; " \
-	"elif bootstockusb; then true; " \
-	"else bootstock; run nandboot; fi"
+	"elif boothybrid; then true; " \
+	"elif bootstock; then true; " \
+	"else run nandboot; fi"
 
 #else
 

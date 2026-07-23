@@ -33,6 +33,9 @@ CONFIG_CMD_USB=y
 CONFIG_CMD_SOURCE=y
 # CONFIG_CMD_SETEXPR is not set
 CONFIG_CMD_FAT=y
+CONFIG_CMD_FS_GENERIC=y
+CONFIG_FS_FAT=y
+CONFIG_FAT_WRITE=y
 CONFIG_CMD_MTDPARTS=y
 CONFIG_MTDIDS_DEFAULT="nand0=ark1680-nand"
 CONFIG_MTDPARTS_DEFAULT="mtdparts=ark1680-nand:128k(S-Loader),512k(U-boot),512k(U-boot_back),256K(U-boot-Env),256K(arkdata),4m(kernel),106m(rootfs),6m(userdata),512K(bootlogo),3m(bootanimation),3m(reversingtrack),256K(Unicode)"
