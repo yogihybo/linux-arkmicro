@@ -215,13 +215,14 @@ void arkdata_apply_lcd_timing(struct screen_info *screen)
 	overridden += apply_field("CLKFreq", &screen->clk_freq);
 	overridden += apply_field("CLKDIV1", &screen->clk_div1);
 	overridden += apply_field("CLKDIV2", &screen->clk_div2);
+	overridden += apply_field("RgbMode", &screen->rgb_mode);
 
-	printf("[arkdata.ini] done — %d/12 fields overridden from SD card, "
+	printf("[arkdata.ini] done — %d/13 fields overridden from SD card, "
 	       "final timing (vbp=%u vfp=%u vsw=%u hbp=%u hfp=%u hsw=%u "
-	       "clk_freq=%u clk_div1=%u clk_div2=%u)\n",
+	       "clk_freq=%u clk_div1=%u clk_div2=%u rgb_mode=%u)\n",
 	       overridden, screen->vbp, screen->vfp, screen->vsw, screen->hbp,
 	       screen->hfp, screen->hsw, screen->clk_freq, screen->clk_div1,
-	       screen->clk_div2);
+	       screen->clk_div2, screen->rgb_mode);
 }
 
 /* fdt_setprop_u32() a value read from arkdata.ini's `key`, at `node_path`'s
