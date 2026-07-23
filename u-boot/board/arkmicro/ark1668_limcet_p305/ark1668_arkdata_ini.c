@@ -26,7 +26,7 @@
  * cache-hit notices) on top of the always-on printf() logging below. Kept
  * file-scoped rather than a global build option since turning DEBUG on
  * tree-wide would flood the console with unrelated subsystem noise. */
-#define DEBUG
+/* #define DEBUG */
 
 #include "ark1668_lcd.h"
 #include <fdt_support.h>
@@ -176,14 +176,14 @@ static int apply_field(const char *key, unsigned int *field)
 	int v;
 
 	if (arkdata_ini_get_int(key, 10, &v) != 0) {
-		printf("[arkdata.ini]   %-8s not found, keeping compiled default (%u)\n",
+		debug("[arkdata.ini]   %-8s not found, keeping compiled default (%u)\n",
 		       key, *field);
 		return 0;
 	}
 	if ((unsigned int)v != *field)
-		printf("[arkdata.ini]   %-8s %u -> %u\n", key, *field, (unsigned int)v);
+		debug("[arkdata.ini]   %-8s %u -> %u\n", key, *field, (unsigned int)v);
 	else
-		printf("[arkdata.ini]   %-8s %u (unchanged)\n", key, *field);
+		debug("[arkdata.ini]   %-8s %u (unchanged)\n", key, *field);
 	*field = (unsigned int)v;
 	return 1;
 }
@@ -194,9 +194,6 @@ static int apply_field(const char *key, unsigned int *field)
 void arkdata_apply_lcd_timing(struct screen_info *screen)
 {
 	int overridden = 0;
-
-	printf("[arkdata.ini] applying LCD timing overrides for screen_id=%d\n",
-	       screen->screen_id);
 
 	if (arkdata_ini_load() != 0) {
 		printf("[arkdata.ini] not available, screen_id=%d keeps compiled "
@@ -254,7 +251,7 @@ static int fdt_apply_field(void *blob, const char *node_path,
 		return 0;
 	}
 
-	printf("[arkdata.ini]   %s='%d' -> DTB %s/%s\n", key, v, node_path, prop);
+	debug("[arkdata.ini]   %s='%d' -> DTB %s/%s\n", key, v, node_path, prop);
 	return 1;
 }
 
@@ -369,7 +366,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 		return 0;
 	}
 
-	printf("[arkdata.ini] ft_board_setup: patching kernel DTB display-timings from arkdata.ini\n");
+	debug("[arkdata.ini] ft_board_setup: patching kernel DTB display-timings from arkdata.ini\n");
 
 	overridden += fdt_apply_field(blob, timing_path, "hactive", "Width", 10);
 	overridden += fdt_apply_field(blob, timing_path, "vactive", "Height", 10);
@@ -393,7 +390,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 		uint32_t hz = (uint32_t)(clk_freq / clk_div1);
 
 		if (nodeoff >= 0 && fdt_setprop_u32(blob, nodeoff, "clock-frequency", hz) == 0) {
-			printf("[arkdata.ini]   CLKFreq/CLKDIV1=%d/%d -> DTB clock-frequency=%u\n",
+			debug("[arkdata.ini]   CLKFreq/CLKDIV1=%d/%d -> DTB clock-frequency=%u\n",
 			       clk_freq, clk_div1, hz);
 			overridden++;
 		}
