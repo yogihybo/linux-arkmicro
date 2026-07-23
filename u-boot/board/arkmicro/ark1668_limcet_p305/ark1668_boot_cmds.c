@@ -24,7 +24,7 @@
  *              USB-hosted rootfs.
  *   bootstock / bootstockusb — chainloads the ORIGINAL stock U-Boot binary
  *              (U-Boot 2012.10) from a FAT file on SD or USB respectively
- *              (stockubootfile env var, stock_uboot.bin by default,
+ *              (stockubootfile env var, uboot_stock.bin by default,
  *              sourced from Prado firmware dump/mtd1-mtd2_uboot/extracted/
  *              uboot.bin) and jumps into it, which then boots the stock
  *              kernel+rootfs+UI from NAND with its own NAND driver.
@@ -119,78 +119,39 @@ U_BOOT_CMD(
 
 extern int cleanup_before_linux(void);
 
-static int bootstock_from_block_dev(const char *iface)
+static int bootstock_file_from_block_dev(const char *iface, const char *env_var, const char *default_file)
 {
 	char cmd[64];
-	const char *stockfile = env_or_default("stockubootfile", "stock_uboot.bin");
+	const char *stockfile = env_or_default(env_var, default_file);
 	unsigned long magic, ep, filesize;
 
-	/* File on a FAT block device only, NOT the "U-boot" NAND partition. A
-	 * NAND-partition read was tried here and reliably failed on real
-	 * hardware — `nand read 0x30000 U-boot` (and even a plain offset/size
-	 * read to that same address, no partition name involved) corrupts
-	 * console output and appears to leave the NAND controller/cache in a
-	 * bad state for subsequent commands. Root cause not yet found — it
-	 * reproduces specifically for reads targeting 0x30000, while the exact
-	 * same read to other addresses (e.g. the kernel partition to
-	 * 0x1000000) works fine, so it isn't a partition-name or generic-
-	 * NAND-read problem. Needs its own investigation before being trusted;
-	 * a FAT file avoids it entirely and is the path already confirmed
-	 * working end-to-end (SD; USB untested but same code path). */
+	/* File on a FAT block device only, NOT the "U-boot" NAND partition. */
 	sprintf(cmd, "fatload %s 0:1 0x%x %s", iface, STOCK_UBOOT_LOAD_ADDR, stockfile);
 	if (run_command(cmd, 0) != 0) {
-		printf("[bootstock] fatload of %s from %s 0:1 failed — copy it to "
-		       "the %s FAT partition (see Prado firmware dump/"
-		       "mtd1-mtd2_uboot/extracted/uboot.bin)\n", stockfile, iface, iface);
+		printf("[chainload] fatload of %s from %s 0:1 failed — copy it to "
+		       "the %s FAT partition\n", stockfile, iface, iface);
 		return 1;
 	}
 
 	magic = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x3c);
 	if (magic != ARK_HEADER_MAGIC) {
-		printf("[bootstock] bad ARK header magic 0x%lx (expected 0x%x) — "
+		printf("[chainload] bad ARK header magic 0x%lx (expected 0x%x) — "
 		       "refusing to jump into garbage\n", magic, ARK_HEADER_MAGIC);
 		return 1;
 	}
 
 	filesize = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x50);
 	ep = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x44);
-	printf("[bootstock] header OK (header EP 0x%lx, unused — see below), "
+	printf("[chainload] header OK (header EP 0x%lx, unused), "
 	       "flushing caches and jumping to 0x%x now (warm handoff, watch "
 	       "serial closely)\n", ep, STOCK_UBOOT_LOAD_ADDR);
 
-	/* do_go() (cmd/boot.c) does a bare jump with NO cache maintenance at
-	 * all — unlike bootm/bootz (used by bootmmc/bootusb), which call
-	 * cleanup_before_linux() internally before handing off. Without any
-	 * cache maintenance, stale/dirty icache lines from whatever ran
-	 * before this command can survive under the freshly-loaded code and
-	 * get executed instead of it.
-	 *
-	 * Deliberately NOT using cleanup_before_linux() here, even though
-	 * that's what bootm/bootz call — it's built for handing off to a
-	 * KERNEL, which does its own from-scratch MMU/interrupt/cache init.
-	 * It disables the MMU, interrupts, and both caches entirely. This is
-	 * a bootloader-to-bootloader handoff via the same EP-jump entry
-	 * Stepldr normally uses, and Stepldr's handoff is what the stock
-	 * binary actually expects/was built for — Stepldr's own DDR init
-	 * almost certainly leaves the MMU/caches in some usable state, not
-	 * fully torn down, and the stock binary may not expect the harder
-	 * teardown. (An earlier version of this fix used
-	 * cleanup_before_linux() and was suspected of causing its own
-	 * immediate crash-and-reset back through Stepldr into THIS build,
-	 * separate from the original stale-icache crash it was meant to
-	 * fix.) Just flush the range we actually wrote and invalidate the
-	 * icache globally — enough to guarantee the CPU executes what was
-	 * just loaded, without touching MMU/interrupt state. */
 	flush_cache(STOCK_UBOOT_LOAD_ADDR, filesize);
 	invalidate_icache_all();
 
-	printf("[bootstock] resetting NAND/BCH controller registers (was BCH_CR=0x%08x)\n",
+	printf("[chainload] resetting NAND/BCH controller registers (was BCH_CR=0x%08x)\n",
 	       *(volatile unsigned int *)(0xec000000 + 0x27c));
 
-	/* Zero out BCH and NAND configuration/control/status registers to reset the
-	 * controller state to a clean Power-On Reset (POR) equivalent baseline.
-	 * This prevents stock U-Boot's OR-based initialization from inheriting
-	 * polluted state from this build's NAND operations. */
 	*(volatile unsigned int *)(0xec000000 + 0x27c) = 0;          /* rBCH_CR */
 	*(volatile unsigned int *)(0xec000000 + 0x288) = 0x0000000f; /* Clear pending BCH interrupts */
 	*(volatile unsigned int *)(0xec000000 + 0x28c) = 0;          /* Mask BCH interrupts */
@@ -199,29 +160,30 @@ static int bootstock_from_block_dev(const char *iface)
 	*(volatile unsigned int *)(0xec000000 + 0x298) = 0;          /* rNAND_JUMP_CTL */
 	*(volatile unsigned int *)(0xec000000 + 0x00) = 0;           /* rNAND_CR */
 
-	/* Jump to the LOAD ADDRESS (reset vector / _start), not the header's
-	 * EP field — verified via objdump disassembly of the real Stepldr.bin
-	 * (Holden firmware update package) that Stepldr's own load routine
-	 * hardcodes `mov r0, #0x30000; blx r0`, ignoring the header's EP
-	 * entirely. Jumping to EP instead skips whatever _start/vector-table
-	 * setup the binary's own reset-vector path does, which is a plausible
-	 * cause of this command's previous intermittent "undefined instr
-	 * resetting" crashes (worked once, then failed consistently — a
-	 * skipped-required-init pattern). See docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md
-	 * §8.3 correction. */
 	sprintf(cmd, "go 0x%x", STOCK_UBOOT_LOAD_ADDR);
 	return run_command(cmd, 0);
 }
 
 int do_bootstock(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	return bootstock_from_block_dev("mmc");
+	return bootstock_file_from_block_dev("mmc", "stockubootfile", "uboot_stock.bin");
 }
 
 U_BOOT_CMD(
 	bootstock, 1, 0, do_bootstock,
 	"chainload the original stock dumped U-Boot from the SD card (bypasses this build's NAND driver)",
 	"bootstock\n"
+);
+
+int do_boothybrid(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	return bootstock_file_from_block_dev("mmc", "hybridubootfile", "uboot_hybrid.bin");
+}
+
+U_BOOT_CMD(
+	boothybrid, 1, 0, do_boothybrid,
+	"chainload the patched hybrid U-Boot (uboot_hybrid.bin) from the SD card",
+	"boothybrid\n"
 );
 
 int do_bootstockusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -231,7 +193,7 @@ int do_bootstockusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("[bootstockusb] usb start failed\n");
 		return 1;
 	}
-	return bootstock_from_block_dev("usb");
+	return bootstock_file_from_block_dev("usb", "stockubootfile", "uboot_stock.bin");
 }
 
 U_BOOT_CMD(
@@ -328,3 +290,38 @@ U_BOOT_CMD(
 	"boot kernel+DTB from a USB stick (same as bootmmc, rootfs unchanged)",
 	"bootusb\n"
 );
+
+int do_bootstockkernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char cmd[192];
+	unsigned long kerneladdr = env_or_default_hex("kerneladdr", 0x1000000);
+	const char *kernelfile = env_or_default("stockkernelfile", "zImage_stock");
+	const char *bootargs_common = env_or_default("bootargs_common",
+		"console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait ro screen=0 user_debug=8");
+	unsigned long machid = env_or_default_hex("machid", 0x1068);
+
+	printf("[bootstockkernel] booting stock 3.4 kernel via ATAGS from mmc 0:1 (%s)...\n", kernelfile);
+
+	sprintf(cmd, "setenv bootargs %s", bootargs_common);
+	run_command(cmd, 0);
+
+	sprintf(cmd, "setenv machid 0x%lx", machid);
+	run_command(cmd, 0);
+
+	sprintf(cmd, "fatload mmc 0:1 0x%lx %s", kerneladdr, kernelfile);
+	if (run_command(cmd, 0) != 0) {
+		printf("[bootstockkernel] failed to load %s from mmc 0:1\n", kernelfile);
+		return 1;
+	}
+
+	/* 2-argument bootz passes ATAGS (not DTB) to stock 3.4 kernel */
+	sprintf(cmd, "bootz 0x%lx", kerneladdr);
+	return run_command(cmd, 0);
+}
+
+U_BOOT_CMD(
+	bootstockkernel, 1, 0, do_bootstockkernel,
+	"boot stock 3.4 kernel directly from SD card using legacy ATAGS (no DTB)",
+	"bootstockkernel\n"
+);
+
