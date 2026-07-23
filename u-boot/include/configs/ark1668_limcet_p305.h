@@ -124,6 +124,7 @@
 	 * (most likely bootstock's old NAND-read-at-0x30000 path, since
 	 * removed — see ark1668_boot_cmds.c). */ \
 	"nandboot=echo Booting stock kernel ...; " \
+		"disconfig 0; " \
 		"run nandargs; " \
 		"switchecc 2; " \
 		"setenv machid 1068; " \
