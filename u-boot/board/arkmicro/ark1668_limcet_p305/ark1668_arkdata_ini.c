@@ -58,17 +58,23 @@ static int arkdata_ini_load(void)
 	printf("[arkdata.ini] loading -> `%s`\n", cmd);
 	ret = run_command(cmd, 0);
 	if (ret != 0) {
-		printf("[arkdata.ini] fatload failed (ret=%d) — file missing from SD "
-		       "card FAT partition, or mmc 0:1 not accessible; using compiled "
-		       "defaults\n", ret);
-		arkdata_loaded = -1;
-		return -1;
+		printf("[arkdata.ini] fatload from SD failed — attempting NAND fallback (partition arkdata)...\n");
+		sprintf(cmd, "switchecc 2; nand read 0x%x arkdata 0x%x", ARKDATA_BUF_ADDR, ARKDATA_BUF_MAXLEN);
+		ret = run_command(cmd, 0);
+		if (ret != 0) {
+			printf("[arkdata.ini] NAND read failed (ret=%d) — using compiled defaults\n", ret);
+			arkdata_loaded = -1;
+			return -1;
+		}
+		/* For NAND read, scan buffer up to MAXLEN for valid INI content */
+		filesize = ARKDATA_BUF_MAXLEN;
+	} else {
+		filesize = env_get_hex("filesize", 0);
+		printf("[arkdata.ini] fatload reported filesize=0x%lx (%lu bytes)\n",
+		       filesize, filesize);
 	}
 
-	filesize = env_get_hex("filesize", 0);
-	printf("[arkdata.ini] fatload reported filesize=0x%lx (%lu bytes)\n",
-	       filesize, filesize);
-	if (filesize == 0 || filesize >= ARKDATA_BUF_MAXLEN) {
+	if (filesize == 0 || filesize > ARKDATA_BUF_MAXLEN) {
 		printf("[arkdata.ini] size 0x%lx out of expected range (1..0x%x), "
 		       "ignoring file and using compiled defaults\n",
 		       filesize, ARKDATA_BUF_MAXLEN);
@@ -79,7 +85,7 @@ static int arkdata_ini_load(void)
 	arkdata_buf = (char *)ARKDATA_BUF_ADDR;
 	arkdata_len = filesize;
 	arkdata_loaded = 1;
-	printf("[arkdata.ini] loaded %u bytes from SD into RAM @ 0x%x\n",
+	printf("[arkdata.ini] loaded %u bytes into RAM @ 0x%x\n",
 	       arkdata_len, ARKDATA_BUF_ADDR);
 	return 0;
 }

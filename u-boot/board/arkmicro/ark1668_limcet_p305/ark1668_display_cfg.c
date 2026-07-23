@@ -400,10 +400,8 @@ void ark_show_bootlogo(void)
 	ark_display_init(g_screen_id);
 	printf("[bootlogo] ark_display_init() done\n");
 
-	/* ark_display_init() enables the small OSD2 update-progress overlay
-	 * and disables OSD1 — undo that so our full-screen splash on OSD1
-	 * is what's actually visible. */
-	ark_osd_en_layer(OSD2_LAYER, 0);
+	/* Keep OSD2 layer enabled at 0x0be00000 (190MB) to match stock U-Boot state */
+	ark_osd_en_layer(OSD2_LAYER, 1);
 	if (display_bootlogo_from_sd() != 0)
 		printf("[bootlogo] no splash shown this boot (see reason above)\n");
 }
