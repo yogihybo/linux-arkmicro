@@ -58,8 +58,8 @@ static int arkdata_ini_load(void)
 	printf("[arkdata.ini] loading -> `%s`\n", cmd);
 	ret = run_command(cmd, 0);
 	if (ret != 0) {
-		printf("[arkdata.ini] fatload from SD failed — attempting NAND fallback (partition arkdata)...\n");
-		sprintf(cmd, "switchecc 2; nand read 0x%x arkdata 0x%x", ARKDATA_BUF_ADDR, ARKDATA_BUF_MAXLEN);
+		printf("[arkdata.ini] fatload from SD failed — attempting NAND fallback (offset 0x160000)...\n");
+		sprintf(cmd, "switchecc 2; nand read 0x%x 0x160000 0x%x", ARKDATA_BUF_ADDR, ARKDATA_BUF_MAXLEN);
 		ret = run_command(cmd, 0);
 		if (ret != 0) {
 			printf("[arkdata.ini] NAND read failed (ret=%d) — using compiled defaults\n", ret);
