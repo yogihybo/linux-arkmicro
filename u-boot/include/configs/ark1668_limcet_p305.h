@@ -108,7 +108,8 @@
 		"nand erase.part bootanimation; " \
 		"nand write ${loadaddr} bootanimation ${filesize}; " \
 		"else setenv bootanimationsize 0; fi\0" \
-	"nandargs=setenv bootargs console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait ro ${mtdparts} screen=${screen}\0" \
+	"screen=0\0" \
+	"nandargs=setenv bootargs console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait ro screen=0 ${mtdparts}\0" \
 	/* switchecc 2: this chip's actual on-flash OOB layout for the
 	 * kernel/rootfs/bootloader partitions is 1024-byte step / 13-byte /
 	 * 7-bit BCH strength / eccpos starting at OOB offset 3 — matches
