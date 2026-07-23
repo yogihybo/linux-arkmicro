@@ -30,6 +30,21 @@ EXPORT_SYMBOL(__cpuc_flush_user_all);
 EXPORT_SYMBOL(__cpuc_flush_user_range);
 EXPORT_SYMBOL(__cpuc_coherent_kern_range);
 EXPORT_SYMBOL(__cpuc_flush_dcache_area);
+/* Vivante's galcore driver does its own DMA cache maintenance and calls
+ * these "private to the dma-mapping API" functions directly -- Vivante's
+ * own gc_hal_kernel_os.c documents this exact patch as required "in case
+ * cache API is not exported". Without it, modprobe fails with unknown
+ * symbol v7_dma_map_area/v7_dma_unmap_area/v7_dma_flush_range on any
+ * single-cache-type (non-MULTI_CACHE) build such as this CPU_V7-only one.
+ * These are assembly-only symbols (arch/arm/mm/cache-v7.S) with no C
+ * prototype visible here, so EXPORT_SYMBOL needs an explicit extern first.
+ */
+extern void __glue(_CACHE,_dma_map_area)(const void *, size_t, int);
+extern void __glue(_CACHE,_dma_unmap_area)(const void *, size_t, int);
+extern void __glue(_CACHE,_dma_flush_range)(const void *, const void *);
+EXPORT_SYMBOL(__glue(_CACHE,_dma_map_area));
+EXPORT_SYMBOL(__glue(_CACHE,_dma_unmap_area));
+EXPORT_SYMBOL(__glue(_CACHE,_dma_flush_range));
 #else
 EXPORT_SYMBOL(cpu_cache);
 #endif

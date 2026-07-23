@@ -106,6 +106,7 @@ static sc_ipc_t gpu_ipcHandle;
 
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/reset.h>
 
 #ifdef CONFIG_DEVICE_THERMAL
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
@@ -1174,7 +1175,7 @@ static inline void put_power(void)
     int core = 0;
     struct gpu_clk *imx_clk = NULL;
     struct imx_priv *priv = &imxPriv;
-    struct device *pmdev_last = NULL;/*legacy gpu device entry for imx6*/
+    struct device *pmdev_last __maybe_unused = NULL;/*legacy gpu device entry for imx6*/
     struct clk *clk_core_last = NULL;/*vg has same core clk as 2d */
 
     for (core = 0; core < gcdMAX_GPU_COUNT; core++) {

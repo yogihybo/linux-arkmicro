@@ -341,7 +341,7 @@ void ark_display_init(int screen_id)
  * but U-Boot's own allocator/relocation logic knows nothing about
  * anything past 0x4000000, so writes there aren't guaranteed safe from
  * U-Boot's side. See docs/UBOOT_BOOTLOGO_AND_RE_PORTS.md. */
-#define BOOTLOGO_SD_ADDR	0x2700000
+#define BOOTLOGO_SD_ADDR	0x0b400000
 #define BOOTLOGO_WIDTH		800
 #define BOOTLOGO_HEIGHT		480
 

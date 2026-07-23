@@ -1235,12 +1235,13 @@ gckKERNEL_DestroyProcessDB(
                    ProcessID, database->mapUserMemory.totalBytes,
                    database->mapUserMemory.maxBytes);
 
-    if (database->list != gcvNULL)
-    {
-        gcmkTRACE_ZONE(gcvLEVEL_WARNING, gcvZONE_DATABASE,
-                       "Process %d has entries in its database:",
-                       ProcessID);
-    }
+    /* database->list is a fixed-size array, never NULL -- this trace
+     * always fires (was previously a dead "!= gcvNULL" check on an
+     * array's address, which GCC's -Werror=address correctly flags on
+     * this kernel/toolchain). */
+    gcmkTRACE_ZONE(gcvLEVEL_WARNING, gcvZONE_DATABASE,
+                   "Process %d has entries in its database:",
+                   ProcessID);
 
     for (i = 0; i < gcmCOUNTOF(database->list); i++)
     {

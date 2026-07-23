@@ -290,7 +290,23 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 	var->red.msb_right = var->green.msb_right = var->blue.msb_right = 0;
 	var->transp.msb_right = 0;
 	var->transp.offset = var->transp.length = 0;
-	var->xoffset = var->yoffset = 0;
+
+	/* Was an unconditional var->xoffset = var->yoffset = 0 here --
+	 * check_var() is called on every FBIOPUT_VSCREENINFO, not just
+	 * once at startup (confirmed via strace: 12 FBIOPUT_VSCREENINFO
+	 * calls interleaved with 23 FBIOPAN_DISPLAY frame flips in a
+	 * single DirectFB session, docs/logs/directfb_strace.txt). Forcing
+	 * yoffset back to 0 (page 1) on every one of those benign
+	 * mode-set calls stomps whichever page DirectFB's own
+	 * triple-buffer rotation was actually displaying, regardless of
+	 * whether that page held current content -- validate/clamp
+	 * instead of unconditionally overwriting. See
+	 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 19.
+	 */
+	var->xoffset = 0;
+	if (var->yoffset + var->yres > var->yres_virtual ||
+	    var->yoffset % var->yres != 0)
+		var->yoffset = 0;
 
 	if (info->fix.smem_len) {
 		unsigned int smem_len = (var->xres_virtual * var->yres_virtual
@@ -410,10 +426,25 @@ static int ark1668_lcdfb_pan_display(struct fb_var_screeninfo *var,
 	struct ark1668_lcdfb_info *sinfo = info->par;
 	struct fb_fix_screeninfo *fix = &info->fix;
 	u32 addr;
+	unsigned long flags;
 
 	addr = fix->smem_start + var->yoffset * fix->line_length
 		+ var->xoffset * info->var.bits_per_pixel / 8;
+
+	/* Stock's real ark_disp_fb_pan_display (vmlinux.elf @ 0x802e2900)
+	 * wraps its equivalent OSD1_ADDR register write in an IRQ-disabled
+	 * critical section (ark_disp_set_next_buf_start_addr ->
+	 * ark_disp_set_osd_data_addr, confirmed via disassembly) -- matched
+	 * here. Note: this does NOT add any wait for GPU render completion;
+	 * stock's write is just as immediate as ours was. It only protects
+	 * against a concurrent interrupt (the vsync IRQ handler) observing
+	 * a torn update -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+	 * section 15/16 for why the actual red/black-screen race is not
+	 * fixable at this layer.
+	 */
+	local_irq_save(flags);
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_ADDR, addr);
+	local_irq_restore(flags);
 
 	return 0;
 }
@@ -1146,12 +1177,35 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
 			ret = -ENOMEM;
 			goto release_intmem;
 		}
-        memset(info->screen_base, 0, info->var.xres * info->var.yres * 4);
 
 		/*
-		 * Don't clear the framebuffer -- someone may have set
-		 * up a splash image.
+		 * Don't clear the first screen's worth -- someone may have
+		 * set up a splash image there (U-Boot draws to the start of
+		 * this same reserved region before Linux boots).
+		 *
+		 * But this resource is the FULL reserved carve-out
+		 * (info->fix.smem_len, 16MB on this board -- see
+		 * ark1668_limcet_p305.dts's lcd@e0500000 second `reg`
+		 * entry), while check_var() below sets up triple-buffering
+		 * (yres_virtual = yres*3) using ark1668_lcdfb_pan_display's
+		 * yoffset to select between 3 stacked pages within it. Only
+		 * the first page (this screen's worth) was ever being
+		 * zeroed here -- pages 2 and 3, plus everything beyond the
+		 * triple-buffer area up to the full 16MB (used by
+		 * OSD2/OSD3/VIDEO1/VIDEO2, set via raw addresses from
+		 * userspace ioctls with no kernel-side allocation tracking),
+		 * were left as genuine uninitialized DRAM content. Confirmed
+		 * on real hardware: a DirectFB red/black screen bug traced
+		 * to a memory dump at exactly one-screen-size past this
+		 * region's base showing non-zero, non-deterministic content
+		 * (docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 17) --
+		 * panning to a page before anything has ever rendered real
+		 * content into it exposes whatever was in DRAM at boot.
+		 * Zero everything past the first screen to close that gap.
 		 */
+		memset(info->screen_base, 0, info->var.xres * info->var.yres * 4);
+		memset(info->screen_base + info->var.xres * info->var.yres * 4, 0,
+		       info->fix.smem_len - info->var.xres * info->var.yres * 4);
 	} else {
 		if(map && !map->start) {
 			sinfo->smem_len = resource_size(map);

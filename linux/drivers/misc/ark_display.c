@@ -72,6 +72,26 @@
 #define ARKDISP_GET_SCREEN_INFO		_IOWR(ARK_DISPLAY_IOC_MAGIC, 29, unsigned long)
 #define ARKDISP_GET_VDE_CFG		_IOWR(ARK_DISPLAY_IOC_MAGIC, 1, unsigned long)
 #define ARKDISP_SET_VDE_CFG		_IOW(ARK_DISPLAY_IOC_MAGIC, 2, unsigned long)
+
+/* Two more commands confirmed as real, live callers in this rootfs (raw
+ * ioctl-number search across every rootfs shared library and binary,
+ * 2026-07-20) -- unlike every other still-unimplemented ARKDISP_* command
+ * (SET/GET_LAYER_CFG, TVOUT/ITU656 controls, etc, all confirmed to have
+ * ZERO callers anywhere in this rootfs and deliberately left unimplemented
+ * as not worth building against nothing), these two are genuinely called:
+ *   - 0xa01b: MsnCoreApp (2 call sites). Stock's ark_disp_ioctl (@
+ *     0x802d9fd8) just does `*(u32 *)(priv+0x1c88) = 1; return 0;` --
+ *     no register access, an argument-less command (_IO, not _IOW/_IOWR --
+ *     encodes to exactly 0xa01b with zero size/dir bits, confirmed by
+ *     decoding the raw command number). Purpose not identified (nothing
+ *     in ark_disp_ioctl itself reads this flag back), so implemented as a
+ *     genuinely stored flag rather than a bare no-op, in case something
+ *     else in stock depends on it being remembered.
+ *   - 0x4004a000: libMcuCenter.so (1 call site). Stock's handler is a
+ *     literal unconditional `return 0;` -- doesn't even touch the
+ *     argument despite the command encoding as a 4-byte _IOW. */
+#define ARKDISP_SET_UNKNOWN_FLAG_1C88	_IO(ARK_DISPLAY_IOC_MAGIC, 0x1b)
+#define ARKDISP_NOOP_ACK		_IOW(ARK_DISPLAY_IOC_MAGIC, 0, unsigned long)
 #define ARK_DISPLAY_LAYER_NUM		5
 
 struct ark_screen_info {
@@ -166,8 +186,27 @@ static void ark_display_write_vde_reg(const struct ark_disp_vde_cfg_arg *cfg)
 	writel(reg, ark_lcdc_base + ark_vde_reg_offset[cfg->layer_id]);
 }
 
+/* Stock's ark_disp_ioctl only rejects a NULL arg for the specific commands
+ * that actually dereference it (confirmed per-command in the decompile) --
+ * it has no blanket check. ARKDISP_SET_UNKNOWN_FLAG_1C88 and
+ * ARKDISP_NOOP_ACK both ignore arg entirely in stock, so they're handled
+ * before the NULL check below rather than after it. */
+static bool ark_display_unknown_flag_1c88;
+
 static long ark_display_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+	switch (cmd) {
+	case ARKDISP_SET_UNKNOWN_FLAG_1C88:
+		ark_display_unknown_flag_1c88 = true;
+		pr_info("ark_display: ARKDISP_SET_UNKNOWN_FLAG_1C88\n");
+		return 0;
+	case ARKDISP_NOOP_ACK:
+		pr_info("ark_display: ARKDISP_NOOP_ACK\n");
+		return 0;
+	default:
+		break;
+	}
+
 	if (!arg)
 		return -EINVAL;
 
@@ -303,5 +342,5 @@ module_init(ark_display_init);
 module_exit(ark_display_exit);
 
 MODULE_AUTHOR("Reconstructed from stock ark_display_drv.c / ark_disp_ioctl disassembly");
-MODULE_DESCRIPTION("Minimal /dev/ark_display misc device (ARKDISP_GET_SCREEN_INFO only, ARKDISP_GET/SET_VDE_CFG with real hardware register writes)");
+MODULE_DESCRIPTION("Minimal /dev/ark_display misc device -- implements every ARKDISP_* command confirmed to have a real caller in this rootfs (GET_SCREEN_INFO, GET/SET_VDE_CFG with real hardware register writes, SET_UNKNOWN_FLAG_1C88, NOOP_ACK); deliberately omits commands with zero confirmed callers (SET/GET_LAYER_CFG, TVOUT/ITU656 controls)");
 MODULE_LICENSE("GPL");

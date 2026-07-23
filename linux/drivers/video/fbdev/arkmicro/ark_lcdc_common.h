@@ -122,6 +122,45 @@ struct ark_disp_vp {
 	int reg[6];
 };
 
+/* Real vendor payload used by libarkcmn.so's arkapi_init_fb_display() and
+ * arkapi_init_fb_video_display() (raw ioctls 0x403c4f27 / 0x403c4f37,
+ * confirmed via ARM disassembly of both functions -- identical 60-byte
+ * layout for both). x/y is layer position; screen_width/screen_height is
+ * the rounded full framebuffer size; param6/param7 are validated non-zero
+ * by the caller and are the actual rendered window width/height; the two
+ * hal_field_* members are values userspace itself read back from an
+ * earlier kernel query and is echoing here (kernel only consumes this
+ * struct, never writes it back), so we don't need to interpret them.
+ */
+struct ark_fb_init_display {
+	unsigned int x;
+	unsigned int y;
+	unsigned int right_margin;
+	unsigned int bottom_margin;
+	unsigned int screen_width;
+	unsigned int screen_height;
+	unsigned int param12;
+	unsigned int _reserved0;
+	unsigned int _reserved1;
+	unsigned int param4;
+	unsigned int param5;
+	unsigned int win_width;
+	unsigned int win_height;
+	unsigned int hal_field_1b0;
+	unsigned int hal_field_1a0;
+};
+
+/* Real vendor payload used by libarkcmn.so's arkapi_set_fb_video_addr()
+ * (raw ioctl 0x40104f38, confirmed via ARM disassembly) -- per-frame
+ * video buffer address update for CarPlay/phone-mirroring video.
+ */
+struct ark_fb_set_video_addr {
+	unsigned int y_addr;
+	unsigned int cb_addr;
+	unsigned int cr_addr;
+	unsigned int param5;
+};
+
 struct ark_disp_atomic {
 	 int layer;
 	 int atomic_stat;
@@ -172,6 +211,23 @@ struct ark_disp_atomic {
  */
 #define ARKFB_HIDE_WINDOW_REAL			ARK_IO(44)
 
+/* Same story for SHOW_WINDOW: stock's real ark_disp_fb_ioctl dispatches
+ * bare ARK_IO(43) (0x4f2b) to ark_fb_show_window, not our reconstructed
+ * ARK_IO(39). libarkcmn.so's arkapi_show_fb() (used by both the CarPlay
+ * DirectFB path and the AndroidAuto `sink` daemon) calls this number.
+ */
+#define ARKFB_SHOW_WINDOW_REAL			ARK_IO(43)
+
+/* Real vendor ioctls issued by libarkcmn.so's arkapi_init_fb_display()
+ * (PRIMARY_LAYER) / arkapi_init_fb_video_display() (VIDEO_LAYER), and
+ * arkapi_set_fb_video_addr() -- confirmed via ARM disassembly, see
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md. These share nr with existing
+ * macros above (39/55/56) but differ in dir/size, so the resulting
+ * 32-bit ioctl numbers do not collide.
+ */
+#define ARKFB_INIT_DISPLAY				ARK_IOW(39, struct ark_fb_init_display)
+#define ARKFB_INIT_VIDEO_DISPLAY		ARK_IOW(55, struct ark_fb_init_display)
+#define ARKFB_SET_VIDEO_ADDR_RAW		ARK_IOW(56, struct ark_fb_set_video_addr)
 
 #define VIN_SHOW_WINDOW	        			ARK_IO(55)
 #define VIN_HIDE_WINDOW	        			ARK_IO(56)

@@ -1055,6 +1055,7 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
             break;
             
         case ARKFB_SHOW_WINDOW:
+        case ARKFB_SHOW_WINDOW_REAL:
 
                 if(layer <= OSD_LAYER3)
                         ark1668_lcdc_set_osd_en(layer, 1);
@@ -1334,11 +1335,87 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
 
         }
         break;
+
+        case ARKFB_INIT_DISPLAY:
+        case ARKFB_INIT_VIDEO_DISPLAY:
+        {
+                /* Real init call from libarkcmn.so's arkapi_init_fb_display()/
+                 * arkapi_init_fb_video_display(), see ark_fb_init_display
+                 * comment in ark_lcdc_common.h. Drive it through the same
+                 * position/size/scaler primitives ARKFB_SET_WINDOW_POS and
+                 * ARKFB_SET_WINDOW_SIZE already use.
+                 */
+                struct ark_fb_init_display init;
+
+                if(copy_from_user(&init, (void *)arg, sizeof(init))){
+                        printk("%s: copy from user para error\n", __func__);
+                        error = -EFAULT;
+                        goto end;
+                }
+
+                if(init.win_width == 0 || init.win_height == 0){
+                        printk("%s: ARKFB_INIT_DISPLAY zero window size\n", __func__);
+                        error = -EINVAL;
+                        goto end;
+                }
+
+                if(layer <= OSD_LAYER3){
+                        ark1668_lcdc_set_osd_pos(layer, init.x, init.y);
+                        ark1668_lcdc_set_osd_size(layer, init.win_width, init.win_height);
+                }else{
+                        int vlayer = layer - OSD_LAYER_MAX;
+
+                        ark1668_lcdc_set_video_layer_pos(vlayer, init.x, init.y);
+                        ark1668_lcdc_set_video_source_size(vlayer, init.win_width, init.win_height);
+                        ark1668_lcdc_set_video_win_size(vlayer, init.win_width, init.win_height);
+                        ark1668_lcdc_set_video_win_point(vlayer, 0, 0);
+                        ark1668_lcdc_set_video_layer_size(vlayer, init.win_width, init.win_height);
+                        ark1668_lcdc_set_video_scal(vlayer, init.win_width, init.win_height,
+                                                     0, 0, 0, 0, init.win_width, init.win_height, 0, 0);
+                }
+
+                printk(KERN_DEBUG "layer=%d: init display x=%d, y=%d, w=%d, h=%d.\n ",
+                       layer, init.x, init.y, init.win_width, init.win_height);
+        }
+        break;
+
+        case ARKFB_SET_VIDEO_ADDR_RAW:
+        {
+                /* Real per-frame update from libarkcmn.so's
+                 * arkapi_set_fb_video_addr(), see ark_fb_set_video_addr
+                 * comment in ark_lcdc_common.h. Stock queues this through an
+                 * IRQ-driven wait-queue buffer pipeline (ark_video_update_window
+                 * in vmlinux.elf); we don't replicate that private kernel-side
+                 * machinery -- only the userspace ioctl ABI has to match. Write
+                 * the address directly so the latest frame is shown as soon as
+                 * possible, which is the right tradeoff for a live video feed.
+                 */
+                struct ark_fb_set_video_addr vaddr;
+                unsigned long flags;
+
+                if(layer <= OSD_LAYER3){
+                        printk("%s: ARKFB_SET_VIDEO_ADDR_RAW on non-video layer\n", __func__);
+                        error = -EINVAL;
+                        goto end;
+                }
+
+                if(copy_from_user(&vaddr, (void *)arg, sizeof(vaddr))){
+                        printk("%s: copy from user para error\n", __func__);
+                        error = -EFAULT;
+                        goto end;
+                }
+
+                spin_lock_irqsave(&sinfo->lock, flags);
+                ark1668_lcdc_set_video_addr(layer - OSD_LAYER_MAX, vaddr.y_addr, vaddr.cb_addr, vaddr.cr_addr);
+                spin_unlock_irqrestore(&sinfo->lock, flags);
+        }
+        break;
+
         default:
             printk("%s %d: unknown ioctl %08x\n",__FUNCTION__, __LINE__, cmd);
             break;
-    }    
-    
+    }
+
 end:
         
     return error;

@@ -2902,8 +2902,11 @@ static struct dma_buf_ops _dmabuf_ops =
     .mmap = _dmabuf_mmap,
     .release = _dmabuf_release,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0)
-    .map_atomic = _dmabuf_kmap,
-    .unmap_atomic = _dmabuf_kunmap,
+    /* map_atomic/unmap_atomic removed from struct dma_buf_ops on this
+     * kernel (replaced by begin_cpu_access/end_cpu_access, a different,
+     * incompatible signature -- not wired up here since this driver's
+     * dma-buf usage doesn't need atomic kmap). .map/.unmap (below)
+     * still exist and cover the non-atomic case. */
     .map = _dmabuf_kmap,
     .unmap = _dmabuf_kunmap,
 #  else
