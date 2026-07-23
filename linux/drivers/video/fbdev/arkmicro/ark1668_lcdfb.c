@@ -256,7 +256,7 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 {
 	struct device *dev = info->device;
 	struct ark1668_lcdfb_info *sinfo = info->par;
-	//struct ark1668_lcdfb_pdata *pdata = &sinfo->pdata;
+	struct ark1668_lcdfb_pdata *pdata = &sinfo->pdata;
 	unsigned long clk_value_khz;
 
 	clk_value_khz = clk_get_rate(sinfo->lcdc_clk) / 1000;
@@ -395,8 +395,13 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 		 */
 		/* fall through */
 	case 24:
-		var->red.offset = 16;
-		var->blue.offset = 0;
+		if (pdata && pdata->lcd_wiring_mode == ARK_LCDC_WIRING_RGB) {
+			var->red.offset = 0;
+			var->blue.offset = 16;
+		} else {
+			var->red.offset = 16;
+			var->blue.offset = 0;
+		}
 		var->green.offset = 8;
 		var->red.length = var->green.length = var->blue.length = 8;
 		break;
