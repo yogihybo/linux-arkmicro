@@ -1379,9 +1379,12 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                          * decoder), so deliberately NOT touched here. See
                          * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 36.
                          */
+                        /* REVERTED 2026-07-24 (checklist section 58): direct,
+                         * untranslated lcd_wiring_mode, see ark1668_lcdfb.c's
+                         * matching comment for why.
+                         */
                         ark1668_lcdc_set_osd_format(layer, ARK1668_LCDC_FORMAT_RGBA888,
-                                                     0, ark_lcdc_wiring_to_rgb_order(
-                                                             sinfo->pdata.lcd_wiring_mode));
+                                                     0, sinfo->pdata.lcd_wiring_mode);
                         ark1668_lcdc_set_osd_pos(layer, init.x, init.y);
                         ark1668_lcdc_set_osd_size(layer, init.win_width, init.win_height);
                 }else{

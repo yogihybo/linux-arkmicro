@@ -28,6 +28,25 @@
 #define ARK_LCDC_WIRING_GRB	4
 #define ARK_LCDC_WIRING_RGB	5
 
+/* DO NOT translate ARK_LCDC_WIRING_* through this enum before writing
+ * it into the LCDC's rgb_order hardware field (OSD1_CTL/OSD2_CTL/
+ * OSD3_CTL bits 18-20, and ARK1668_LCDC_CONTROL's copy of the same
+ * bits) -- a same-day fix (2026-07-24) briefly did exactly that, based
+ * on a debug string found elsewhere in stock's vmlinux.elf ("rgb_order:
+ * 0=rgb, 1=rbg, 2=grb, 3=gbr, 4=brg, 5=bgr") that looked like it should
+ * describe this field's real encoding. It was reverted the same day:
+ * stock's real ark_disp_fb_set_par() (vmlinux.elf @ 0x802e2a40,
+ * checklist section 33's original decompile) derives its hardware
+ * rgb_order value as exactly the wiring-mode enum's own raw value (0
+ * for BGR, 5 for RGB) -- i.e. lcd_wiring_mode should be written
+ * directly, unchanged. The translation produced the opposite value for
+ * both wiring modes actually in use on this board, causing a real,
+ * hardware-confirmed red/blue channel swap in start_msn. See checklist
+ * sections 33, 52, and 58 for the full history -- 52 is the wrong
+ * fix, 58 is the revert. This enum's real, correct use (if any) was
+ * never established; kept here only because ARK1668_LCDC_OSD1_CTL's
+ * comment in ark1668_lcdfb.c cites the same debug string as unresolved
+ * context, not because anything in this tree should construct one. */
 enum ark_lcdc_rgb_order {
 	ARK_LCDC_ORDER_RGB,
 	ARK_LCDC_ORDER_RBG,
@@ -36,32 +55,6 @@ enum ark_lcdc_rgb_order {
 	ARK_LCDC_ORDER_BRG,
 	ARK_LCDC_ORDER_BGR,
 };
-
-/* ark1668 fix (2026-07-24): ARK_LCDC_WIRING_* (the DTS/pdata-facing
- * enum describing physical panel wiring) and ark_lcdc_rgb_order (the
- * LCDC hardware register's own field encoding, confirmed against a
- * debug string in stock's vmlinux.elf: "rgb_order: 0=rgb, 1=rbg,
- * 2=grb, 3=gbr, 4=brg, 5=bgr") number the same six orderings
- * DIFFERENTLY. ark1668_lcdfb_set_par() and the OSD2/OSD3 init path in
- * ark1668_lcdc_funcs.c both used to write pdata->lcd_wiring_mode
- * straight into the hardware rgb_order field, unchanged -- e.g. for
- * this board's real wiring (ARK_LCDC_WIRING_BGR = 0), the hardware
- * received rgb_order = 0, which the hardware itself defines as "rgb"
- * (no reorder at all), not "bgr". Every wiring mode except identity
- * was similarly wrong. This function translates between the two. See
- * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 52. */
-static inline enum ark_lcdc_rgb_order ark_lcdc_wiring_to_rgb_order(int wiring_mode)
-{
-	switch (wiring_mode) {
-	case ARK_LCDC_WIRING_BGR: return ARK_LCDC_ORDER_BGR;
-	case ARK_LCDC_WIRING_GBR: return ARK_LCDC_ORDER_GBR;
-	case ARK_LCDC_WIRING_RBG: return ARK_LCDC_ORDER_RBG;
-	case ARK_LCDC_WIRING_BRG: return ARK_LCDC_ORDER_BRG;
-	case ARK_LCDC_WIRING_GRB: return ARK_LCDC_ORDER_GRB;
-	case ARK_LCDC_WIRING_RGB: return ARK_LCDC_ORDER_RGB;
-	default:                  return ARK_LCDC_ORDER_RGB;
-	}
-}
 
 enum ark_platform_type {
         ARK_PLATFORM_ARK1668,
