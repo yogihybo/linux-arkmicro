@@ -524,7 +524,12 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 		/* set interrupt at the start of the front porch when vfp is not zero */
 		if (info->var.lower_margin)
 			value |= (3 << 21);
-		value |= pdata->lcd_wiring_mode << 18;
+		/* Same wiring-mode -> rgb_order translation as the OSD1_CTL
+		 * write below (see that comment) -- this bit position and
+		 * source field are identical, so it's the same encoding
+		 * mismatch even though it's a one-time write to a
+		 * different register (CONTROL, not OSD1_CTL). */
+		value |= ark_lcdc_wiring_to_rgb_order(pdata->lcd_wiring_mode) << 18;
 		lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
 	}
 
@@ -601,8 +606,8 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 33. */
 	value = lcdc_readl(sinfo, ARK1668_LCDC_OSD1_CTL);
 	value &= ~(0x7ff << 12);
-	value |= (pdata->lcd_wiring_mode << 18) | (1 << 17) |
-		 (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
+	value |= (ark_lcdc_wiring_to_rgb_order(pdata->lcd_wiring_mode) << 18) |
+		 (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_CTL, value);
 
 	/* Explicitly disable OSD1's colorkey. Found while probing the init

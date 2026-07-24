@@ -1380,7 +1380,8 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                          * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 36.
                          */
                         ark1668_lcdc_set_osd_format(layer, ARK1668_LCDC_FORMAT_RGBA888,
-                                                     0, sinfo->pdata.lcd_wiring_mode);
+                                                     0, ark_lcdc_wiring_to_rgb_order(
+                                                             sinfo->pdata.lcd_wiring_mode));
                         ark1668_lcdc_set_osd_pos(layer, init.x, init.y);
                         ark1668_lcdc_set_osd_size(layer, init.win_width, init.win_height);
                 }else{
