@@ -317,7 +317,34 @@ enum mirror_type {
 	MIRROR_TYPE_END,
 };
 
-#define   ARK_DISPLAY_ALL_MODE         0
+/* RE-ENABLED (2026-07-24, section 39): the first attempt at enabling
+ * this caused the boot logo to stop showing. Root-caused, not just
+ * avoided: g_display_para.vpinfo (contrast/brightness/saturation/hue
+ * per layer) was never populated by any parser in this source tree --
+ * pure BSS-zero, so ark_display_initialize_common() was writing
+ * brightness=0/contrast=0/saturation=0 to every OSD layer's VP
+ * register, crushing the output to black. Added
+ * arkdata_apply_vpinfo() (ark1668_arkdata_ini.c) to actually populate
+ * it, seeded with the same correct defaults the #else branch already
+ * used, optionally overridden from arkdata.ini's real [VP] keys --
+ * same fail-safe apply_field() pattern as arkdata_apply_lcd_timing().
+ * gamma_info/itu656byp_info/special_info/touchscreen_info deliberately
+ * NOT given the same treatment -- confirmed nothing in this board's
+ * U-Boot source reads those four struct members at all. */
+#define   ARK_DISPLAY_ALL_MODE         1
+
+/* GAMMA_INFO_FLAG/GAMMA_REG_MAX: referenced by ark_gamma_init() below
+ * but never defined anywhere in this entire vendor tree (all board
+ * variants) -- the ARK_DISPLAY_ALL_MODE=1 path doesn't compile as
+ * checked in, in any variant. GAMMA_REG_MAX=48 is unambiguous (matches
+ * the 48 rLCD_GAMMA_REG_1..48 registers / Gamma0-47 arkdata fields).
+ * GAMMA_INFO_FLAG's exact value doesn't matter functionally: the only
+ * use is gated by gammainfo.gamma_en==0x03, and every real arkdata.ini
+ * we have (Holden, CarSyncTech, P306, Prado) sets Gamma_en=0 -- this
+ * whole function is a provable no-op for every real config regardless
+ * of what GAMMA_INFO_FLAG is defined as. */
+#define   GAMMA_REG_MAX                48
+#define   GAMMA_INFO_FLAG              1
 
 #if ARK_DISPLAY_ALL_MODE
 typedef struct _VP_INFO
@@ -531,6 +558,9 @@ void ark_display_init(int screen_id);
 void ark_show_bootlogo(void);
 void arkdata_apply_lcd_timing(struct screen_info *screen);
 int arkdata_ini_get_int(const char *key, int base, int *out);
+#if ARK_DISPLAY_ALL_MODE
+void arkdata_apply_vpinfo(vp_info *vp);
+#endif
 void ark_lcd_console_init(void);
 
 

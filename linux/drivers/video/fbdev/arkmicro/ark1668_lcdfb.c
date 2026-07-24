@@ -256,6 +256,7 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 {
 	struct device *dev = info->device;
 	struct ark1668_lcdfb_info *sinfo = info->par;
+	struct ark1668_lcdfb_pdata *pdata = &sinfo->pdata;
 	unsigned long clk_value_khz;
 
 	clk_value_khz = clk_get_rate(sinfo->lcdc_clk) / 1000;
@@ -394,8 +395,30 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 		 */
 		/* fall through */
 	case 24:
-		var->red.offset = 0;
-		var->blue.offset = 16;
+		/* Derived from pdata->lcd_wiring_mode, not hardcoded. A
+		 * later commit (linux-arkmicro 964371f70, same day as the
+		 * dynamic version below was first added) briefly hardcoded
+		 * this to a flat red.offset=0/blue.offset=16 (RGB memory
+		 * layout) unconditionally -- that directly contradicts
+		 * wiring_mode=BGR (arkdata.ini's RgbMode=0, the LCDC
+		 * ARK1668_LCDC_CONTROL wiring bit, and the OSD1/OSD2/OSD3
+		 * rgb_order derivation in fb_set_par()/ARKFB_INIT_DISPLAY --
+		 * all consistently BGR, confirmed via U-Boot's own working
+		 * bootlogo render under this same wiring setting). That
+		 * mismatch -- Qt writing pixels in RGB byte order while the
+		 * hardware is correctly configured for BGR everywhere else
+		 * -- is a strong candidate for wrong linuxfb colors reported
+		 * on real hardware after that commit landed. Restored to
+		 * derive from wiring_mode, consistent with the rest of the
+		 * pipeline. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+		 * section 38. */
+		if (pdata && pdata->lcd_wiring_mode == ARK_LCDC_WIRING_RGB) {
+			var->red.offset = 0;
+			var->blue.offset = 16;
+		} else {
+			var->red.offset = 16;
+			var->blue.offset = 0;
+		}
 		var->green.offset = 8;
 		var->red.length = var->green.length = var->blue.length = 8;
 		break;
@@ -552,28 +575,57 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_SOURCE_SIZE, value);
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_POS, 0);
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_WIN_POINT, 0);
-	/* Read-modify-write, preserving rgb_order/yuv_order (bits 18-22) --
-	 * was a flat literal assignment that unconditionally zeroed them on
-	 * every fb_set_par() call (every FBIOPUT_VSCREENINFO, including
-	 * DirectFB's mode-set), clobbering whatever ark1668_lcdc_funcs.c's
-	 * ark1668_lcdc_set_osd_format() (the ioctl path's own correct RMW
-	 * helper) had set via the ARKFB_SET_WINDOW_FORMAT/atomic layer-fmt
-	 * ioctls. Confirmed via Ghidra comparison against stock's real
-	 * ark_disp_set_osd_format() (vmlinux.elf @ 0x802ddf98) as the root
-	 * cause of skewed colors specifically on alpha-blended UI elements
-	 * (2026-07-19) -- rgb_order controls channel routing in the
-	 * blend-unit's actual compositor math, which only runs for
-	 * partial-alpha pixels; opaque pixels (alpha=255) pass through
-	 * largely unaffected by a wrong value here, matching the reported
-	 * symptom exactly (flat background fine, blended icons/widgets
-	 * wrong). bit16 (rgb_ycbcr_bypass) is intentionally cleared to 0
-	 * here, not preserved -- 0 is the format-correct value for
-	 * RGBA888 per ark1668_lcdc_set_osd_format()'s own switch statement,
-	 * not something the ioctl path should be setting independently. */
+	/* rgb_order (bits 18-20) is derived from pdata->lcd_wiring_mode, not
+	 * preserved from whatever was already in the register. An earlier
+	 * fix (2026-07-19) changed this from a flat overwrite (which
+	 * unconditionally zeroed rgb_order on every fb_set_par() call) to
+	 * an RMW that preserves bits 18-22 -- that stopped this function
+	 * from clobbering a value set elsewhere, but nothing in this driver
+	 * ever actually SETS rgb_order to a value matching the wiring mode
+	 * in the first place: ARKFB_INIT_DISPLAY (what libarkcmn.so's
+	 * arkapi_init_fb_display() actually calls at startup, see
+	 * ark1668_lcdc_funcs.c) only sets position/size, never format: so
+	 * the preserved value was always just whatever U-Boot or hardware
+	 * reset happened to leave behind, unrelated to lcd_wiring_mode.
+	 * Confirmed via decompile of stock's real ark_disp_fb_set_par()
+	 * (vmlinux.elf @ 0x802e2a40): it strictly validates the userspace-
+	 * supplied var.red/green/blue offsets and derives a matching
+	 * rgb_order value (0 or 5 in the traced branches -- exactly
+	 * ARK_LCDC_WIRING_BGR/RGB) which it then writes through
+	 * ark_disp_set_layer_cfg() on every set_par call. This is the
+	 * missing piece behind wrong colors persisting even after
+	 * check_var()'s var.red/blue.offset fix: userspace was writing
+	 * pixels in one byte order while the LCDC's blend-unit compositor
+	 * math used a stale/unrelated rgb_order value, unaffected by
+	 * anything var.red/blue.offset says. See
+	 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 33. */
 	value = lcdc_readl(sinfo, ARK1668_LCDC_OSD1_CTL);
-	value &= (0x1F << 18);	/* keep only rgb_order/yuv_order (bits 18-22) */
-	value |= (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
+	value &= ~(0x7ff << 12);
+	value |= (pdata->lcd_wiring_mode << 18) | (1 << 17) |
+		 (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_CTL, value);
+
+	/* Explicitly disable OSD1's colorkey. Found while probing the init
+	 * sequence (2026-07-24): U-Boot's ark_display_initialize_common()
+	 * (board/arkmicro/ark1668_limcet_p305/ark1668_lcd.c) unconditionally
+	 * enables a BLACK colorkey on OSD1 --
+	 * rLCD_COLOR_KEY_MASK_VALUE_OSD1 = (1<<24)|(BLACK_Y<<16)|(BLACK_U<<8)|BLACK_V
+	 * -- gated by `#ifdef BOOT_CONFIG_PIXEL_ALPHA`, which is referenced
+	 * but never #define'd anywhere in the entire vendor U-Boot tree, in
+	 * any board variant, so this branch always compiles in every real
+	 * build. Confirmed the register offset (LCDC_BASE+0xec) and bit-24
+	 * enable flag against stock's real ark_disp_set_osd_colorkey()
+	 * (vmlinux.elf @ 0x802debb8). This driver has no colorkey handling
+	 * at all otherwise (see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+	 * section 34), so nothing else would ever clear what U-Boot leaves
+	 * enabled here. Whether this specific black value ever actually
+	 * matches real rendered pixel data wasn't confirmed (depends on
+	 * whether the hardware comparator runs on raw RGB bytes or a
+	 * post-conversion YCbCr representation) -- disabling it
+	 * unconditionally is correct regardless, since nothing in this
+	 * driver's userspace ABI ever asks for a colorkey on OSD1. See
+	 * section 37. */
+	lcdc_writel(sinfo, ARK1668_LCDC_COLOR_KEY_MASK_VALUE_OSD1, 0);
 
 	/* Open OSD1 layer. Deliberately unconditional (not gated by set_par
 	 * like the wiring-mode block above): this is a read-modify-write of

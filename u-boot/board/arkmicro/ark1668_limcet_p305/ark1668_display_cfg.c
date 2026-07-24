@@ -1,4 +1,7 @@
 #include "ark1668_lcd.h"
+#include <asm-generic/gpio.h>
+#include <asm/setup.h>
+#include <version.h>
 
 
 #define  UPDATING_WIDTH      200
@@ -280,7 +283,10 @@ void ark_display_init(int screen_id)
 	g_screen_info = screen;
         memset(&g_display_para, 0 ,sizeof(g_display_para));
         memcpy(&g_display_para.screeninfo, screen, sizeof(struct screen_info));
-	
+#if ARK_DISPLAY_ALL_MODE
+        arkdata_apply_vpinfo(&g_display_para.vpinfo);
+#endif
+
 	ark_backlight_config_f(screen->screen_id);
 	ark_display_initialize_port(screen);
 	interlace = is_interlace_tvenc(screen);        
@@ -443,6 +449,179 @@ U_BOOT_CMD(
 	"disconfig percent\n"
 	"percent(0:) \n"
 );
+
+/* backcarcheck: reads the reverse-gear GPIO and configures the ITU656
+ * camera-input controller accordingly, matching stock U-Boot's own
+ * backcar routine -- recovered via Ghidra decompilation of the raw
+ * mtd1_uboot.bin binary (no symbols; confirmed present, byte-identical,
+ * in every vendor U-Boot dump we have -- Holden, CarSyncTech Toyota,
+ * P306 2025, and all 3 copies of this unit's own U-Boot). GPIO 5 is
+ * the real backcar-detect pin (active-low, confirmed via the stock
+ * kernel's own matching gpio_request(..., "backcar") label). Register
+ * base 0xe0800000 is ITU656IN_BASE, confirmed via ark1668.dtsi's
+ * itu656in@e0800000 node -- the reverse camera's video CAPTURE INPUT
+ * controller, not the LCDC (0xe0500000). Does NOT touch GPIO 81 (the
+ * shared LCD backlight enable pin, already correctly managed by
+ * ark_backlight_config()/ark_backlight_config_f() elsewhere in this
+ * file's boot path) -- stock's own routine briefly toggles it off/on
+ * around this same check, but duplicating that here risks a new
+ * flicker/race against the existing backlight logic for no confirmed
+ * benefit; see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 30.
+ *
+ * Stock's own MCU UART notification (two fixed frames sent whenever
+ * this GPIO is read) is deliberately NOT ported -- despite the real,
+ * decompiled protocol bytes being known, no caller of that function
+ * could be found anywhere in stock's binary after an exhaustive search
+ * (direct branch, literal pool, movw/movt, thumb interworking), so it
+ * may be dead code in this build; not implemented blind. */
+#define ARK_BACKCAR_GPIO	5
+
+int do_backcarcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int in_reverse;
+
+	gpio_direction_input(ARK_BACKCAR_GPIO);
+	in_reverse = (gpio_get_value(ARK_BACKCAR_GPIO) == 0);
+
+	rITU656IN_INPUT_SEL |= 1;
+	if (in_reverse) {
+		rITU656IN_MODULE_EN |= 6;
+		PIX_LINE_NUM_DELTA = 0x1e0a;
+	} else {
+		rITU656IN_IMR = 0;
+	}
+
+	printf("[backcarcheck] gpio%d=%d, in_reverse=%d.\n",
+	       ARK_BACKCAR_GPIO, gpio_get_value(ARK_BACKCAR_GPIO), in_reverse);
+
+	return 0;
+}
+
+U_BOOT_CMD(
+	backcarcheck,	1,	0,	do_backcarcheck,
+	"read reverse-gear GPIO and configure ITU656 camera input",
+	""
+);
+
+/* setup_board_tags() -- resolves the "track paint init out width or
+ * height fail!" bug seen on bootnand (stock 3.4 kernel direct boot),
+ * plus two related vendor ATAGs ported for consistency with stock.
+ * See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 40/43/44 for
+ * the full trace.
+ *
+ * Root cause of the track-paint bug: the stock kernel's
+ * track_paint_init() (carback/reverse-camera overlay) validates the
+ * reservingtrack blob's width/height against a global struct at a
+ * fixed kernel address, populated ONLY by parse_tag_display_param() --
+ * one of three custom ATAG parsers stock's kernel registers. U-Boot's
+ * mainline arch/arm/lib/bootm.c calls a __weak setup_board_tags() hook
+ * right before ATAG_NONE, specifically so boards can inject vendor
+ * tags; stock's board file overrides it to emit these three, ours
+ * never defined the override at all, so the weak no-op ran instead --
+ * the kernel's struct stayed zeroed from its __memzero(), and
+ * track_paint_init()'s width/height check failed against 0. This was
+ * previously investigated (section 40) and parked as an apparent
+ * "dynamic struct, no static global" dead end -- that read was wrong:
+ * it *is* a real static global, just one populated via ATAG at boot
+ * rather than by any function call, which is why an exhaustive
+ * call-graph/xref sweep of the kernel binary alone couldn't find a
+ * writer.
+ *
+ * All three tags recovered from stock's uboot.bin via Ghidra (function
+ * chain at 0x31b18 calling 0x319e8/0x31a20/0x31a7c, matching bootm.c's
+ * setup_board_tags() call site exactly, confirmed via the same
+ * ATAG_CORE/ATAG_CMDLINE/ATAG_MEM/ATAG_INITRD2 literal-pool values as
+ * our own unmodified bootm.c). Tag-ID-to-handler mapping was
+ * cross-checked against the kernel's own (unstripped, real symbol
+ * names) parse_tag_uboot_version()/parse_tag_backcar()/
+ * parse_tag_display_param(), matching each handler's payload size
+ * against each U-Boot sender's declared size -- not just assumed from
+ * declaration order:
+ *
+ * - ATAG_BACKCAR (0x41000403, U-Boot @ 0x319e8): 1-word payload,
+ *   exactly matching parse_tag_backcar()'s single-word read into a
+ *   kernel global later checked once in ark_disp_dev_init() (gates a
+ *   display-layer init default for one specific OSD/video sub-layer).
+ *   Stock reads this from a fixed U-Boot global, populated somewhere
+ *   in its own boot sequence -- not re-derived here since it wasn't
+ *   possible to reliably recover the same build-specific value from a
+ *   binary compiled for a different customer/board revision than this
+ *   exact unit (later per-build data offsets diverge even though the
+ *   code itself is shared). Rather than guess a magic constant, this
+ *   sends the SAME live GPIO 5 read already used by backcarcheck
+ *   (do_backcarcheck() above) -- a well-justified, verifiable value
+ *   (real reverse-gear state at boot) even if it doesn't reproduce
+ *   whatever static flag stock's specific build happened to compile
+ *   in.
+ * - ATAG_UBOOT_VERSION (0x41000404, U-Boot @ 0x31a20): 64-byte payload,
+ *   exactly matching parse_tag_uboot_version()'s 0x40-byte copy into a
+ *   kernel-side version-string buffer. Stock sends its own build
+ *   string (a "root<date>"-style tag, differs per customer build and
+ *   isn't meaningful to copy); this sends U-Boot's own version_string
+ *   (include/version.h) instead -- informational only, no kernel
+ *   behavior found to depend on its content, just presence/format.
+ * - ATAG_DISPLAY_PARAM (0x41000405, U-Boot @ 0x31a7c): 536-byte (0x218)
+ *   payload, four separate memcpy's from a single vendor struct,
+ *   byte-identical in size to this file's own display_updatepara:
+ *   0x78 bytes (screeninfo) at payload offset 0, 0x98 bytes at +0x80,
+ *   0xb8 bytes at +0x118, 0x50 bytes at +0x1d0. Only the first
+ *   (screeninfo, holding width/height at struct offsets 0xc/0x10) is
+ *   confirmed to matter -- track_paint_init() and every other reader
+ *   found in the kernel's call-graph sweep (section 41) only ever
+ *   reads those two fields from this tag. The other three sections'
+ *   exact field-for-field mapping into vpinfo/gammainfo/
+ *   itu656bypinfo/spec_info/touch_info was not re-derived (would need
+ *   further stock decompilation to confirm padding/order) -- sent
+ *   zeroed, matching this tag's previous fully-absent state for those
+ *   fields, so this is a strict improvement with no new regression
+ *   risk for the parts left unmapped.
+ *
+ * All three tag IDs sit immediately after mainline's own
+ * ATAG_MEMCLK=0x41000402 (arch/arm/include/asm/setup.h) -- the vendor
+ * extended the same numbering block mainline already reserved,
+ * corroborating this reading rather than being a coincidence. */
+#define ATAG_BACKCAR		0x41000403
+#define ATAG_UBOOT_VERSION	0x41000404
+#define ATAG_DISPLAY_PARAM	0x41000405
+#define ATAG_DISPLAY_PARAM_PAYLOAD_SIZE	0x218
+#define ATAG_UBOOT_VERSION_PAYLOAD_SIZE	0x40
+
+void setup_board_tags(struct tag **in_params)
+{
+	struct tag *params = *in_params;
+	u32 backcar_word;
+
+	/* ATAG_BACKCAR: same live GPIO 5 read as do_backcarcheck() above. */
+	gpio_direction_input(ARK_BACKCAR_GPIO);
+	backcar_word = (gpio_get_value(ARK_BACKCAR_GPIO) == 0) ? 1 : 0;
+
+	params->hdr.tag = ATAG_BACKCAR;
+	params->hdr.size = (sizeof(struct tag_header) +
+			     sizeof(backcar_word) + 3) >> 2;
+	memcpy(&params->u, &backcar_word, sizeof(backcar_word));
+	params = tag_next(params);
+
+	/* ATAG_UBOOT_VERSION: our own build's version banner. */
+	params->hdr.tag = ATAG_UBOOT_VERSION;
+	params->hdr.size = (sizeof(struct tag_header) +
+			     ATAG_UBOOT_VERSION_PAYLOAD_SIZE + 3) >> 2;
+	memset(&params->u, 0, ATAG_UBOOT_VERSION_PAYLOAD_SIZE);
+	strncpy((char *)&params->u, version_string,
+		ATAG_UBOOT_VERSION_PAYLOAD_SIZE - 1);
+	params = tag_next(params);
+
+	/* ATAG_DISPLAY_PARAM: only the screeninfo section (width/height)
+	 * is populated -- see comment block above. */
+	params->hdr.tag = ATAG_DISPLAY_PARAM;
+	params->hdr.size = (sizeof(struct tag_header) +
+			     ATAG_DISPLAY_PARAM_PAYLOAD_SIZE + 3) >> 2;
+	memset(&params->u, 0, ATAG_DISPLAY_PARAM_PAYLOAD_SIZE);
+	memcpy(&params->u, &g_display_para.screeninfo,
+	       sizeof(struct screen_info));
+	params = tag_next(params);
+
+	*in_params = params;
+}
 
 /* regr/regw/pmem — ported from the stock binary's debug command table
  * (recovered via Ghidra decompilation of mtd1_uboot.bin @ 0x6c0d8/0x6c244/

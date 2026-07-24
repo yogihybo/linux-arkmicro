@@ -110,7 +110,20 @@
 		"nand write ${loadaddr} bootanimation ${filesize}; " \
 		"else setenv bootanimationsize 0; fi\0" \
 	"screen=0\0" \
-	"nandargs=setenv bootargs console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait ro screen=0 ${mtdparts}\0" \
+	/* rootdelay=3: blind test for a suspected mdev-vs-MsnCoreApp boot
+	 * race on the stock kernel/rootfs path -- /dev/ark_display open()
+	 * fails in userspace despite __disp_probe()'s own failure paths
+	 * (all <3>/KERN_ERR, should be console-visible) not appearing in
+	 * the boot log, suggesting probe succeeds but mdev -s (rcS line
+	 * 10, creates the node from sysfs) may not have run yet by the
+	 * time MsnCoreApp tries to open it -- plausible given this boot
+	 * chain is now faster than before. rootdelay only pushes back the
+	 * whole init timeline uniformly (no way to reach into the stock
+	 * NAND rootfs's own rcS/inittab ordering from here), so this is a
+	 * blind test, not a confirmed fix -- see
+	 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md. Revert if it doesn't
+	 * help. */ \
+	"nandargs=setenv bootargs console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait rootdelay=3 ro screen=0 ${mtdparts}\0" \
 	/* switchecc 2: this chip's actual on-flash OOB layout for the
 	 * kernel/rootfs/bootloader partitions is 1024-byte step / 13-byte /
 	 * 7-bit BCH strength / eccpos starting at OOB offset 3 — matches
@@ -126,9 +139,24 @@
 	 * removed — see ark1668_boot_cmds.c). */ \
 	"nandboot=echo Booting stock kernel ...; " \
 		"disconfig 0; " \
+		"backcarcheck; " \
 		"run nandargs; " \
 		"switchecc 2; " \
 		"setenv machid 1068; " \
+		/* Stock's kernel (track_paint_init(), vmlinux.elf @ 0x802f0ebc)
+		 * checks for a "RSTK" magic at fixed physical 0x0fd00000 (inside
+		 * the LCDC's own 240-256MB carveout) before initializing the
+		 * carback/reverse-camera track overlay -- confirmed via decompile
+		 * plus byte-level verification of firmware_source/mtd10_reversingtrack/
+		 * reversingtrack, which genuinely starts with "RSTK". Without this
+		 * load, the check fails ("reservingtrack check failed!", <1>/ALERT,
+		 * confirmed present in a failing boot and absent -- i.e. the magic
+		 * check passing -- in a known-good baseline dmesg). Not established
+		 * to be the cause of the separate /dev/ark_display open failure
+		 * (this subsystem's own init failure path is self-contained and
+		 * doesn't touch shared allocations), but it's a real, confirmed gap
+		 * regardless -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md. */ \
+		"nand read 0xfd00000 reversingtrack; " \
 		"if fatload mmc 0:1 ${kerneladdr} zImage_stock; then " \
 			"echo Loaded zImage_stock from SD card; " \
 		"else " \

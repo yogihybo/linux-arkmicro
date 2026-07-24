@@ -225,6 +225,87 @@ void arkdata_apply_lcd_timing(struct screen_info *screen)
 	       screen->clk_div2, screen->rgb_mode);
 }
 
+#if ARK_DISPLAY_ALL_MODE
+/* Populate g_display_para.vpinfo (per-layer contrast/brightness/
+ * saturation/hue) from arkdata.ini's [VP] section, same apply_field()
+ * pattern as arkdata_apply_lcd_timing() above.
+ *
+ * Real gap found 2026-07-24: ARK_DISPLAY_ALL_MODE gates a whole family
+ * of extended struct members (vp_info/gamma_info/itu656byp_info/
+ * special_info/touchscreen_info) that ark_display_initialize_common()
+ * (ark1668_lcd.c) reads directly -- but NOTHING anywhere in this
+ * reconstructed source tree ever populated vpinfo from arkdata.ini.
+ * With the flag enabled, vpinfo was pure BSS-zero (brightness=0,
+ * contrast=0, saturation=0 for every layer), and
+ * ark_display_initialize_common() writes those straight to the LCDC's
+ * VP registers unconditionally -- brightness=0 crushes the output to
+ * black, which is what caused the boot logo to stop showing the first
+ * time this flag was enabled and tested on real hardware. Confirmed
+ * via decompile that stock's shipped binary must have had a real
+ * parser filling this struct (ark_display_initialize_common() itself
+ * is otherwise correct and unconditional); our source tree simply
+ * never included it, same root cause as the GAMMA_INFO_FLAG/
+ * GAMMA_REG_MAX gap already found in ark1668_lcd.h.
+ *
+ * gamma_info/itu656byp_info/special_info/touchscreen_info are
+ * deliberately NOT given the same treatment here: confirmed via grep
+ * that nothing in this board's U-Boot source ever reads those other
+ * four struct members anywhere (only vpinfo and gammainfo are read at
+ * all, and gammainfo's only consumer is already safely gated behind
+ * `gamma_en==3`, which BSS-zero-default correctly fails since every
+ * real arkdata.ini we have sets Gamma_en=0) -- so there is nothing
+ * else to populate. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+ * section 38/39. */
+void arkdata_apply_vpinfo(vp_info *vp)
+{
+	int overridden = 0;
+
+	/* Seed with the same defaults ark_display_initialize_common()'s own
+	 * #else (ARK_DISPLAY_ALL_MODE=0) branch uses, and that every real
+	 * arkdata.ini [VP] section we have ever actually contains -- so a
+	 * missing/unreadable arkdata.ini still produces correct output,
+	 * exactly matching arkdata_apply_lcd_timing()'s fail-safe contract. */
+	vp->video_hue = vp->video2_hue = vp->osd1_hue = vp->osd2_hue = vp->osd3_hue = 0;
+	vp->video_saturation = vp->video2_saturation = vp->osd1_saturation
+		= vp->osd2_saturation = vp->osd3_saturation = 0x40;
+	vp->video_brightness = vp->video2_brightness = vp->osd1_brightness
+		= vp->osd2_brightness = vp->osd3_brightness = 0x80;
+	vp->video_contrast = vp->video2_contrast = vp->osd1_contrast
+		= vp->osd2_contrast = vp->osd3_contrast = 0x80;
+
+	if (arkdata_ini_load() != 0) {
+		printf("[arkdata.ini] not available, VP info keeps compiled defaults\n");
+		return;
+	}
+
+	overridden += apply_field("videoContrast", &vp->video_contrast);
+	overridden += apply_field("videoBrightness", &vp->video_brightness);
+	overridden += apply_field("videoSaturation", &vp->video_saturation);
+	overridden += apply_field("videoHue", &vp->video_hue);
+	overridden += apply_field("video2Contrast", &vp->video2_contrast);
+	overridden += apply_field("video2Brightness", &vp->video2_brightness);
+	overridden += apply_field("video2Saturation", &vp->video2_saturation);
+	overridden += apply_field("video2Hue", &vp->video2_hue);
+	overridden += apply_field("osd1Contrast", &vp->osd1_contrast);
+	overridden += apply_field("osd1Brightness", &vp->osd1_brightness);
+	overridden += apply_field("osd1Saturation", &vp->osd1_saturation);
+	overridden += apply_field("osd1Hue", &vp->osd1_hue);
+	overridden += apply_field("osd2Contrast", &vp->osd2_contrast);
+	overridden += apply_field("osd2Brightness", &vp->osd2_brightness);
+	overridden += apply_field("osd2Saturation", &vp->osd2_saturation);
+	overridden += apply_field("osd2Hue", &vp->osd2_hue);
+	overridden += apply_field("osd3Contrast", &vp->osd3_contrast);
+	overridden += apply_field("osd3Brightness", &vp->osd3_brightness);
+	overridden += apply_field("osd3Saturation", &vp->osd3_saturation);
+	overridden += apply_field("osd3Hue", &vp->osd3_hue);
+
+	printf("[arkdata.ini] vpinfo: %d/20 fields overridden, "
+	       "osd1=(c%u b%u s%u h%u)\n",
+	       overridden, vp->osd1_contrast, vp->osd1_brightness,
+	       vp->osd1_saturation, vp->osd1_hue);
+}
+#endif
+
 /* fdt_setprop_u32() a value read from arkdata.ini's `key`, at `node_path`'s
  * `prop`. Leaves the DTB's existing (compiled-in) value untouched if the
  * key isn't found or the node doesn't exist -- same fail-safe philosophy

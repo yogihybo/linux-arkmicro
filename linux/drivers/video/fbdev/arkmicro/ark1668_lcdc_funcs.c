@@ -1360,6 +1360,27 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 }
 
                 if(layer <= OSD_LAYER3){
+                        /* Real gap found 2026-07-24: this is the ONLY init-time
+                         * hook that actually runs for OSD2/OSD3 (/dev/fb1,
+                         * /dev/fb2) -- ark1668_lcdfb_probe()'s registration loop
+                         * for fb1-fb4 memcpy's fb0's struct fb_info and calls
+                         * register_framebuffer() directly, never fb_set_par(),
+                         * so the OSD1-specific rgb_order fix in
+                         * ark1668_lcdfb_set_par() (see that file) never runs
+                         * for these layers at all. Set format+rgb_order here
+                         * too, matching the same wiring_mode derivation, so
+                         * every OSD layer that goes through this real call path
+                         * (libarkcmn.so's arkapi_init_fb_display()) ends up
+                         * correctly configured regardless of which /dev/fbN it
+                         * targets. RGBA888 is the only format OSD layers (UI
+                         * overlay content) are ever used with -- unlike
+                         * VIDEO_LAYER1/2 below, whose format is genuinely
+                         * content-dependent (RGB or YUV depending on the
+                         * decoder), so deliberately NOT touched here. See
+                         * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 36.
+                         */
+                        ark1668_lcdc_set_osd_format(layer, ARK1668_LCDC_FORMAT_RGBA888,
+                                                     0, sinfo->pdata.lcd_wiring_mode);
                         ark1668_lcdc_set_osd_pos(layer, init.x, init.y);
                         ark1668_lcdc_set_osd_size(layer, init.win_width, init.win_height);
                 }else{
