@@ -1122,11 +1122,24 @@ static int ark1668_lcdc_dev_init(struct ark1668_lcdfb_info *sinfo)
 	 * section 1b for the full investigation history. Do NOT re-attempt
 	 * a non-zero blend_mode fix without new evidence -- that axis was
 	 * already tried exhaustively and ruled out. */
+	/* ark1668 fix (2026-07-25): fields are 3 bits wide (mask 0x7), not 4
+	 * (0xf) -- confirmed against genuine U-Boot source
+	 * (board/arkmicro/ark1668_limcet_p305/ark1668_lcd.c's real
+	 * ark_set_video_priority()/ark_set_win1_priority()/etc, which use
+	 * the identical shift positions 0/8/16/24 but a 0x7 mask) and
+	 * cross-checked against this driver's own runtime
+	 * ARKFB_SET_WINDOW_PRIORITY ioctl handlers
+	 * (ark1668_lcdc_funcs.c's ark1668_lcdc_set_video_priority() etc,
+	 * which already correctly use 0x7). This path only fires if a
+	 * "lcd-priority" DTS property is ever added -- none currently
+	 * exists for this board, so this was a dormant bug, not yet
+	 * observed live. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+	 * section 61. */
 	if (!of_property_read_u32_array(dev->of_node, "lcd-priority", prio, ARRAY_SIZE(prio))) {
-		u32 val = (prio[0] & 0xf) | ((prio[1] & 0xf) << 8) | ((prio[2] & 0xf) << 16)
-					| ((prio[3] & 0xf) << 24);
+		u32 val = (prio[0] & 0x7) | ((prio[1] & 0x7) << 8) | ((prio[2] & 0x7) << 16)
+					| ((prio[3] & 0x7) << 24);
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, val);
-		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG1, 0x00003000 | (prio[4] & 0xf));
+		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG1, 0x00003000 | (prio[4] & 0x7));
 	}
 	else {
 		lcdc_writel(sinfo, ARK1668_LCDC_MODE_LCD_REG0, 0x03000204);
