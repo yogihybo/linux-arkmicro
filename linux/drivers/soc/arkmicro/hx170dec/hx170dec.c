@@ -502,9 +502,18 @@ const struct file_operations vdec_misc_fops = {
 	.unlocked_ioctl =	vdec_misc_ioctl,
 };
 
+/* ark1668 fix (2026-07-24): renamed from "vdec" to "hx170dec" to match
+ * real stock's device identity -- stock's original driver is a closed
+ * proprietary .ko whose own dmesg output identifies as "hx170dec:"
+ * (docs/logs/archived/dmesg live device kernel 3.4 dmeg_260715.txt),
+ * and usr/lib/libmfc.so (Android Auto's video decoder, confirmed via
+ * ioctl-ABI cross-check to be the same Hantro hx170dec protocol this
+ * driver implements) hardcodes /tmp/dev/hx170 as its device path -- a
+ * shortened form of "hx170dec", not "vdec". See
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 56/57. */
 static struct miscdevice vdec_misc_device = {
 	MISC_DYNAMIC_MINOR,
-	"vdec",
+	"hx170dec",
 	&vdec_misc_fops
 };
 
@@ -708,7 +717,14 @@ MODULE_DEVICE_TABLE(of, vdec_of_match);
 
 static struct platform_driver vdec_of_driver = {
 	.driver		= {
-		.name	= "ark-vdec",
+		/* ark1668 fix (2026-07-24): renamed from "ark-vdec" to
+		 * "hx170dec" for the same reason as vdec_misc_device's
+		 * name above -- this is only the dev_info()/dev_warn()
+		 * printk prefix and platform-bus driver name, unrelated
+		 * to the DTS "on2,ark-vdec" compatible string below
+		 * (left untouched, shared across many other board DTS
+		 * files, kernel-internal only, invisible to userspace). */
+		.name	= "hx170dec",
 		.owner	= THIS_MODULE,
 		.of_match_table	= vdec_of_match,
 	},
