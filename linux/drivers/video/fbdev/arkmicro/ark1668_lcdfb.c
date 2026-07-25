@@ -256,7 +256,6 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 {
 	struct device *dev = info->device;
 	struct ark1668_lcdfb_info *sinfo = info->par;
-	struct ark1668_lcdfb_pdata *pdata = &sinfo->pdata;
 	unsigned long clk_value_khz;
 
 	clk_value_khz = clk_get_rate(sinfo->lcdc_clk) / 1000;
@@ -395,30 +394,26 @@ static int ark1668_lcdfb_check_var(struct fb_var_screeninfo *var,
 		 */
 		/* fall through */
 	case 24:
-		/* Derived from pdata->lcd_wiring_mode, not hardcoded. A
-		 * later commit (linux-arkmicro 964371f70, same day as the
-		 * dynamic version below was first added) briefly hardcoded
-		 * this to a flat red.offset=0/blue.offset=16 (RGB memory
-		 * layout) unconditionally -- that directly contradicts
-		 * wiring_mode=BGR (arkdata.ini's RgbMode=0, the LCDC
-		 * ARK1668_LCDC_CONTROL wiring bit, and the OSD1/OSD2/OSD3
-		 * rgb_order derivation in fb_set_par()/ARKFB_INIT_DISPLAY --
-		 * all consistently BGR, confirmed via U-Boot's own working
-		 * bootlogo render under this same wiring setting). That
-		 * mismatch -- Qt writing pixels in RGB byte order while the
-		 * hardware is correctly configured for BGR everywhere else
-		 * -- is a strong candidate for wrong linuxfb colors reported
-		 * on real hardware after that commit landed. Restored to
-		 * derive from wiring_mode, consistent with the rest of the
-		 * pipeline. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
-		 * section 38. */
-		if (pdata && pdata->lcd_wiring_mode == ARK_LCDC_WIRING_RGB) {
-			var->red.offset = 0;
-			var->blue.offset = 16;
-		} else {
-			var->red.offset = 16;
-			var->blue.offset = 0;
-		}
+		/* FIXED AGAIN 2026-07-25 (checklist section 66): hardcoded to
+		 * a fixed red.offset=16/blue.offset=0, no longer derived from
+		 * pdata->lcd_wiring_mode at all. This whole function went
+		 * through several wiring_mode-conditional revisions (see git
+		 * history), all of them built on the wrong assumption that
+		 * arkdata.ini's real RgbMode is 0 (BGR) -- it's actually 5
+		 * (RGB), confirmed directly from a real boot log ("[arkdata.ini]
+		 * -> DTB .../lcd-wiring-mode=RGB"). The one thing genuinely
+		 * proven correct on real hardware is U-Boot's own bootlogo
+		 * (board/arkmicro/ark1668_limcet_p305/ark1668_display_cfg.c),
+		 * which hardcodes red@16/green@8/blue@0 packing (see
+		 * build_tools/convert_bootlogo.py's own documented convention)
+		 * paired with a hardcoded rgb_order=0 (now also hardcoded to
+		 * match in fb_set_par()/ARKFB_INIT_DISPLAY, see those
+		 * comments) -- unconditionally, never reading RgbMode at all.
+		 * Matching that fixed pairing here too, instead of deriving
+		 * from wiring_mode. See
+		 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 66. */
+		var->red.offset = 16;
+		var->blue.offset = 0;
 		var->green.offset = 8;
 		var->red.length = var->green.length = var->blue.length = 8;
 		break;
@@ -524,22 +519,24 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 		/* set interrupt at the start of the front porch when vfp is not zero */
 		if (info->var.lower_margin)
 			value |= (3 << 21);
-		/* REVERTED 2026-07-24 (checklist section 58): pdata->lcd_wiring_mode
-		 * is written here directly, unchanged, matching stock's real
-		 * ark_disp_fb_set_par() (vmlinux.elf @ 0x802e2a40, checklist
-		 * section 33's original decompile finding), which derives its
-		 * hardware rgb_order value as exactly the wiring-mode enum's
-		 * own raw value (0=BGR, 5=RGB) -- NOT translated through the
-		 * separate ark_lcdc_rgb_order enum. A same-day fix briefly
-		 * added that translation based on an unrelated debug string,
-		 * without cross-checking against section 33's own earlier,
-		 * more carefully-verified finding -- it produced the exact
-		 * opposite value for both wiring modes actually in use,
-		 * causing a real, hardware-confirmed red/blue channel swap
-		 * in start_msn (U-Boot's own bootlogo, unaffected by this
-		 * driver, stayed correct throughout, which is what exposed
-		 * the regression). */
-		value |= pdata->lcd_wiring_mode << 18;
+		/* FIXED AGAIN 2026-07-25 (checklist section 66): neither the
+		 * wiring_mode-direct-passthrough model (section 58's revert)
+		 * nor the translated version before it (section 52, wrong)
+		 * actually produces correct colors on real hardware --
+		 * confirmed by the user after testing section 58's revert.
+		 * The one thing that IS empirically, hardware-confirmed
+		 * correct is U-Boot's own real bootlogo code
+		 * (board/arkmicro/ark1668_limcet_p305/ark1668_display_cfg.c),
+		 * which hardcodes rgb_order=0 (DISP_RGB_888, order nibble 0)
+		 * UNCONDITIONALLY -- it never reads RgbMode/lcd_wiring_mode at
+		 * all. Since arkdata.ini's real deployed RgbMode is 5 (RGB),
+		 * not 0 (BGR) as earlier sessions assumed throughout this
+		 * whole investigation, the direct-passthrough model was
+		 * writing rgb_order=5 here -- different from the bootlogo's
+		 * proven-correct 0. Hardcoding rgb_order=0 unconditionally,
+		 * matching the bootlogo exactly, instead of deriving it from
+		 * lcd_wiring_mode at all. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+		 * section 66. */
 		lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
 	}
 
@@ -614,15 +611,13 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	 * math used a stale/unrelated rgb_order value, unaffected by
 	 * anything var.red/blue.offset says. See
 	 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 33. */
-	/* REVERTED 2026-07-24 (checklist section 58): back to a direct,
-	 * untranslated write of pdata->lcd_wiring_mode -- see the CONTROL
-	 * register comment above for the full explanation of why the
-	 * ark_lcdc_wiring_to_rgb_order() translation (briefly added, then
-	 * reverted the same day) was wrong. */
+	/* FIXED AGAIN 2026-07-25 (checklist section 66): rgb_order hardcoded
+	 * to 0, matching U-Boot's real bootlogo exactly -- see the CONTROL
+	 * register comment above for the full explanation. Not derived
+	 * from pdata->lcd_wiring_mode at all anymore. */
 	value = lcdc_readl(sinfo, ARK1668_LCDC_OSD1_CTL);
 	value &= ~(0x7ff << 12);
-	value |= (pdata->lcd_wiring_mode << 18) | (1 << 17) |
-		 (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
+	value |= (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_CTL, value);
 
 	/* Explicitly disable OSD1's colorkey. Found while probing the init
