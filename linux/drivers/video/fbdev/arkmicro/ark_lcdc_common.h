@@ -180,6 +180,23 @@ struct ark_fb_set_video_addr {
 	unsigned int param5;
 };
 
+/* Real vendor payload for the ARKFB_SET_BLEND ioctl (raw ioctl
+ * 0x40104f29, confirmed via ARM disassembly of stock's real
+ * ark_fb_set_blend() in vmlinux.elf -- see
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 65). Target layer is
+ * whichever /dev/fbN the fd was opened against, same as every other
+ * ioctl here -- not part of this struct. alpha is a single byte; the
+ * remaining 3 bytes are implicit padding from the preceding int fields
+ * (struct size is exactly 16 bytes both ways, confirmed against the
+ * ioctl's own encoded size field).
+ */
+struct ark_fb_blend {
+	int alpha_blend_en;
+	int per_pix_alpha_blend_en;
+	int blend_mode;
+	unsigned char alpha;
+};
+
 struct ark_disp_atomic {
 	 int layer;
 	 int atomic_stat;
@@ -247,6 +264,16 @@ struct ark_disp_atomic {
 #define ARKFB_INIT_DISPLAY				ARK_IOW(39, struct ark_fb_init_display)
 #define ARKFB_INIT_VIDEO_DISPLAY		ARK_IOW(55, struct ark_fb_init_display)
 #define ARKFB_SET_VIDEO_ADDR_RAW		ARK_IOW(56, struct ark_fb_set_video_addr)
+
+/* Real vendor ioctl for dynamically configuring a layer's blend
+ * parameters (alpha_blend_en, per_pix_alpha_blend_en, blend_mode,
+ * layer alpha), confirmed 0x40104f29 via ARM disassembly of stock's
+ * real ark_fb_set_blend() -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+ * section 65. Shares nr with ARKFB_SET_WINDOW_POS (41) above, but
+ * differs in size (16 bytes vs 4), so the resulting 32-bit ioctl
+ * numbers do not collide -- same pattern as ARKFB_INIT_DISPLAY etc.
+ */
+#define ARKFB_SET_BLEND					ARK_IOW(41, struct ark_fb_blend)
 
 #define VIN_SHOW_WINDOW	        			ARK_IO(55)
 #define VIN_HIDE_WINDOW	        			ARK_IO(56)

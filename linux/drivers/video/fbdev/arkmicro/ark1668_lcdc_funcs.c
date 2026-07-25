@@ -704,6 +704,160 @@ static void ark1668_lcdc_set_osd_per_pix_alpha_blend_en_lcd(int id, int enable)
         writel(val, lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
 }
 
+/* ark1668 fix (2026-07-25): real vendor ARKFB_SET_BLEND ioctl (0x40104f29,
+ * confirmed via ARM disassembly of stock's real ark_fb_set_blend() in
+ * vmlinux.elf -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 65)
+ * was entirely unhandled by this driver. libarkcmn.so's real callers were
+ * never traced directly, but stock's kernel only ever calls the
+ * per-layer alpha_blend_en/per_pix_alpha_blend_en/blend_mode/alpha
+ * setters below (which already existed for OSD, added here for VIDEO)
+ * from inside this exact ioctl and a debug-only sscanf interface --
+ * meaning these fields are never set anywhere else in stock's own boot
+ * path (U-Boot doesn't touch them for VIDEO at all, confirmed via its
+ * real source), so this ioctl not existing meant VIDEO's blend config
+ * was stuck at raw hardware-reset default on our reconstruction,
+ * unlike stock which (if this ioctl is genuinely called by real
+ * userspace) ends up at a confirmed-live value of alpha_blend_en=0,
+ * per_pix_alpha_blend_en=0 (use fixed layer alpha, not pixel alpha --
+ * video frame data has no meaningful alpha channel), blend_mode=0,
+ * alpha=0xff (fully opaque) -- i.e. VIDEO drawn as a simple, always-
+ * opaque layer with no blending consideration at all. Below are the
+ * missing primitives; the ioctl handler itself is further down in
+ * ark1668_lcdfb_ioctl(). */
+
+static void ark1668_lcdc_set_video_alpha_blend_en_lcd(int id, int enable)
+{
+        unsigned int pos;
+        unsigned int val;
+
+        if (id < 0 || id > VIDEO_LAYER2) return;
+
+        val = readl(lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
+
+        /* video=bit11, video2=bit9 -- confirmed via disassembly, NOT a
+         * simple id*2+9 pattern (video2 is lower, not higher, than video). */
+        pos = (id == VIDEO_LAYER1) ? 11 : 9;
+
+        if (enable)
+                val |= 1 << pos;
+        else
+                val &= ~(1 << pos);
+
+        writel(val, lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
+}
+
+static void ark1668_lcdc_set_video_per_pix_alpha_blend_en_lcd(int id, int enable)
+{
+        unsigned int pos;
+        unsigned int val;
+
+        if (id < 0 || id > VIDEO_LAYER2) return;
+
+        val = readl(lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
+
+        /* video=bit10, video2=bit8 -- confirmed via disassembly. */
+        pos = (id == VIDEO_LAYER1) ? 10 : 8;
+
+        if (enable)
+                val |= 1 << pos;
+        else
+                val &= ~(1 << pos);
+
+        writel(val, lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
+}
+
+static void ark1668_lcdc_set_osd_blend_mode(int id, unsigned int mode)
+{
+        unsigned int pos;
+        unsigned int val;
+
+        switch (id)
+        {
+        case OSD_LAYER1:
+                pos = 12;
+                break;
+        case OSD_LAYER2:
+                pos = 20;
+                break;
+        case OSD_LAYER3:
+                pos = 28;
+                break;
+        default:
+                return;
+        }
+
+        val = readl(lcdc_base + ARK1668_LCDC_MODE_LCD_REG0);
+        val &= ~(0xf << pos);
+        val |= (mode & 0xf) << pos;
+        writel(val, lcdc_base + ARK1668_LCDC_MODE_LCD_REG0);
+}
+
+static void ark1668_lcdc_set_video_blend_mode(int id, unsigned int mode)
+{
+        unsigned int val;
+
+        if (id < 0 || id > VIDEO_LAYER2) return;
+
+        /* video's blend_mode lives in MODE_LCD_REG0 bits[7:4]; video2's
+         * lives in MODE_LCD_REG1 bits[7:4] -- a different register per
+         * layer, confirmed via disassembly, not just a different bit
+         * offset within the same register like every other field here. */
+        if (id == VIDEO_LAYER1) {
+                val = readl(lcdc_base + ARK1668_LCDC_MODE_LCD_REG0);
+                val &= ~(0xf << 4);
+                val |= (mode & 0xf) << 4;
+                writel(val, lcdc_base + ARK1668_LCDC_MODE_LCD_REG0);
+        } else {
+                val = readl(lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
+                val &= ~(0xf << 4);
+                val |= (mode & 0xf) << 4;
+                writel(val, lcdc_base + ARK1668_LCDC_MODE_LCD_REG1);
+        }
+}
+
+static void ark1668_lcdc_set_osd_alpha(int id, unsigned int alpha)
+{
+        unsigned int reg;
+        unsigned int val;
+
+        switch (id)
+        {
+        case OSD_LAYER1:
+                reg = ARK1668_LCDC_OSD1_CTL;
+                break;
+        case OSD_LAYER2:
+                reg = ARK1668_LCDC_OSD2_CTL;
+                break;
+        case OSD_LAYER3:
+                reg = ARK1668_LCDC_OSD3_CTL;
+                break;
+        default:
+                return;
+        }
+
+        val = readl(lcdc_base + reg);
+        val &= ~0xff;
+        val |= alpha & 0xff;
+        writel(val, lcdc_base + reg);
+}
+
+static void ark1668_lcdc_set_video_alpha(int id, unsigned int alpha)
+{
+        unsigned int val;
+
+        if (id < 0 || id > VIDEO_LAYER2) return;
+
+        val = readl(lcdc_base + ARK1668_LCDC_VIDEO_VIDEO2_BLD_COEF);
+        if (id == VIDEO_LAYER1) {
+                val &= ~0xff;
+                val |= alpha & 0xff;
+        } else {
+                val &= ~(0xff << 8);
+                val |= (alpha & 0xff) << 8;
+        }
+        writel(val, lcdc_base + ARK1668_LCDC_VIDEO_VIDEO2_BLD_COEF);
+}
+
 
 int ark_bootanimation_display_init(int width, int height, unsigned int addr)
 {
@@ -1397,6 +1551,29 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                         ark1668_lcdc_set_video_layer_size(vlayer, init.win_width, init.win_height);
                         ark1668_lcdc_set_video_scal(vlayer, init.win_width, init.win_height,
                                                      0, 0, 0, 0, init.win_width, init.win_height, 0, 0);
+
+                        /* ark1668 fix (2026-07-25): apply stock's confirmed-live
+                         * blend config as a static default here too, not just
+                         * via the new ARKFB_SET_BLEND ioctl handler -- U-Boot
+                         * never touches VIDEO's alpha_blend_en/per_pix_alpha_blend_en
+                         * bits at all (confirmed absent from its real source),
+                         * so without this, VIDEO_LAYER's blend state would be
+                         * raw hardware-reset default (unknown, possibly wrong)
+                         * unless userspace happens to call ARKFB_SET_BLEND
+                         * itself, which was never confirmed either way. This
+                         * belt-and-braces default matches stock's real live
+                         * MODE_LCD_REG1 dump exactly: alpha_blend_en=0,
+                         * per_pix_alpha_blend_en=0 (fixed layer alpha, not
+                         * pixel alpha -- decoded video frame data has no
+                         * meaningful alpha channel), blend_mode=0, alpha=0xff
+                         * (fully opaque) -- VIDEO drawn as a simple, always-
+                         * visible layer with no blending consideration. See
+                         * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 65.
+                         */
+                        ark1668_lcdc_set_video_alpha_blend_en_lcd(vlayer, 0);
+                        ark1668_lcdc_set_video_per_pix_alpha_blend_en_lcd(vlayer, 0);
+                        ark1668_lcdc_set_video_blend_mode(vlayer, 0);
+                        ark1668_lcdc_set_video_alpha(vlayer, 0xff);
                 }
 
                 printk(KERN_DEBUG "layer=%d: init display x=%d, y=%d, w=%d, h=%d.\n ",
@@ -1433,6 +1610,39 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 spin_lock_irqsave(&sinfo->lock, flags);
                 ark1668_lcdc_set_video_addr(layer - OSD_LAYER_MAX, vaddr.y_addr, vaddr.cb_addr, vaddr.cr_addr);
                 spin_unlock_irqrestore(&sinfo->lock, flags);
+        }
+        break;
+
+        case ARKFB_SET_BLEND:
+        {
+                /* Real vendor ioctl, previously entirely unhandled -- see
+                 * the block comment above ark1668_lcdc_set_video_alpha_blend_en_lcd()
+                 * earlier in this file for the full trace and why this
+                 * matters for VIDEO_LAYER (CarPlay/Android Auto video)
+                 * specifically. Target layer is whichever /dev/fbN this
+                 * fd was opened against, same as every other ioctl here.
+                 */
+                struct ark_fb_blend blend;
+
+                if(copy_from_user(&blend, (void *)arg, sizeof(blend))){
+                        printk("%s: copy from user para error\n", __func__);
+                        error = -EFAULT;
+                        goto end;
+                }
+
+                if(layer <= OSD_LAYER3){
+                        ark1668_lcdc_set_osd_alpha_blend_en_lcd(layer, blend.alpha_blend_en);
+                        ark1668_lcdc_set_osd_per_pix_alpha_blend_en_lcd(layer, blend.per_pix_alpha_blend_en);
+                        ark1668_lcdc_set_osd_blend_mode(layer, blend.blend_mode);
+                        ark1668_lcdc_set_osd_alpha(layer, blend.alpha);
+                }else{
+                        int vlayer = layer - OSD_LAYER_MAX;
+
+                        ark1668_lcdc_set_video_alpha_blend_en_lcd(vlayer, blend.alpha_blend_en);
+                        ark1668_lcdc_set_video_per_pix_alpha_blend_en_lcd(vlayer, blend.per_pix_alpha_blend_en);
+                        ark1668_lcdc_set_video_blend_mode(vlayer, blend.blend_mode);
+                        ark1668_lcdc_set_video_alpha(vlayer, blend.alpha);
+                }
         }
         break;
 
