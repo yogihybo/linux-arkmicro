@@ -1,6 +1,6 @@
 ========================================================================
 ARK1668E 搭建 Qt5.15.2 交叉编译环境  /  ARK1668E Qt 5.15.2 Cross-Compile Environment Setup
-(Bilingual companion to Ark1668E搭建Qt5.15.2交叉编译环境.pdf)
+(Bilingual companion to Ark1668E_Qt5.15.2_cross_compile_setup.pdf)
 ========================================================================
 
 第一章 通过 Buildroot 下载编译 Qt5.15.2

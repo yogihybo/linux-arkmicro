@@ -1,6 +1,6 @@
 ========================================================================
 ARK1668E 生产及量产后升级说明  /  ARK1668E Production & Post-Production Upgrade Guide
-(Bilingual companion to ARK1668E生产及量产后升级说明.pdf)
+(Bilingual companion to ARK1668E_production_upgrade_guide.pdf)
 ========================================================================
 
 一． 生产时升级

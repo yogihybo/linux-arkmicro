@@ -1,6 +1,6 @@
 ========================================================================
 ARK1668E 显示相关说明文档  /  ARK1668E Display Reference Document
-(Bilingual companion to ARK1668E显示相关说明文档.pdf)
+(Bilingual companion to ARK1668E_display_reference.pdf)
 ========================================================================
 
 一、倒车轨迹和雷达信息文件制作及使用说明

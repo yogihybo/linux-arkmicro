@@ -1,6 +1,6 @@
 ========================================================================
 ARK1668E 声卡配置说明  /  ARK1668E Audio Card Configuration Guide
-(Bilingual companion to ARK1668E声卡配置说明.pdf)
+(Bilingual companion to ARK1668E_audio_codec_config.pdf)
 ========================================================================
 
 一、ark1668e 开发板 i2s 设计说明
