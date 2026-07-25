@@ -1,0 +1,148 @@
+========================================================================
+ARK1668E 声卡配置说明  /  ARK1668E Audio Card Configuration Guide
+(Bilingual companion to ARK1668E声卡配置说明.pdf)
+========================================================================
+
+一、ark1668e 开发板 i2s 设计说明
+[EN] Section 1: ARK1668E Dev Board I2S Design
+
+  i2s0:MICIN/LINEIN、CS5343
+  i2s1:LINEOUT、ES8316(支持全双工)
+  i2s2:CS4334
+[EN]  i2s0: MIC-IN / LINE-IN via CS5343 (ADC codec)
+  i2s1: LINE-OUT via ES8316 (full-duplex supported)
+  i2s2: DAC output via CS4334
+
+提示：LINEOUT、ES8316、CS4334 均经过 BD37033 音效 IC 的不同通道输入(参考说明四进行通道切换)
+[EN] Note: LINE-OUT, ES8316, and CS4334 all feed through different input channels of the BD37033
+audio effects IC. See Section 4 for channel switching.
+
+--------------------------------------------------------------------
+二、CPU 内置/外部免驱声卡配置说明
+[EN] Section 2: Built-in / External Driver-Free Codec Configuration
+--------------------------------------------------------------------
+
+2.1、内核配置:(命令:build/build.sh XXXXXX config linux)
+[EN] 2.1 Kernel config (command: build/build.sh XXXXXX config linux):
+
+Device Drivers --->
+    <*> Sound card support --->
+         <*> Advanced Linux Sound Architecture --->
+              <*> ALSA for SoC audio support --->
+                  <*> ASoC support for Arkmicro
+                  < > ARKN141 I2S Device Driver
+                  < > Soc Internal DAC for Audio out
+                  < > Soc Internal ADC for Audio In
+                  <*> ARK1668E I2S Device Driver
+                      <*>     ARK1668E Internal audio codec for Audio In/out
+                       CODEC drivers --->
+                      < > Everest Semi ES8316 CODEC
+                      <*> Everest Semi CS4334 CODEC
+                      <*> Everest Semi CS5343 CODEC
+                  <*>    Support Audio BD37033 IC Driver
+                  <*> ASoC Simple sound card support
+
+2.2、配置设备树（linux-arkmicro\linux\arch\arm\boot\dts\ark1668e_devb.dts）
+[EN] 2.2 Configure the device tree (linux-arkmicro/linux/arch/arm/boot/dts/ark1668e_devb.dts):
+
+    <1>、ark1668e_devb.dts 修改：
+    关闭宏：//#define I2S_FULL_DUPLEX_CODEC_SUPPORT
+[EN]    <1> ark1668e_devb.dts changes:
+    Disable the macro: //#define I2S_FULL_DUPLEX_CODEC_SUPPORT
+
+    配置三个 DAI link：
+    - I2S0 (ADC): capture_codec = cs5343_codec (外部免驱ADC) 或 ark_codec (内部MICIN)
+    - I2S1 (DAC): playback_codec = ark_codec (内部)
+    - I2S2 (DAC): codec_master = cs4334_codec (外部免驱DAC，只能做slave)
+[EN]    Configure three DAI links:
+    - I2S0 (ADC): capture_codec = cs5343_codec (external driver-free ADC) or ark_codec (internal MICIN)
+    - I2S1 (DAC): playback_codec = ark_codec (internal)
+    - I2S2 (DAC): codec_master = cs4334_codec (external driver-free DAC, slave only)
+
+    <2>、ark1668e.dtsi 修改：
+    如需 i2s1 全双工，在 i2s-dac@e4200000 节点中打开：//full-duplex-mode;
+[EN]    <2> ark1668e.dtsi changes:
+    To enable I2S1 full-duplex, uncomment in the i2s-dac@e4200000 node: full-duplex-mode;
+
+配置说明 — Master/Slave 关系：
+[EN] Configuration notes — Master/Slave relationships:
+    i2s0: codec为master (capture_codec), cpu为slave — 反之改为 capture_cpu
+    i2s1: codec为master (playback_codec), cpu为slave — 反之改为 playback_cpu
+    i2s2: cpu为master (cpu_master), codec为slave — 反之改为 codec_master
+[EN]    i2s0: codec is master (capture_codec), cpu is slave — to reverse, use capture_cpu
+    i2s1: codec is master (playback_codec), cpu is slave — to reverse, use playback_cpu
+    i2s2: cpu is master (cpu_master), codec is slave — to reverse, use codec_master
+
+    音效IC：simple-audio-card,aux-devs = <&amp>; 指定BD37033。如目标板未使用或改用其他免驱型号，可屏蔽或重新指定。
+[EN]    Audio effects IC: simple-audio-card,aux-devs = <&amp>; specifies BD37033.
+    If the target board does not use this IC or uses a different driver-free model, disable or re-specify.
+
+--------------------------------------------------------------------
+三、外部全双工声卡配置说明（ES8316）
+[EN] Section 3: External Full-Duplex Codec Configuration (ES8316)
+--------------------------------------------------------------------
+
+3.1、内核配置:(命令:build/build.sh XXXXXX config linux)
+[EN] 3.1 Kernel config (command: build/build.sh XXXXXX config linux):
+
+Device Drivers --->
+    <*> Sound card support --->
+         <*> Advanced Linux Sound Architecture --->
+              <*> ALSA for SoC audio support --->
+                  <*> ASoC support for Arkmicro
+                  < > ARKN141 I2S Device Driver
+                  < > Soc Internal DAC for Audio out
+                  < > Soc Internal ADC for Audio In
+                  <*> ARK1668E I2S Device Driver
+                      <>     ARK1668E Internal audio codec for Audio In/out
+                        CODEC drivers --->
+                      <*> Everest Semi ES8316 CODEC
+                      < > Everest Semi CS4334 CODEC
+                      < > Everest Semi CS5343 CODEC
+                  <*>    Support Audio BD37033 IC Driver
+                  <*> ASoC Simple sound card support
+
+3.2、配置设备树
+[EN] 3.2 Configure the device tree:
+
+    <1>、ark1668e_devb.dts 修改：打开宏：#define I2S_FULL_DUPLEX_CODEC_SUPPORT
+[EN]    <1> ark1668e_devb.dts changes: Enable the macro: #define I2S_FULL_DUPLEX_CODEC_SUPPORT
+
+    使用单个 DAI link，指向 es8316_codec，cpu (i2s_dac) 为 master：
+    simple-audio-card,bitclock-master = <&dailink0_cpu>;
+    simple-audio-card,frame-master = <&dailink0_cpu>;
+[EN]    Use a single DAI link pointing to es8316_codec, with the CPU (i2s_dac) as master:
+    simple-audio-card,bitclock-master = <&dailink0_cpu>;
+    simple-audio-card,frame-master = <&dailink0_cpu>;
+    (To make codec master instead, use <&dailink0_codec>.)
+
+    <2>、ark1668e.dtsi 修改：在 i2s_dac 节点中打开：full-duplex-mode;
+[EN]    <2> ark1668e.dtsi changes: Enable in the i2s_dac node: full-duplex-mode;
+
+--------------------------------------------------------------------
+四、开发板 BD37033 音源输出通道切换
+[EN] Section 4: BD37033 Audio Source Channel Switching
+--------------------------------------------------------------------
+
+查看通道控件：
+[EN] List available controls:
+    amixer controls
+    amixer cget iface=MIXER,name='PA Input Select'
+
+设置通道：
+[EN] Set the channel:
+
+LINEOUT -> BD37033
+    切换命令：amixer cset iface=MIXER,name='PA Input Select' 1
+[EN] LINE-OUT -> BD37033:
+    amixer cset iface=MIXER,name='PA Input Select' 1
+
+ES8316 OUTPUT -> BD37033
+    切换命令：amixer cset iface=MIXER,name='PA Input Select' 3
+[EN] ES8316 output -> BD37033:
+    amixer cset iface=MIXER,name='PA Input Select' 3
+
+CS4334 OUTPUT -> BD37033
+    切换命令：amixer cset iface=MIXER,name='PA Input Select' 2
+[EN] CS4334 output -> BD37033:
+    amixer cset iface=MIXER,name='PA Input Select' 2

@@ -1,0 +1,40 @@
+========================================================================
+ARK1668E 生产及量产后升级说明  /  ARK1668E Production & Post-Production Upgrade Guide
+(Bilingual companion to ARK1668E生产及量产后升级说明.pdf)
+========================================================================
+
+一． 生产时升级
+[EN] Section 1: Production Upgrade
+
+按照上图所示，生产时将启动模式设置为 01xx(U 盘升级)或者 10xx(SD 卡升级)，后两位值取决于项目
+使用的外部存储介质是 nandflash, emmc, norflash 或者 spi-nandflash。另外需要注意的是升级的卡或者 U
+盘最好使用 4GB-16GB 的品牌卡或者 U 盘，格式化成 FAT32 文件系统，分配单元大小选择 4096。之后将
+拷贝好升级文件的 SD 卡插入 SD1 卡槽或者将 U 盘插入 USB0 口重新上电即可升级。
+[EN] As shown in the diagram, set the boot mode pins to 01xx (USB upgrade) or 10xx (SD card upgrade)
+during production. The lower 2 bits depend on the external storage medium used (NAND Flash, eMMC,
+NOR Flash, or SPI-NAND). Use a 4 GB–16 GB branded SD card or USB drive, formatted as FAT32 with
+a 4096-byte allocation unit. Insert the prepared SD card into the SD1 slot or the USB drive into USB0
+and power on to begin upgrading.
+
+二． 量产后升级
+[EN] Section 2: Post-Production Upgrade
+
+量产后的机器需要将启动模式设置为 11xx,否则会影响启动时间，同时也存在启动不起来的风险。
+[EN] After mass production, set the boot mode to 11xx — otherwise boot time will be affected and there
+is a risk the device will fail to start.
+
+量产后同样也支持 SD 卡，U 盘以及 OTA 升级，使用 SD 卡或者 U 盘升级需要在应用层设置 uboot 环境
+变量 need_update 的值为 yes，之后再重启开始升级。使用 OTA 升级需要应用层先将升级文件拷贝到外部
+存储设备相应的分区，再设置 uboot 环境变量 update_from_flash 值为 yes，之后再重启开始升级。
+[EN] Post-production devices support SD card, USB drive, and OTA upgrades:
+- SD card / USB drive upgrade: At the application layer, set the U-Boot environment variable
+  need_update=yes, then reboot to begin upgrading.
+- OTA upgrade: At the application layer, copy the upgrade files to the appropriate partition on the
+  external storage device, set U-Boot environment variable update_from_flash=yes, then reboot.
+
+如果担心出现应用层异常导致不能设置相应环境变量进行升级的问题，可以通过 MCU 或者外部方式改变
+启动模式的一个 IO 脚的值，就可以将 11xx 的启动模式改变为 01xx(U 盘升级)或者 10xx(SD 卡升级)，
+之后可以在 uboot 的升级检测代码处添加启动模式值的检测来进行强制升级。
+[EN] If the application layer fails and environment variables cannot be set, use the MCU or external
+hardware to change one boot-mode IO pin, switching from 11xx to 01xx (USB upgrade) or 10xx (SD card
+upgrade). Then add boot-mode detection code in U-Boot's upgrade check routine to force an upgrade.

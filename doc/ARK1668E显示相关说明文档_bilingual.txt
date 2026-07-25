@@ -1,0 +1,213 @@
+========================================================================
+ARK1668E 显示相关说明文档  /  ARK1668E Display Reference Document
+(Bilingual companion to ARK1668E显示相关说明文档.pdf)
+========================================================================
+
+一、倒车轨迹和雷达信息文件制作及使用说明
+[EN] Section 1: Reverse Camera Trajectory & Radar Overlay File Creation and Usage
+
+存放路径：linux-arkmicro/tool/arktrack-tool.rar
+[EN] Tool location: linux-arkmicro/tool/arktrack-tool.rar
+
+--------------------------------------------------------------------
+二、LIBARKAPI 常用接口函数说明
+[EN] Section 2: LIBARKAPI Key API Function Reference
+--------------------------------------------------------------------
+
+（1）常用函数接口说明
+[EN] (1) Core API functions
+
+/*
+** 函数功能：设置当前的显示模式
+** 参数：mode — DISP_PLAYER（播放多媒体）或 DISP_PHONELINK（手机互联）
+** 返回值：0=成功，<0=失败
+*/
+int arkapi_video_set_display_mode(int mode);
+[EN] /* Set the current display mode.
+** mode: DISP_PLAYER (multimedia playback) or DISP_PHONELINK (phone-link)
+** Returns: 0=success, <0=error */
+
+/*
+** 函数功能：初始化解码器、显示层、分配内存等
+** 参数：stream_type — 视频流格式，如 RAW_STRM_TYPE_H264，参考 mfcapi.h
+** 返回值：成功返回 video_handle* 指针，失败返回 NULL
+*/
+video_handle *arkapi_video_init(int stream_type);
+[EN] /* Initialize the decoder, display layer, and allocate memory.
+** stream_type: video format, e.g. RAW_STRM_TYPE_H264 (see mfcapi.h)
+** Returns: video_handle* on success, NULL on error */
+
+/*
+** 函数功能：设置/获取显示信息（宽高、偏移值、源窗口大小等）
+** 参数：handle — 初始化返回的指针；cfg_vid — 参考 ark_api.h 的 video_cfg 结构体
+** 返回值：0=成功，<0=失败
+*/
+int arkapi_video_set_config(video_handle *handle, video_cfg *cfg_vid);
+int arkapi_video_get_config(video_handle *handle, video_cfg *cfg_vid);
+[EN] /* Set/get display configuration (width, height, offset, source window size, etc.)
+** handle: pointer from init; cfg_vid: see video_cfg struct in ark_api.h
+** Returns: 0=success, <0=error */
+
+/*
+** 函数功能：启动解码器并缩放显示到屏幕
+** 参数：handle、src_addr（视频数据源地址）、len（数据大小）、fps（帧率）
+** 返回值：成功返回解码显示的帧数，失败返回<0
+*/
+int arkapi_video_play(video_handle *handle, const void *src_addr, int len, int fps);
+[EN] /* Start the decoder and scale/display to screen.
+** handle, src_addr (video data source), len (data size), fps (frame rate)
+** Returns: number of frames decoded/displayed on success, <0 on error */
+
+/*
+** 函数功能：播放流结尾时将剩余帧播放完成
+** 返回值：0=成功，<0=失败
+*/
+int arkapi_video_play_eof(video_handle *handle, int fps);
+[EN] /* Flush remaining frames at end of stream.
+** Returns: 0=success, <0=error */
+
+/*
+** 函数功能：打开/关闭对应的显示层
+** 参数：enable — 1=打开，0=关闭
+** 返回值：0=成功，<0=失败
+*/
+int arkapi_video_show(video_handle *handle, int enable);
+[EN] /* Show or hide the video layer.
+** enable: 1=show, 0=hide
+** Returns: 0=success, <0=error */
+
+/*
+** 函数功能：打开显示层并检查当前模式是否匹配
+** 参数：mode — DISP_PLAYER 或 DISP_PHONELINK；enable — 1=打开，0=关闭
+*/
+int arkapi_video_show_mode(video_handle *handle, int mode, int enable);
+[EN] /* Show/hide the layer, verifying that the current display mode matches.
+** mode: DISP_PLAYER or DISP_PHONELINK; enable: 1=show, 0=hide */
+
+/*
+** 函数功能：释放解码器、内存、显示层等
+*/
+void arkapi_video_release(video_handle *handle);
+[EN] /* Release the decoder, memory, and display layer. */
+
+/*
+** 函数功能：通知显示库进入/退出倒车模式（必须调用，否则显示切换异常）
+** 返回值：0=成功，<0=失败
+*/
+int arkapi_enter_carback(void);
+int arkapi_exit_carback(void);
+[EN] /* Notify the display library that reverse camera mode is entered/exited.
+** Must be called — skipping this causes display switching issues.
+** Returns: 0=success, <0=error */
+
+/*
+** 显示层对应关系（ARK1668E — 5层，同时最多用4层）：
+**   PRIMARY_LAYER  → OSD2   (UI)
+**   VIDEO_LAYER    → VIDEO2 (倒车、手机互联、多媒体)
+**   OVER_LAYER     → OSD1   (倒车轨迹、雷达信息)
+**   TVOUT_LAYER    → VIDEO1 (开机动画、LOGO)
+**   AUX_LAYER      → OSD3   (保留)
+**
+** 显示层优先级（数字越大在越上面）：
+**   TVOUT_LAYER(0) < VIDEO_LAYER(1) < OVER_LAYER(2) < PRIMARY_LAYER(3)
+**
+** 注：对于 app 开发者来说主要涉及 PRIMARY_LAYER，其他层一般由底层处理。
+*/
+[EN] /* Display layer mapping (ARK1668E — 5 layers, max 4 active simultaneously):
+**   PRIMARY_LAYER  → OSD2   (UI)
+**   VIDEO_LAYER    → VIDEO2 (reverse camera, phone-link, multimedia)
+**   OVER_LAYER     → OSD1   (reverse trajectory lines, radar info)
+**   TVOUT_LAYER    → VIDEO1 (boot animation, logo)
+**   AUX_LAYER      → OSD3   (reserved)
+**
+** Z-order (higher number = on top):
+**   TVOUT_LAYER(0) < VIDEO_LAYER(1) < OVER_LAYER(2) < PRIMARY_LAYER(3)
+**
+** Note: App developers mainly work with PRIMARY_LAYER; other layers are typically
+** managed by the lower-level system. */
+
+disp_handle *arkapi_display_open_layer(enum ark_disp_layer layer);
+void         arkapi_display_close_layer(disp_handle *handle);
+int          arkapi_display_show_layer(disp_handle *handle);
+int          arkapi_display_hide_layer(disp_handle *handle);
+int          arkapi_display_force_show_layer(enum ark_disp_layer layer);
+int          arkapi_display_force_hide_layer(enum ark_disp_layer layer);
+int          arkapi_display_set_layer_pos(disp_handle *handle, int x, int y);
+int          arkapi_display_set_layer_size(disp_handle *handle, int width, int height);
+int          arkapi_display_set_layer_format(disp_handle *handle, int format);
+int          arkapi_display_set_layer_addr(disp_handle *handle, u32 pyrgbaddr, u32 pcbaddr, u32 pcraddr);
+/* Atomic variants — staged, applied together after arkapi_display_layer_update_commit() */
+int          arkapi_display_set_layer_pos_atomic(disp_handle *handle, int x, int y);
+int          arkapi_display_set_layer_size_atomic(disp_handle *handle, int width, int height);
+int          arkapi_display_set_layer_format_atomic(disp_handle *handle, int format);
+int          arkapi_display_set_layer_addr_atomic(disp_handle *handle, u32 pyrgbaddr, u32 pcbaddr, u32 pcraddr);
+int          arkapi_display_layer_update_commit(disp_handle *handle);
+int          arkapi_display_layer_set_color(enum ark_disp_layer layer, disp_color *vp);
+int          arkapi_display_layer_get_color(enum ark_disp_layer layer, disp_color *vp);
+int          arkapi_display_wait_for_vsync(disp_handle *handle);
+int          arkapi_display_get_layer_addr(disp_handle *handle, u32 *y, u32 *u, u32 *v);
+int          arkapi_display_get_screen_info(screen_info *screen);
+memalloc_handle *arkapi_memalloc_init(void);
+int              arkapi_memalloc_reqbuf(memalloc_handle *handle, reqbuf_info *reqbuf);
+void             arkapi_memalloc_release(memalloc_handle *handle);
+int  arkapi_open_vin(void);
+int  arkapi_close_vin(int vin_fd);
+int  arkapi_vin_config(int vin_fd, int progressive, int itu601en);
+int  arkapi_vin_start(int vin_fd);
+int  arkapi_vin_stop(int vin_fd);
+int  arkapi_vin_detect_signal(int vin_fd);   /* Returns 1=signal present, 0=no signal */
+int  arkapi_vin_switch_channel(int vin_fd, enum dvr_source source);
+
+（2）AVIN 接口使用说明
+[EN] (2) AVIN (AUX video input) usage
+
+调用顺序：arkapi_vin_config → arkapi_vin_switch_channel（配置解码芯片AVIN输入通道）→ arkapi_vin_start
+[EN] Call order: arkapi_vin_config → arkapi_vin_switch_channel (configure decoder AVIN input channel) → arkapi_vin_start
+
+（3）应用倒车时控制 UI 层的使用说明
+[EN] (3) App-managed UI layer control during reverse camera
+
+1.1 应用不调用接口：底层驱动自动在进入倒车时关闭 UI 层，退出时开启。
+[EN] 1.1 App does not call the ioctl: the kernel driver automatically closes the UI layer on entering reverse and reopens it on exit.
+
+1.2 应用调用接口：应用调用 CARBACK_IOCTL_SET_APP_READY 后，驱动不再控制 UI 层，由应用全权管理。
+    流程：
+    - 调用 CARBACK_IOCTL_SET_APP_READY（初始化时）
+    - 检测到进入倒车 → 调用 arkapi_enter_carback() → 关闭/调整 UI → 调用 CARBACK_IOCTL_APP_ENTER_DONE
+    - 检测到退出倒车 → 调用 arkapi_exit_carback() → 恢复 UI → 调用 CARBACK_IOCTL_APP_EXIT_DONE
+[EN] 1.2 App calls the ioctls: after calling CARBACK_IOCTL_SET_APP_READY, the driver hands full UI
+    layer control to the application.
+    Flow:
+    - Call CARBACK_IOCTL_SET_APP_READY (at init)
+    - On entering reverse: call arkapi_enter_carback() → hide/adjust UI → call CARBACK_IOCTL_APP_ENTER_DONE
+    - On exiting reverse:  call arkapi_exit_carback()  → restore UI     → call CARBACK_IOCTL_APP_EXIT_DONE
+
+（4）显示模式切换说明
+[EN] (4) Display mode switching
+
+- 进入倒车：arkapi_enter_carback() / 退出倒车：arkapi_exit_carback()
+- 进入多媒体视频播放前：arkapi_video_set_display_mode(DISP_PLAYER)
+- 进入手机互联前：arkapi_video_set_display_mode(DISP_PHONELINK)
+[EN] - Enter reverse: arkapi_enter_carback() / Exit reverse: arkapi_exit_carback()
+- Before entering multimedia video: arkapi_video_set_display_mode(DISP_PLAYER)
+- Before entering phone-link mode: arkapi_video_set_display_mode(DISP_PHONELINK)
+
+--------------------------------------------------------------------
+三、常见问题配置修改
+[EN] Section 3: Common Configuration Changes
+--------------------------------------------------------------------
+
+（1）屏参修改（以 ark1668e_devb 为例）
+[EN] (1) Display timings (screen parameters) — using ark1668e_devb as example
+
+U-Boot 屏参：修改 u-boot/include/configs/ark1668e_devb.h 中的相关配置（参考文档中图示）。
+[EN] U-Boot display timings: edit u-boot/include/configs/ark1668e_devb.h at the locations shown in the PDF.
+
+Kernel 屏参：修改 linux/arch/arm/boot/dts/ 下对应的设备树文件（参考文档中图示）。
+[EN] Kernel display timings: edit the corresponding device tree file under linux/arch/arm/boot/dts/ (see PDF diagrams).
+
+（2）GPIO-I2C（模拟 I2C）
+[EN] (2) GPIO-I2C (bit-banged I2C)
+
+参考设备树中 i2c-gpio 节点的配置（参考文档中图示）。
+[EN] Reference the i2c-gpio node configuration in the device tree (see PDF diagram).

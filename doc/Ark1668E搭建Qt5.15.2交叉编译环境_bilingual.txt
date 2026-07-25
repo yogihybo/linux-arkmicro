@@ -1,0 +1,137 @@
+========================================================================
+ARK1668E 搭建 Qt5.15.2 交叉编译环境  /  ARK1668E Qt 5.15.2 Cross-Compile Environment Setup
+(Bilingual companion to Ark1668E搭建Qt5.15.2交叉编译环境.pdf)
+========================================================================
+
+第一章 通过 Buildroot 下载编译 Qt5.15.2
+[EN] Chapter 1: Build Qt5.15.2 via Buildroot
+
+1.1 配置 Buildroot 选中 Qt5
+[EN] 1.1 Configure Buildroot to enable Qt5
+
+在 linux-arkmicro/build 下执行指令配置 Buildroot：
+[EN] From linux-arkmicro/build/, run:
+    build/build.sh <BOARD_TYPE> config buildroot
+
+在界面中选择 Target Packages，依次选中 Qt5 相关选项。
+[EN] In the menuconfig UI, navigate to Target Packages and enable the required Qt5 modules.
+
+1.2 编译 BSP 源码
+[EN] 1.2 Build the BSP source
+
+第一次编译时整体编译：
+[EN] For a first-time build, compile everything:
+    build/build.sh <BOARD_TYPE> build
+
+已经编译过则只编译 Buildroot：
+[EN] If already built, compile only Buildroot:
+    build/build.sh <BOARD_TYPE> build buildroot
+
+--------------------------------------------------------------------
+第二章 编译 BSP 生成交叉编译器
+[EN] Chapter 2: Generate the Cross-Compiler SDK from the BSP
+--------------------------------------------------------------------
+
+2.1 编译生成交叉编译器 SDK
+[EN] 2.1 Build the cross-compiler SDK
+
+在 BSP 编译后生成的 output 目录下编译 SDK：
+[EN] After the BSP build completes, generate the SDK from the output directory:
+    cd output/board/<BOARD_TYPE>/buildroot
+    source ../../../../env.source && make sdk
+
+2.2 解压交叉编译器 SDK
+[EN] 2.2 Extract the cross-compiler SDK
+
+编译完成后，SDK 压缩文件 (arm-buildroot-linux-gnueabihf_sdk-buildroot.tar.gz) 在 images/ 目录下。
+拷贝到虚拟机任意目录后解压。
+[EN] After the build, the SDK archive (arm-buildroot-linux-gnueabihf_sdk-buildroot.tar.gz) is in the
+images/ directory. Copy it to any directory on your Linux host and extract it.
+
+2.3 配置交叉编译器 SDK
+[EN] 2.3 Configure the cross-compiler SDK
+
+解压后在生成的目录下执行脚本 relocate-sdk.sh。
+[EN] Run relocate-sdk.sh inside the extracted directory to configure paths.
+
+qmake、GCC 和 G++ 编译器在 bin/ 目录下，后面配置 Qt Creator 时会用到。
+[EN] qmake, gcc, and g++ are located in the bin/ subdirectory — note their paths for Qt Creator setup.
+
+--------------------------------------------------------------------
+第三章 配置 Qt Creator 的构建套件 Kit
+[EN] Chapter 3: Configure the Qt Creator Build Kit
+--------------------------------------------------------------------
+
+3.1 下载 PC 版 Linux Qt
+[EN] 3.1 Download the PC Linux version of Qt
+
+从官网下载 Qt5 以上版本 (如 qt-opensource-linux-x64-5.10.0.run)，直接运行全选安装。
+[EN] Download Qt 5.x from the official site (e.g. qt-opensource-linux-x64-5.10.0.run) and install
+with default options.
+    Official URL: http://download.qt.io/official_releases/qt/
+
+3.2 配置交叉编译构建套件
+[EN] 3.2 Configure the cross-compile build kit
+
+打开 Qt Creator → 工具 → 选项：
+[EN] Open Qt Creator → Tools → Options:
+
+3.2.1 添加 G++ 交叉编译器 — 路径指向 SDK bin/ 下的 arm-linux-gnueabihf-g++
+[EN] 3.2.1 Add G++ cross-compiler — path: SDK bin/arm-linux-gnueabihf-g++
+
+3.2.2 添加 GCC 交叉编译器 — 路径指向 SDK bin/ 下的 arm-linux-gnueabihf-gcc
+[EN] 3.2.2 Add GCC cross-compiler — path: SDK bin/arm-linux-gnueabihf-gcc
+
+3.3.3 添加 qmake — 路径指向 SDK bin/ 下的 qmake
+[EN] 3.3.3 Add qmake — path: SDK bin/qmake
+
+3.3.4 配置构建套件 — sysroot 路径设置为 SDK 解压目录下的 arm-buildroot-linux-gnueabihf/sysroot/
+[EN] 3.3.4 Configure the Kit — set sysroot to: <sdk-dir>/arm-buildroot-linux-gnueabihf/sysroot/
+     Assign the GCC, G++, and qmake tools configured above.
+
+Qt 交叉编译环境搭建完成！
+[EN] Qt cross-compile environment setup complete!
+
+--------------------------------------------------------------------
+第四章 新建 Qt 测试工程
+[EN] Chapter 4: Create a Test Qt Project
+--------------------------------------------------------------------
+
+4.1 新建 Qt 工程 — 点击 New Project，选择 Qt Widgets Application。
+[EN] 4.1 New project — click New Project, select Qt Widgets Application.
+
+4.2 配置工程 — 设置工程名字和路径，选择交叉编译构建套件。
+[EN] 4.2 Configure the project — set the project name and path; select the cross-compile kit.
+
+4.3 添加测试界面，设计任意 UI 布局。
+[EN] 4.3 Add a test UI widget with any layout.
+
+3.4 编译工程。若报错缺少 LGL，按提示安装对应库。
+[EN] 3.4 Build the project. If an error about missing LGL appears, install the indicated library.
+
+--------------------------------------------------------------------
+第五章 在 ARM 平台运行 Qt 编译生成的应用
+[EN] Chapter 5: Run the Qt Application on the ARM Board
+--------------------------------------------------------------------
+
+5.1 切换到工程目录，将编译生成的应用（如 Qt_Test）拷贝到 TF 卡或 U 盘。
+[EN] 5.1 Switch to the project directory, copy the compiled binary (e.g. Qt_Test) to a TF card or USB drive.
+
+5.2 在开发板上运行应用，如果显示出设计的界面，则交叉编译环境搭建成功。
+[EN] 5.2 Run the application on the dev board. If your designed UI appears, the cross-compile environment
+is working correctly.
+
+--------------------------------------------------------------------
+第六章 通过 Buildroot 裁剪 Qt 模块
+[EN] Chapter 6: Trim Qt Modules via Buildroot
+--------------------------------------------------------------------
+
+6.1 重新配置 Buildroot：build/build.sh <BOARD_TYPE> config buildroot
+    在 Target Packages → Qt5 中选择/取消所需模块（如添加多媒体模块）。保存退出。
+[EN] 6.1 Reconfigure Buildroot: build/build.sh <BOARD_TYPE> config buildroot
+    In Target Packages → Qt5, enable or disable individual modules (e.g. add the multimedia module). Save and exit.
+
+6.2 重新编译 buildroot：build/build.sh <BOARD_TYPE> build buildroot
+    编译完成后将升级文件拷贝到 SD 卡并重新升级开发板。
+[EN] 6.2 Rebuild Buildroot: build/build.sh <BOARD_TYPE> build buildroot
+    After building, copy the new image files to an SD card and flash the board.
