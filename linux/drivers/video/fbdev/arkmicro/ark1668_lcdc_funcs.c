@@ -1647,6 +1647,23 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
         }
         break;
 
+        case ARKFB_GET_LAYER_ID:
+        {
+                /* Real vendor ioctl (0x80044f39, confirmed via its own
+                 * "ARKFB_GET_LAYER_ID fail." string in libarkcmn.so),
+                 * previously entirely unhandled -- see the macro comment
+                 * in ark_lcdc_common.h. Simply reports back which layer
+                 * this fd corresponds to, same value already computed
+                 * from the minor number at the top of this function.
+                 */
+                if(copy_to_user((void *)arg, &layer, sizeof(layer))){
+                        printk("%s: copy to user para error\n", __func__);
+                        error = -EFAULT;
+                        goto end;
+                }
+        }
+        break;
+
         default:
             printk("%s %d: unknown ioctl %08x\n",__FUNCTION__, __LINE__, cmd);
             break;

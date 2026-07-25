@@ -275,6 +275,21 @@ struct ark_disp_atomic {
  */
 #define ARKFB_SET_BLEND					ARK_IOW(41, struct ark_fb_blend)
 
+/* Real vendor ioctl, confirmed via its own "ARKFB_GET_LAYER_ID fail."
+ * error string in libarkcmn.so's rodata (0x80044f39 = _IOR('O', 57,
+ * int)) -- queries which layer a given /dev/fbN fd corresponds to.
+ * Called by arkapi_init_fb_display_internal() during video-layer
+ * init; non-fatal on failure (caller just logs and continues,
+ * confirmed via disassembly), but was previously entirely
+ * unimplemented ("unknown ioctl 80044f39" in dmesg). Shares nr with
+ * VIN_SET_WINDOW_POS (57) below, but differs in dir/size (bare _IO
+ * vs _IOR with a 4-byte payload), so the resulting 32-bit ioctl
+ * numbers do not collide -- same pattern as ARKFB_SET_BLEND/
+ * ARKFB_SET_WINDOW_POS above. See
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 67.
+ */
+#define ARKFB_GET_LAYER_ID				ARK_IOR(57, int)
+
 #define VIN_SHOW_WINDOW	        			ARK_IO(55)
 #define VIN_HIDE_WINDOW	        			ARK_IO(56)
 #define VIN_SET_WINDOW_POS					ARK_IO(57)
