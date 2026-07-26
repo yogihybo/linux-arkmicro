@@ -260,6 +260,12 @@ static int boot_from_block_dev(const char *iface)
 	if (strcmp(iface, "usb") == 0) {
 		sprintf(cmd, "fdt addr 0x%lx", dtbaddr);
 		run_command(cmd, 0);
+		/* The loaded blob has zero slack space (fatload gives it its
+		 * exact on-disk size) -- fdt_setprop() fails FDT_ERR_NOSPACE
+		 * growing dr_mode from "otg" (4 bytes incl NUL) to "host" (5
+		 * bytes), even though that's a trivially small grow. `fdt
+		 * resize` pads the working copy first. */
+		run_command("fdt resize 64", 0);
 		if (run_command("fdt set /ahb/usb@E0100000 dr_mode \"host\"", 0) != 0)
 			printf("[bootusb] warning: failed to force usb0 dr_mode=host in DTB, "
 			       "keeping DTS default (otg) -- boot will be slower but should still work\n");
