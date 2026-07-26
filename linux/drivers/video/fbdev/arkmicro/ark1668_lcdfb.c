@@ -621,27 +621,39 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	value |= (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_CTL, value);
 
-	/* Explicitly disable OSD1's colorkey. Found while probing the init
-	 * sequence (2026-07-24): U-Boot's ark_display_initialize_common()
+	/* RE-ENABLED 2026-07-27 (checklist section 61-67's "AA video runs
+	 * but screen stays black" investigation) -- the disable below was
+	 * wrong. Real mechanism, confirmed via disassembly of
+	 * libMsnCarAuto.so: CarAutoWindow::isVideoAppBkTransparent() (a
+	 * stored flag, offset 0x55) and MsnCoreApp's own
+	 * "background:transparent;" Qt stylesheet strings drive
+	 * CarAutoWindow to paint literal RGB black where Android
+	 * Auto/CarPlay video should show through -- it relies entirely on
+	 * OSD1's *colorkey* comparator to punch that hole, not on real
+	 * ARGB alpha (which ark1668_lcdfb_check_var()'s Format_RGB32
+	 * forcing, above/elsewhere in this file, makes impossible to rely
+	 * on anyway -- see that fix's own comment for why). "Nothing in
+	 * this driver's userspace ABI ever asks for a colorkey" (the
+	 * previous reasoning for disabling this) missed that userspace
+	 * asks for it *implicitly*, by painting the exact colorkey color
+	 * and depending on it already being enabled from init -- same as
+	 * stock's own real, unconditional behavior (see the original
+	 * finding this comment used to describe, still accurate):
+	 * U-Boot's ark_display_initialize_common()
 	 * (board/arkmicro/ark1668_limcet_p305/ark1668_lcd.c) unconditionally
-	 * enables a BLACK colorkey on OSD1 --
-	 * rLCD_COLOR_KEY_MASK_VALUE_OSD1 = (1<<24)|(BLACK_Y<<16)|(BLACK_U<<8)|BLACK_V
-	 * -- gated by `#ifdef BOOT_CONFIG_PIXEL_ALPHA`, which is referenced
-	 * but never #define'd anywhere in the entire vendor U-Boot tree, in
-	 * any board variant, so this branch always compiles in every real
-	 * build. Confirmed the register offset (LCDC_BASE+0xec) and bit-24
-	 * enable flag against stock's real ark_disp_set_osd_colorkey()
-	 * (vmlinux.elf @ 0x802debb8). This driver has no colorkey handling
-	 * at all otherwise (see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
-	 * section 34), so nothing else would ever clear what U-Boot leaves
-	 * enabled here. Whether this specific black value ever actually
-	 * matches real rendered pixel data wasn't confirmed (depends on
-	 * whether the hardware comparator runs on raw RGB bytes or a
-	 * post-conversion YCbCr representation) -- disabling it
-	 * unconditionally is correct regardless, since nothing in this
-	 * driver's userspace ABI ever asks for a colorkey on OSD1. See
-	 * section 37. */
-	lcdc_writel(sinfo, ARK1668_LCDC_COLOR_KEY_MASK_VALUE_OSD1, 0);
+	 * enables a BLACK colorkey on OSD1, gated by
+	 * `#ifdef BOOT_CONFIG_PIXEL_ALPHA`, referenced but never #define'd
+	 * anywhere in the vendor tree so the branch always compiles in.
+	 * Register offset (LCDC_BASE+0xec) and bit-24 enable flag confirmed
+	 * against stock's real ark_disp_set_osd_colorkey() (vmlinux.elf @
+	 * 0x802debb8). Value: (1<<24)|(BLACK_Y<<16)|(BLACK_U<<8)|BLACK_V,
+	 * BLACK_Y/U/V = 0x10/0x80/0x80 (board/arkmicro/ark1668_limcet_p305/
+	 * ark1668_lcd.h) -- limited-range YCbCr black, the standard BT.601
+	 * conversion of RGB (0,0,0), confirming the hardware comparator
+	 * runs post-YCbCr-conversion (the driver's earlier comment here
+	 * left this unconfirmed). NOT YET HARDWARE-TESTED. */
+	lcdc_writel(sinfo, ARK1668_LCDC_COLOR_KEY_MASK_VALUE_OSD1,
+		    (1 << 24) | (0x10 << 16) | (0x80 << 8) | 0x80);
 
 	/* Open OSD1 layer. Deliberately unconditional (not gated by set_par
 	 * like the wiring-mode block above): this is a read-modify-write of
