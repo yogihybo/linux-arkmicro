@@ -925,7 +925,10 @@ MODULE_DEVICE_TABLE(of, ark7116_of_match);
 static int dvr_rn6752_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct dvr_rn6752 *dvr_rn6752;
-	struct ark_private_data pdata;
+	/* must outlive this function: g_itu656in_priv (below) is read later
+	 * by the independently-probed ark1668_itu656 platform driver, long
+	 * after dvr_rn6752_probe() has returned and this stack frame is gone */
+	static struct ark_private_data pdata;
 	const struct of_device_id *match = NULL;
 	int value;
 	int ret = -1;
