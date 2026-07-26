@@ -18,6 +18,7 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
+#include <linux/workqueue.h>
 #include <video/of_display_timing.h>
 #include <video/display_timing.h>
 #include <video/videomode.h>
@@ -1144,6 +1145,81 @@ static int ark1668_lcdc_dev_init(struct ark1668_lcdfb_info *sinfo)
 	return 0;
 }
 
+/* LCD RGB888 pin-share reclaim (2026-07-26): r0/r1 (pins 2/3) and r7
+ * (pin 9) are the same physical pads as i2c-gpio-0's SCL/SDA (RN6752)
+ * and i2c-gpio-1's SDA (BD37033) -- see docs/DISPLAY_SUBSYSTEM.md's
+ * I2C_GPIO0_LCD_PIN_CONFLICT section and
+ * docs/LCD_PIN_CONFLICT_TEST_PROCEDURE.md. Confirmed on real hardware
+ * (tools/pin-force/): at boot, these pins end up PERMANENTLY stuck in
+ * GPIO input mode -- i2c-gpio's generic driver claims the pinmux once,
+ * at gpio_request() time (pinctrl-ark.c's ark_gpio_request_enable()),
+ * and never gives it back (ark_gpio_disable_free() is an empty
+ * function). This driver's own pinctrl-0 (lcd-base-0 + lcd-rgb-0) gets
+ * applied automatically by the driver core just before probe() runs,
+ * but if i2c-gpio-0/-1 probe afterward, they silently win the pins for
+ * the rest of the boot. r7 stuck-at-(whatever BD37033's idle SDA level
+ * is) explains the dramatic, value-dependent LCDTest color corruption
+ * (confirmed: manually re-selecting pinctrl-0 at runtime via
+ * tools/pin-force made the screen match stock exactly, immediately,
+ * with no further drift -- i2c-gpio never re-steals the pin after its
+ * one-time claim, since direction_output()/gpio_set_value() only touch
+ * the GPIO direction/data registers, not the pinmux function-select
+ * bits). r0/r1 are stuck the same way but too visually minor to
+ * matter on their own (2 LSBs of the R channel, max +/-3 of 255).
+ *
+ * Fix, take 1 (didn't work): re-select the same DT-specified
+ * pinctrl-0 default state via devm_pinctrl_get_select_default(), a few
+ * seconds after our own probe. Confirmed on hardware this does NOT
+ * stick -- pin-force still reads GPIO afterward. Root cause: the
+ * generic pinctrl core tracks "currently selected state" in software
+ * (struct pinctrl_state *state on the pinctrl handle) and
+ * pinctrl_select_state() short-circuits as a no-op when the requested
+ * state matches what it already believes is selected. i2c-gpio's theft
+ * happens via a completely different, lower-level path
+ * (pinmux_ops.gpio_request_enable() in pinctrl-ark.c, called from
+ * gpio_request() -- never touches pinctrl_select_state()'s tracking at
+ * all), so the core's belief ("LCD default is still selected") goes
+ * out of sync with the real hardware register the moment i2c-gpio
+ * steals the pin -- and our "re-select the same state" call gets
+ * silently skipped because the core doesn't know anything changed.
+ *
+ * Fix, take 2: bypass the pinctrl subsystem's state tracking entirely
+ * and directly rewrite the same physical register tools/pin-force/
+ * already proved fixes this on real hardware -- pinctrl0's pad-mux
+ * register for pins 2-9 (r0-r7), one 4-bit nibble per pin, LSB-first
+ * (pin N -> bits [4*(N-2)+3 : 4*(N-2)]), at PINCTRL_BASE + 0x1c0 (see
+ * tools/pinmux-watch/README.md for the full derivation). Forces every
+ * nibble to 1 (LCD/ARK_PVAL_1, dt-bindings/pinctrl/ark-pinfunc.h) --
+ * not just the 3 pins (r0/r1/r7) confirmed shared, since restoring the
+ * whole group matches what pinctrl_lcd_rgb888 itself specifies and
+ * costs nothing extra. Same one-shot delayed_work timing as take 1 --
+ * that part was never the problem. */
+#define ARK1668_LCDFB_PINCTRL_BASE 0xE4900000UL
+#define ARK1668_LCDFB_PINCTRL_R_REG 0x1c0UL
+
+static struct delayed_work g_ark1668_lcdfb_reclaim_work;
+
+static void ark1668_lcdfb_reclaim_pinctrl(struct work_struct *work)
+{
+	void __iomem *base;
+	u32 val;
+
+	base = ioremap(ARK1668_LCDFB_PINCTRL_BASE, 0x200);
+	if (!base) {
+		pr_err("ark1668_lcdfb: pinctrl reclaim: ioremap failed\n");
+		return;
+	}
+
+	/* force every pin-2..9 (r0-r7) nibble to 0x1 = LCD/ARK_PVAL_1 */
+	val = 0x11111111U;
+	writel(val, base + ARK1668_LCDFB_PINCTRL_R_REG);
+
+	pr_info("ark1668_lcdfb: LCD RGB888 r0-r7 pinmux reclaimed from any i2c-gpio pin theft (now 0x%08x)\n",
+		readl(base + ARK1668_LCDFB_PINCTRL_R_REG));
+
+	iounmap(base);
+}
+
 static int ark1668_lcdfb_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -1368,6 +1444,10 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
         memset(&sinfo->patomic, 0, sizeof(struct ark_disp_atomic)*ARK1668_LAYER_MAX);
 }
 #endif
+
+	INIT_DELAYED_WORK(&g_ark1668_lcdfb_reclaim_work, ark1668_lcdfb_reclaim_pinctrl);
+	schedule_delayed_work(&g_ark1668_lcdfb_reclaim_work, msecs_to_jiffies(3000));
+
 	return 0;
 
 reset_drvdata:

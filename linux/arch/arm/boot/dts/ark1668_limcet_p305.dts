@@ -54,7 +54,18 @@
 		gpios = <&gpio0 3 0		/* SDA (GPIO 3) */
 			 &gpio0 2 0		/* SCL (GPIO 2) */
 		>;
-		i2c-gpio,delay-us = <6>;
+		// delay-us=6 (~83KHz) -> 2 (~250KHz, clk freq = 500/delay KHz --
+		// matches arkn141-dongle.dts/ark1668e_fpga.dts, the value most
+		// other ArkMicro boards use for this bus type; our old <6> looks
+		// copied from ark168.dts/ark1668e_devb_dashboard.dts during
+		// reconstruction rather than derived from this board's real
+		// firmware). This bus's SCL/SDA (GPIO2/3) are the same physical
+		// pads as LCD r0/r1 (see docs/DISPLAY_SUBSYSTEM.md's
+		// I2C_GPIO0_LCD_PIN_CONFLICT section and
+		// docs/LCD_PIN_CONFLICT_TEST_PROCEDURE.md) -- a faster clock
+		// means each transaction (and each retry) occupies less real
+		// time, so fewer LCD scanlines get corrupted per attempt.
+		i2c-gpio,delay-us = <2>;
 		i2c-gpio,scl-output-only;
 
 		// Richwave RN6752 AHD Camera Decoder
@@ -100,7 +111,12 @@
 		gpios = <&gpio0 9 0		/* SDA (GPIO 9) */
 			 &gpio3 25 0		/* SCL (GPIO 121) */
 		>;
-		i2c-gpio,delay-us = <6>;
+		// delay-us=6 -> 2, same reasoning as i2c-gpio-0 above. This
+		// bus's SDA (GPIO 9) is the same physical pad as LCD r7 --
+		// the higher-impact conflict if r7 is the R channel's MSB
+		// rather than r0/r1's two LSBs. See
+		// docs/LCD_PIN_CONFLICT_TEST_PROCEDURE.md.
+		i2c-gpio,delay-us = <2>;
 		i2c-gpio,scl-output-only;
 
 		// ROHM BD37033FV Sound Processor. Moved back here from

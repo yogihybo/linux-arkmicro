@@ -1572,6 +1572,13 @@ static long dvr_ioctl(struct file *filp,
 		return -ENXIO;
 	}
 
+	printk(KERN_ALERT "[DIAG_ITU656_IOCTL] cmd=0x%08x g_dvr_dev=%px filp->private_data=%px (%s) "
+	       "start=%px (want %px, %s) stop=%px (want %px, %s)\n",
+	       cmd, dvr_dev, filp->private_data,
+	       (dvr_dev == filp->private_data) ? "MATCH" : "*** MISMATCH ***",
+	       dvr_dev->start, dvr_start, (dvr_dev->start == dvr_start) ? "OK" : "*** CORRUPT ***",
+	       dvr_dev->stop, dvr_stop, (dvr_dev->stop == dvr_stop) ? "OK" : "*** CORRUPT ***");
+
 	//client = dvr_dev->client;
 
 #if 0//defined(CONFIG_ARK_CARBACK) || defined (CONFIG_ARK_CARBACK_MODULE)
@@ -1874,13 +1881,20 @@ end:
 
 static int dvr_open(struct inode *inode, struct file *filp)
 {
-	struct dvr_dev * dvr_dev = 
+	struct dvr_dev * dvr_dev =
 		container_of(inode->i_cdev, struct dvr_dev, cdev);
 
 	if(dvr_dev)
-		filp->private_data = dvr_dev;	
+		filp->private_data = dvr_dev;
   	else
 		printk(KERN_ERR"err %s, null cdev \n", __func__);
+
+	printk(KERN_ALERT "[DIAG_ITU656_OPEN] container_of-dvr_dev=%px g_dvr_dev=%px (%s) "
+	       "start=%px (want %px) stop=%px (want %px)\n",
+	       dvr_dev, g_dvr_dev, (dvr_dev == g_dvr_dev) ? "MATCH" : "*** MISMATCH ***",
+	       dvr_dev ? dvr_dev->start : NULL, dvr_start,
+	       dvr_dev ? dvr_dev->stop : NULL, dvr_stop);
+
 	return 0;
 }
 
@@ -1986,6 +2000,18 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
         	return -ENOMEM;
         }
     
+	{
+		static int diag_probe_count = 0;
+		diag_probe_count++;
+		printk(KERN_ALERT "[DIAG_ITU656_PROBE] call #%d: dvr_dev=%px sizeof(struct dvr_dev)=%zu\n",
+		       diag_probe_count, dvr_dev, sizeof(struct dvr_dev));
+		if (diag_probe_count > 1)
+			printk(KERN_ALERT "[DIAG_ITU656_PROBE] *** probe() called more than once -- "
+			       "g_dvr_dev will be overwritten, any fd opened against an earlier "
+			       "instance's cdev will resolve to a STALE dvr_dev via container_of "
+			       "in dvr_open() while dvr_ioctl() uses the latest g_dvr_dev ***\n");
+	}
+
 	g_dvr_dev = dvr_dev;
 
 	dvr_dev->name = "ark_dvr";
@@ -1995,6 +2021,10 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	dvr_dev->deinter_status = 0;
 	dvr_dev->start = dvr_start;
 	dvr_dev->stop = dvr_stop;
+	printk(KERN_ALERT "[DIAG_ITU656_PROBE] dvr_dev=%px &start=%px start=%px (want dvr_start=%px) "
+	       "&stop=%px stop=%px (want dvr_stop=%px)\n",
+	       dvr_dev, &dvr_dev->start, dvr_dev->start, dvr_start,
+	       &dvr_dev->stop, dvr_dev->stop, dvr_stop);
 	dvr_dev->client = client;
 	dvr_dev->fasync_queue = NULL;
 	dvr_dev->system = NTSC;
@@ -2181,8 +2211,11 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
     
         carback_first_enter();
 
+	printk(KERN_ALERT "[DIAG_ITU656_PROBE_END] dvr_dev=%px start=%px (want %px) stop=%px (want %px)\n",
+	       dvr_dev, dvr_dev->start, dvr_start, dvr_dev->stop, dvr_stop);
+
         return 0;
-    
+
 err_get_buffer:
         free_pages((unsigned long)dvr_dev->buffer_virtaddr, get_order(dvr_dev->buffer_size));
 err_irq:
