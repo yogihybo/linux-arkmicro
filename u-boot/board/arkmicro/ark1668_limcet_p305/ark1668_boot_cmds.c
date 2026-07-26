@@ -246,6 +246,25 @@ static int boot_from_block_dev(const char *iface)
 		return 1;
 	}
 
+	/* usb0 (the board's single external USB port) ships with
+	 * dr_mode="otg" in the DTS so bootmmc (the real vehicle boot path)
+	 * keeps real gadget capability for wired CarPlay. bootusb already
+	 * knows for certain no wired CarPlay cable is in the picture --
+	 * the whole point of that path is booting off a USB stick plugged
+	 * into that same port -- so patch the in-RAM DTB to force
+	 * dr_mode="host" here instead, skipping the several seconds of
+	 * ID-pin negotiation retries "otg" costs at every boot. Patching
+	 * the loaded DTB (not the DTS default) keeps this a boot-command
+	 * -local decision instead of a compile-time one -- see
+	 * linux-arkmicro's ark1668.dtsi usb0 node comment. */
+	if (strcmp(iface, "usb") == 0) {
+		sprintf(cmd, "fdt addr 0x%lx", dtbaddr);
+		run_command(cmd, 0);
+		if (run_command("fdt set /ahb/usb@E0100000 dr_mode \"host\"", 0) != 0)
+			printf("[bootusb] warning: failed to force usb0 dr_mode=host in DTB, "
+			       "keeping DTS default (otg) -- boot will be slower but should still work\n");
+	}
+
 	/* If the kernel/DTB were fatload'd from USB, U-Boot's own musb-hdrc
 	 * driver is left mid-enumeration on the controller. Without stopping
 	 * it here, the kernel's musb-hdrc probe hangs trying to take over a

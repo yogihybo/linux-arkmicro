@@ -578,18 +578,22 @@
 			interrupt-parent = <&vicl>;
             interrupts = <14>, <13>; /* <usb0 int>, <usb0_dma_int> */
             interrupt-names = "mc", "dma";
-            /* INSTRUMENTED RE-ATTEMPT 2026-07-22 -- was "otg", set back
-             * to "host" here (see linux-arkmicro 83ab185e6 for the
-             * first attempt, d44cce385 for its revert) to reproduce the
-             * unexplained bus1->bus2 renumbering regression under the
-             * diagnostic logging added in musb_ark.c
-             * (ark_musb_dump_cross_port_state(), called at init and at
-             * every set_mode entry/exit). Full history in
-             * docs/WIRELESS_AND_INIT.md sec 7. THIS IS A TEST BUILD:
-             * do not ship with dr_mode="host" until the dmesg capture
-             * from this run confirms or rules out a cause -- revert to
-             * "otg" (the known-working state) if this hangs again. */
-            dr_mode = "host";
+            /* Back to "otg" here (2026-07-27) so this, the board's single
+             * external-facing USB port, keeps real OTG/gadget capability
+             * for wired CarPlay on the normal bootmmc (real vehicle) boot
+             * path. "host" (see linux-arkmicro 83ab185e6, 9fa92d4b1,
+             * docs/WIRELESS_AND_INIT.md sec 7) skipped several seconds of
+             * ID-pin negotiation retries at boot, but permanently disabled
+             * wired CarPlay -- musb_core never calls musb_gadget_setup()
+             * for a "host"-mode port, so there's no runtime sysfs toggle
+             * back. Ported that speed-up to the one boot path that
+             * actually wants it instead: U-Boot's bootusb command now
+             * `fdt set`s this property to "host" in the in-RAM DTB right
+             * before bootz, only for that USB-stick test-boot path (where
+             * a wired CarPlay cable is never in the picture -- see
+             * ark1668_boot_cmds.c). bootmmc/bootsd get this DTS default
+             * ("otg") unchanged. */
+            dr_mode = "otg";
             multipoint = <1>;
             num-eps = <6>;
             ram-bits = <12>;
