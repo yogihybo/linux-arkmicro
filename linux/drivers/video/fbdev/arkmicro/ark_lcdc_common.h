@@ -290,6 +290,23 @@ struct ark_disp_atomic {
  */
 #define ARKFB_GET_LAYER_ID				ARK_IOR(57, int)
 
+/* Real vendor ioctls issued by libarkcmn.so's arkapi_set_fb_addr()/
+ * arkapi_get_fb_addr() -- confirmed 0x40104f2a/0x80104f36 via Ghidra
+ * decompile of the real deployed libarkcmn.so. This is a SEPARATE,
+ * generic address-update path from ARKFB_SET_VIDEO_ADDR_RAW (nr 56)
+ * above -- observed live on hardware (2026-07-27): `sink`'s video
+ * layer (fd for the video-layer /dev/fbN, layer id 4) calls this one
+ * in a tight per-frame loop (arkapi_get_fb_addr x2 as a "did the HW
+ * latch the previous address yet" poll, then arkapi_set_fb_addr's own
+ * ioctl once), not the nr-56 path. Same 4-word {y,cb,cr,param5} shape
+ * as ark_fb_set_video_addr, so it reuses that struct. Shares nr with
+ * ARKFB_SET_WINDOW_SIZE (42)/ARKFB_SET_VP_INFO (54) above, but differs
+ * in size/dir, so the resulting 32-bit ioctl numbers do not collide.
+ * See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 73.
+ */
+#define ARKFB_SET_FB_ADDR				ARK_IOW(42, struct ark_fb_set_video_addr)
+#define ARKFB_GET_FB_ADDR				ARK_IOR(54, struct ark_fb_set_video_addr)
+
 #define VIN_SHOW_WINDOW	        			ARK_IO(55)
 #define VIN_HIDE_WINDOW	        			ARK_IO(56)
 #define VIN_SET_WINDOW_POS					ARK_IO(57)

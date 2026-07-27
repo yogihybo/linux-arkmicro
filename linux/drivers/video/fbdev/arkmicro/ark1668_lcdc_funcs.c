@@ -1664,6 +1664,63 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
         }
         break;
 
+        case ARKFB_SET_FB_ADDR:
+        {
+                /* Real vendor ioctl from libarkcmn.so's arkapi_set_fb_addr()
+                 * -- the address-update path actually exercised by `sink`'s
+                 * video layer per frame (0x40104f2a), separate from
+                 * ARKFB_SET_VIDEO_ADDR_RAW above. See the macro comment in
+                 * ark_lcdc_common.h.
+                 */
+                struct ark_fb_set_video_addr vaddr;
+                unsigned long flags;
+
+                if(layer <= OSD_LAYER3){
+                        printk("%s: ARKFB_SET_FB_ADDR on non-video layer\n", __func__);
+                        error = -EINVAL;
+                        goto end;
+                }
+
+                if(copy_from_user(&vaddr, (void *)arg, sizeof(vaddr))){
+                        printk("%s: copy from user para error\n", __func__);
+                        error = -EFAULT;
+                        goto end;
+                }
+
+                spin_lock_irqsave(&sinfo->lock, flags);
+                ark1668_lcdc_set_video_addr(layer - OSD_LAYER_MAX, vaddr.y_addr, vaddr.cb_addr, vaddr.cr_addr);
+                spin_unlock_irqrestore(&sinfo->lock, flags);
+        }
+        break;
+
+        case ARKFB_GET_FB_ADDR:
+        {
+                /* GET counterpart of ARKFB_SET_FB_ADDR above -- libarkcmn.so's
+                 * arkapi_get_fb_addr() polls this to check whether the
+                 * hardware has latched a previously-set address before
+                 * writing the next one (0x80104f36).
+                 */
+                struct ark_fb_set_video_addr vaddr = { 0, 0, 0, 0 };
+                unsigned long flags;
+
+                if(layer <= OSD_LAYER3){
+                        printk("%s: ARKFB_GET_FB_ADDR on non-video layer\n", __func__);
+                        error = -EINVAL;
+                        goto end;
+                }
+
+                spin_lock_irqsave(&sinfo->lock, flags);
+                ark1668_lcdc_get_video_addr(layer - OSD_LAYER_MAX, &vaddr.y_addr, &vaddr.cb_addr, &vaddr.cr_addr);
+                spin_unlock_irqrestore(&sinfo->lock, flags);
+
+                if(copy_to_user((void *)arg, &vaddr, sizeof(vaddr))){
+                        printk("%s: copy to user para error\n", __func__);
+                        error = -EFAULT;
+                        goto end;
+                }
+        }
+        break;
+
         default:
             printk("%s %d: unknown ioctl %08x\n",__FUNCTION__, __LINE__, cmd);
             break;
