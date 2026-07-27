@@ -158,7 +158,17 @@ struct ark_fb_init_display {
 	unsigned int bottom_margin;
 	unsigned int screen_width;
 	unsigned int screen_height;
-	unsigned int param12;
+	/* Confirmed via Ghidra decompile cross-reference (2026-07-27,
+	 * arkapi_init_fb_video_display()'s sibling arkapi_init_fb_display_internal()
+	 * call passes 0x11 == ARK_LCDC_FORMAT_Y_UV420 in this exact
+	 * positional slot): this is the video layer's pixel format, not
+	 * an opaque param. Previously never read by our ARKFB_INIT_DISPLAY/
+	 * ARKFB_INIT_VIDEO_DISPLAY handler at all -- VIDEO2_CTL's format
+	 * bits were left at whatever stale/POR value was there, producing
+	 * severe green/color-cast corruption once video actually started
+	 * rendering. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 74.
+	 */
+	unsigned int format;
 	unsigned int _reserved0;
 	unsigned int _reserved1;
 	unsigned int param4;

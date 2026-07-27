@@ -1545,6 +1545,25 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 }else{
                         int vlayer = layer - OSD_LAYER_MAX;
 
+                        /* Real gap found 2026-07-27 (checklist section 74):
+                         * this init call was never setting the video layer's
+                         * pixel format at all -- VIDEO2_CTL's format bits
+                         * stayed at whatever stale/POR value was there,
+                         * producing severe green/color-cast corruption once
+                         * video actually started rendering (root-caused via
+                         * a live on-hardware photo showing legible but
+                         * heavily green-tinted Android Auto content). The
+                         * real decoder output is semi-planar YUV420 (NV12,
+                         * ARK_LCDC_FORMAT_Y_UV420=0x11) -- confirmed by
+                         * cross-referencing libarkcmn.so's own sibling
+                         * OSD-layer init call, which passes that exact value
+                         * in the same struct position. yuv_order/rgb_order
+                         * are irrelevant for Y_UV420 (set_video_format
+                         * derives its own y_uv_order bit from the format
+                         * value), so pass 0 for both.
+                         */
+                        ark1668_lcdc_set_video_format(vlayer, init.format, 0, 0, 0);
+
                         ark1668_lcdc_set_video_layer_pos(vlayer, init.x, init.y);
                         ark1668_lcdc_set_video_source_size(vlayer, init.win_width, init.win_height);
                         ark1668_lcdc_set_video_win_size(vlayer, init.win_width, init.win_height);
