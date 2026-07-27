@@ -140,6 +140,8 @@ struct vdec_device {
 	struct semaphore pp_sem;
 	struct file *dec_owner;
 	struct file *pp_owner;
+	struct fasync_struct *async_queue_dec;
+	struct fasync_struct *async_queue_pp;
 	u32 regs[VDEC_NUM_REGS_DEC + VDEC_NUM_REGS_PP];
 	struct mfc_jpeg_context context;
 };

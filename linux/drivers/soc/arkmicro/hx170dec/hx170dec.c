@@ -333,9 +333,22 @@ static int vdec_misc_open(struct inode *inode, struct file *filp)
 	return 0;
 }
 
+static int vdec_misc_fasync(int fd, struct file *filp, int mode)
+{
+	struct vdec_device *p = filp->private_data;
+	int ret;
+
+	ret = fasync_helper(fd, filp, mode, &p->async_queue_dec);
+	if (ret < 0)
+		return ret;
+	return fasync_helper(fd, filp, mode, &p->async_queue_pp);
+}
+
 static int vdec_misc_release(struct inode *inode, struct file *filp)
 {
 	struct vdec_device *p = filp->private_data;
+
+	vdec_misc_fasync(-1, filp, 0);
 
 	if (p->dec_owner == filp) {
 		p->dec_irq_done = false;
@@ -500,6 +513,7 @@ const struct file_operations vdec_misc_fops = {
 	.open           =	vdec_misc_open,
 	.release        =	vdec_misc_release,
 	.unlocked_ioctl =	vdec_misc_ioctl,
+	.fasync         =	vdec_misc_fasync,
 };
 
 /* ark1668 fix (2026-07-24): renamed from "vdec" to "hx170dec" to match
@@ -538,6 +552,7 @@ static irqreturn_t vdec_isr(int irq, void *dev_id)
 
 		p->dec_irq_done = true;
 		wake_up_interruptible(&p->dec_wq);
+		kill_fasync(&p->async_queue_dec, SIGIO, POLL_IN);
 		handled++;
 	}
 
@@ -548,6 +563,7 @@ static irqreturn_t vdec_isr(int irq, void *dev_id)
 
 		p->pp_irq_done = true;
 		wake_up_interruptible(&p->pp_wq);
+		kill_fasync(&p->async_queue_pp, SIGIO, POLL_IN);
 		handled++;
 	}
 
