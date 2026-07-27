@@ -1561,8 +1561,24 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                          * are irrelevant for Y_UV420 (set_video_format
                          * derives its own y_uv_order bit from the format
                          * value), so pass 0 for both.
+                         *
+                         * scal_bypass=1: this call site always programs the
+                         * scaler's source size and window size from the SAME
+                         * init.win_width/win_height (see the
+                         * set_video_source_size/set_video_win_size calls
+                         * below) -- source and destination are structurally
+                         * always identical (1:1, no scaling) on this path, so
+                         * the scaler engine (and its chroma FIR low-pass
+                         * filter, active whenever the scaler isn't bypassed)
+                         * should never actually be engaged. Real user-visible
+                         * bug found 2026-07-27: with scal_bypass=0 (the
+                         * previous, un-set default), a real on-screen
+                         * crosshatch/weave texture was visible over live AA
+                         * video content -- exactly the kind of artifact a
+                         * needlessly-active 1:1 chroma scaler/FIR path would
+                         * produce. See checklist section 75.
                          */
-                        ark1668_lcdc_set_video_format(vlayer, init.format, 0, 0, 0);
+                        ark1668_lcdc_set_video_format(vlayer, init.format, 0, 0, 1);
 
                         ark1668_lcdc_set_video_layer_pos(vlayer, init.x, init.y);
                         ark1668_lcdc_set_video_source_size(vlayer, init.win_width, init.win_height);
