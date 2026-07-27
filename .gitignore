@@ -16,6 +16,7 @@
 *.gcda
 *.gcno
 *.i
+*.ko
 *.lex.c
 *.ll
 *.lst
@@ -35,10 +36,20 @@
 *.tab.[ch]
 
 #
+# build outputs (build_kernel.sh / build_uboot.sh regenerate these)
+#
+zImage.w_dtb
+/compiled_modules/
+Module.symvers
+UBOOT.BIN
+*.asn1.c
+*.asn1.h
+
+#
 #buildroot
 #
 /buildroot/output
-#/buildroot/dl
+/buildroot/dl
 /buildroot/.auto.deps
 /buildroot/.config.cmd
 /buildroot/.config.old
@@ -53,7 +64,7 @@
 /buildroot/*.pyc
 !/buildroot/.gitignore
 /buildroot-2021.02.2/output
-#/buildroot-2021.02.2/dl
+/buildroot-2021.02.2/dl
 /buildroot-2021.02.2/.auto.deps
 /buildroot-2021.02.2/.config.cmd
 /buildroot-2021.02.2/.config.old
