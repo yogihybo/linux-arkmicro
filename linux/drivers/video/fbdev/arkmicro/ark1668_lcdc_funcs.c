@@ -1629,7 +1629,6 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                  * possible, which is the right tradeoff for a live video feed.
                  */
                 struct ark_fb_set_video_addr vaddr;
-                unsigned long flags;
 
                 if(layer <= OSD_LAYER3){
                         printk("%s: ARKFB_SET_VIDEO_ADDR_RAW on non-video layer\n", __func__);
@@ -1643,9 +1642,22 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                         goto end;
                 }
 
-                spin_lock_irqsave(&sinfo->lock, flags);
+                /* ark1668 fix (2026-07-28): was spin_lock_irqsave, disabling
+                 * ALL interrupts on this CPU (including audio's) for the
+                 * duration -- pointlessly, since ark1668_lcdfb_interrupt()
+                 * (the vsync IRQ handler) calls this exact same
+                 * set_video_addr() function from IRQ context without taking
+                 * sinfo->lock at all. This lock never protected against that
+                 * real concurrent writer; it only ever serialized against
+                 * another ioctl call, which doesn't need IRQs disabled to do
+                 * safely. Downgraded to a plain spinlock -- this ioctl now
+                 * fires ~30x/sec (once per AA video frame), so the removed
+                 * IRQ-disable window was a real, regular, avoidable cost.
+                 * See docs/AUDIO_SUBSYSTEM_INVESTIGATION.md.
+                 */
+                spin_lock(&sinfo->lock);
                 ark1668_lcdc_set_video_addr(layer - OSD_LAYER_MAX, vaddr.y_addr, vaddr.cb_addr, vaddr.cr_addr);
-                spin_unlock_irqrestore(&sinfo->lock, flags);
+                spin_unlock(&sinfo->lock);
         }
         break;
 
@@ -1708,7 +1720,6 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                  * ark_lcdc_common.h.
                  */
                 struct ark_fb_set_video_addr vaddr;
-                unsigned long flags;
 
                 if(layer <= OSD_LAYER3){
                         printk("%s: ARKFB_SET_FB_ADDR on non-video layer\n", __func__);
@@ -1722,9 +1733,16 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                         goto end;
                 }
 
-                spin_lock_irqsave(&sinfo->lock, flags);
+                /* ark1668 fix (2026-07-28): downgraded from
+                 * spin_lock_irqsave -- see the identical comment on
+                 * ARKFB_SET_VIDEO_ADDR_RAW above. This is the specific
+                 * ioctl `sink` actually calls ~30x/sec for AA video, so
+                 * this was the single highest-frequency IRQ-disable window
+                 * in the whole driver.
+                 */
+                spin_lock(&sinfo->lock);
                 ark1668_lcdc_set_video_addr(layer - OSD_LAYER_MAX, vaddr.y_addr, vaddr.cb_addr, vaddr.cr_addr);
-                spin_unlock_irqrestore(&sinfo->lock, flags);
+                spin_unlock(&sinfo->lock);
         }
         break;
 
@@ -1733,10 +1751,12 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                 /* GET counterpart of ARKFB_SET_FB_ADDR above -- libarkcmn.so's
                  * arkapi_get_fb_addr() polls this to check whether the
                  * hardware has latched a previously-set address before
-                 * writing the next one (0x80104f36).
+                 * writing the next one (0x80104f36). Same spin_lock
+                 * downgrade rationale -- this is the *other* half of the
+                 * ~30x/sec per-frame pair (called twice per frame here,
+                 * vs SET_FB_ADDR's once).
                  */
                 struct ark_fb_set_video_addr vaddr = { 0, 0, 0, 0 };
-                unsigned long flags;
 
                 if(layer <= OSD_LAYER3){
                         printk("%s: ARKFB_GET_FB_ADDR on non-video layer\n", __func__);
@@ -1744,9 +1764,9 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                         goto end;
                 }
 
-                spin_lock_irqsave(&sinfo->lock, flags);
+                spin_lock(&sinfo->lock);
                 ark1668_lcdc_get_video_addr(layer - OSD_LAYER_MAX, &vaddr.y_addr, &vaddr.cb_addr, &vaddr.cr_addr);
-                spin_unlock_irqrestore(&sinfo->lock, flags);
+                spin_unlock(&sinfo->lock);
 
                 if(copy_to_user((void *)arg, &vaddr, sizeof(vaddr))){
                         printk("%s: copy to user para error\n", __func__);
