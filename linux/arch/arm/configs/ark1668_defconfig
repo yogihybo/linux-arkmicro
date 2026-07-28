@@ -364,11 +364,26 @@ CONFIG_MESSAGE_LOGLEVEL_DEFAULT=7
 CONFIG_STRIP_ASM_SYMS=y
 CONFIG_DEBUG_FS=y
 CONFIG_DEBUG_SECTION_MISMATCH=y
+# 2026-07-28: FUNCTION_TRACER/FUNCTION_GRAPH_TRACER dropped after a
+# hardware boot immediately following their addition showed a new
+# galcore NULL-pointer Oops (gckOS_WriteRegisterEx) during gpu_probe
+# that was never seen on any prior boot of this same galcore.ko/
+# rcS-modprobe-params combination. FUNCTION_TRACER's own Kconfig help
+# text says it works "by using a compiler feature to insert a small,
+# 5-byte No-Operation" at every kernel function call site, patched at
+# runtime via CONFIG_DYNAMIC_FTRACE (confirmed active: the boot log
+# shows "ftrace: allocating 21831 entries in 65 pages", i.e. ~21831
+# call sites patched system-wide at boot) -- a much larger, riskier
+# change than anything else touched this session, on an
+# ARM32/Linaro-7.3 toolchain combination far less exercised upstream
+# than x86. IRQSOFF_TRACER and SCHED_TRACER (what the AA audio-stutter
+# investigation actually needs, see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md)
+# do NOT depend on FUNCTION_TRACER -- confirmed via kernel/trace/Kconfig,
+# neither lists it as a dependency -- so dropping it keeps the tracers
+# we actually want without the whole-kernel code-patching. Not yet
+# re-tested on hardware to confirm this was really the trigger.
 CONFIG_FTRACE=y
-CONFIG_FUNCTION_TRACER=y
-CONFIG_FUNCTION_GRAPH_TRACER=y
 CONFIG_IRQSOFF_TRACER=y
-CONFIG_PREEMPT_TRACER=y
 CONFIG_SCHED_TRACER=y
 CONFIG_DEBUG_USER=y
 CONFIG_DEBUG_LL=y
