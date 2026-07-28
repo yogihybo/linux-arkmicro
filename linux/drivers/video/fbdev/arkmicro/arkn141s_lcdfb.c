@@ -1012,7 +1012,7 @@ static int arkn141s_lcdfb_probe(struct platform_device *pdev)
 		goto reset_drvdata;
 	}
 
-	dev_info(dev, "fb%d: Atmel LCDC at 0x%08lx (mapped at %p), irq %d\n",
+	dev_info(dev, "fb%d: ARKN141S LCDC at 0x%08lx (mapped at %p), irq %d\n",
 		       info->node, info->fix.mmio_start, sinfo->mmio, sinfo->irq_base);
 
 #if 1////tmp test
