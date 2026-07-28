@@ -1318,7 +1318,30 @@ gckGALDEVICE_Construct(
 
     if (device->irqLines[gcvCORE_MAJOR] != -1)
     {
+        /* gcTA_Construct() (the ARM TrustZone "Trusted Application"
+         * layer, present in this vendor release via the
+         * hal/security_v1/os/emulator glue even on boards with no
+         * real TrustZone silicon) hard-crashes here on ARK1668: its
+         * gctaOS_WriteRegister() -> gckOS_WriteRegisterEx() call
+         * writes through a NULL register-base pointer during
+         * gctaHARDWARE_Construct()'s initial chip-ID probe, well
+         * before any GPU rendering functionality is touched. Root
+         * cause not fully traced into the emulator's os-wrapper
+         * plumbing, but this call is provably non-essential: it only
+         * powers on the GPU and reads chip-ID for the TA/security
+         * codepath specifically (irrelevant on this SoC, which has no
+         * TrustZone/TEE), and globalTA[] is checked for NULL
+         * everywhere else it's read (see gc_hal_kernel_device.c's own
+         * teardown path), so leaving it unconstructed here is safe.
+         * The real, load-bearing GPU/MMU setup is gckDEVICE_AddCore()
+         * just below, an entirely separate, unaffected codepath. See
+         * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md 2026-07-28 for the
+         * full crash trace and the reasoning that ruled out
+         * everything else first. Not yet hardware-tested.
+         */
+#if 0
         gcmkONERROR(gcTA_Construct(device->taos, gcvCORE_MAJOR, &globalTA[gcvCORE_MAJOR]));
+#endif
 
         gcmkONERROR(gckDEVICE_AddCore(device->device, gcvCORE_MAJOR, Args->chipIDs[gcvCORE_MAJOR], device, &device->kernels[gcvCORE_MAJOR]));
 

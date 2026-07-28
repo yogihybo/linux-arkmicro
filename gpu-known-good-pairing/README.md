@@ -57,3 +57,55 @@ cp gpu-known-good-pairing/libGAL.so /media/sf_GitHub/prado-firmware-reconstructi
 ```
 
 (This is exactly what's staged as of 2026-07-20, uncommitted, in the main repo.)
+
+## 2026-07-28: `galcore.ko` rebuilt to fix a hard crash during `gpu_probe`
+
+First real hardware test since the 2026-07-20 `registerMemBase`/`irqLine`
+modprobe-params fix landed hit a kernel Oops: `NULL pointer dereference`
+in `gckOS_WriteRegisterEx`, called from `gctaHARDWARE_Construct` ->
+`gcTA_Construct` -> `gckGALDEVICE_Construct` -> `drv_init` -> `gpu_probe`.
+Deterministic (byte-identical crash across repeated boots, including
+after ruling out an unrelated kernel-config theory — see
+`docs/AUDIO_SUBSYSTEM_INVESTIGATION.md` in the main repo for that
+elimination trail).
+
+**Root cause**: `gcTA_Construct()` is Vivante's ARM TrustZone "Trusted
+Application" layer. `Kbuild` sets `-DgcdENABLE_TRUST_APPLICATION=1`
+*unconditionally* (not gated behind the `SECURITY=1` build variable the
+way the neighbouring `gcdSECURITY` flag is), so `hal/security_v1/`'s TA
+objects (including its `os/emulator` software stand-in for boards
+without real TrustZone silicon) always get compiled in and always run
+during `gckGALDEVICE_Construct()`. On ARK1668 — a board with no
+TrustZone/TEE at all — this TA construction's own hardware-probe write
+(`gctaOS_WriteRegister(ta->os, ta->core, 0, 0x900)`, a chip-ID query,
+nothing to do with actual GPU rendering) resolves to a NULL register
+base and crashes the kernel outright, before `gckDEVICE_AddCore()` (the
+real, load-bearing GPU/MMU init path) ever gets a chance to run.
+
+**Fix**: patched `nxp-source-6.2.4.p1.8/kernel-module-imx-gpu-viv-src/
+hal/os/linux/kernel/gc_hal_kernel_device.c` to skip the
+`gcTA_Construct()` call for `gcvCORE_MAJOR`. Confirmed safe: `globalTA[]`
+is NULL-checked everywhere else it's read (this driver's own teardown
+path), and the actually-required GPU setup (`gckDEVICE_AddCore`) is
+independent of it. Rebuilt via:
+
+```
+source env.source
+cd gpu-known-good-pairing/nxp-source-6.2.4.p1.8/kernel-module-imx-gpu-viv-src
+make -C ../../../linux M=$(pwd) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- AQROOT=$(pwd) CONFIG_MXC_GPU_VIV=m modules
+```
+
+(`AQROOT` must be passed explicitly — the Kbuild's own default assumes
+the source lives inside a kernel tree at `drivers/mxc/gpu-viv/`, which
+it doesn't here. `CONFIG_MXC_GPU_VIV=m` must also be passed explicitly
+for the same reason — `obj-$(CONFIG_MXC_GPU_VIV)` is otherwise empty
+and nothing gets built, no error, just 0 modules.)
+
+`vermagic` confirmed as `4.19.192` (matches this kernel exactly, no SMP/
+PREEMPT flags, consistent with our `PREEMPT_NONE` non-SMP build).
+Resulting `galcore.ko` (471392 bytes, was 477120) copied over both this
+directory's checkpoint copy and `compiled_modules/lib/modules/4.19.192/
+galcore.ko` (the actual deployed file, gitignored, staged by hand per
+this README's own instructions above). **Not yet hardware-tested** —
+next boot needs to confirm this actually resolves the Oops without
+regressing whatever got EffectWatch's ioctls working before.
