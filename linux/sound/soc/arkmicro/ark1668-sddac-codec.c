@@ -6,6 +6,7 @@
 #include <sound/soc.h>
 #include <linux/io.h>
 #include <linux/slab.h>
+#include <linux/ktime.h>
 
 #include "ark_i2s.h"
 
@@ -30,6 +31,13 @@ static int ark_sddac_get_l_playback_volume (struct snd_kcontrol * kcontrol, stru
 
 //	ucontrol->value.integer.value[0] = dac->vol_l & 0x7f;
 //	//printk("get_l_playback_volume = %ld\n",ucontrol->value.integer.value[0]);
+	/* 2026-07-28 AA audio-stutter investigation: this get/set pair is a
+	 * no-op stub (see the whole function body commented out above) --
+	 * logging entry so it's visible in dmesg if/when MsnCoreApp/sink
+	 * ever actually calls it, since right now there's no way to tell.
+	 */
+	printk(KERN_INFO "ark1668-sddac: get_l_playback_volume called at %lluns\n",
+	       ktime_to_ns(ktime_get()));
 	return 0;
 }
 
@@ -45,6 +53,8 @@ static int ark_sddac_set_l_playback_volume (struct snd_kcontrol * kcontrol, stru
 //	//printk("new_l_playback_volume = 0x%x\n",DACR0_LVOL(dac->vol_l));
 //	writel(val, dac->base + I2S_DACR0);
 
+	printk(KERN_INFO "ark1668-sddac: set_l_playback_volume requested=%ld (NO-OP, has no hardware effect) at %lluns\n",
+	       ucontrol->value.integer.value[0], ktime_to_ns(ktime_get()));
 	return 0;
 }
 
@@ -55,6 +65,8 @@ static int ark_sddac_get_r_playback_volume (struct snd_kcontrol * kcontrol, stru
 
 //	ucontrol->value.integer.value[0] = dac->vol_r & 0x7f;
 //	//printk("get_r_playback_volume = %ld\n",ucontrol->value.integer.value[0]);
+	printk(KERN_INFO "ark1668-sddac: get_r_playback_volume called at %lluns\n",
+	       ktime_to_ns(ktime_get()));
 	return 0;
 }
 
@@ -70,6 +82,8 @@ static int ark_sddac_set_r_playback_volume (struct snd_kcontrol * kcontrol, stru
 //	//printk("new_r_playback_volume = 0x%x\n",DACR0_RVOL(dac->vol_r));
 //	writel(val, dac->base + I2S_DACR0);
 
+	printk(KERN_INFO "ark1668-sddac: set_r_playback_volume requested=%ld (NO-OP, has no hardware effect) at %lluns\n",
+	       ucontrol->value.integer.value[0], ktime_to_ns(ktime_get()));
 	return 0;
 }
 
@@ -121,6 +135,21 @@ static int ark_sddac_mute(struct snd_soc_dai *dai, int mute)
 	 * already uses at init; DACR0_LVOL/DACR0_RVOL (ark_i2s.h) already
 	 * had the correct real-hardware bit layout, this function just
 	 * never called them. */
+
+	/* 2026-07-28 AA audio-stutter investigation
+	 * (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md): this is a REAL,
+	 * hardware-active mute -- ASoC's core calls .digital_mute
+	 * automatically around stream trigger/prepare transitions (and
+	 * potentially DAPM power sequencing). If something is toggling
+	 * this more often than expected during otherwise-continuous
+	 * playback, that alone would produce an audible click/dropout
+	 * completely independent of ALSA's digital buffer health -- which
+	 * would explain why SND_PCM_XRUN_DEBUG found nothing. Rare enough
+	 * event in normal operation to log unconditionally.
+	 */
+	printk(KERN_INFO "ark1668-sddac: digital_mute mute=%d at %lluns\n",
+	       mute, ktime_to_ns(ktime_get()));
+
 	if (mute)
 		writel(0, dac->base + I2S_DACR0);
 	else

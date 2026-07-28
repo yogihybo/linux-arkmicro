@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/time.h>
+#include <linux/ktime.h>
 #include <linux/mm.h>
 #include <linux/sched/signal.h>
 #include <sound/core.h>
@@ -950,6 +951,27 @@ static int snd_ctl_elem_write(struct snd_card *card, struct snd_ctl_file *file,
 	}
 
 	snd_ctl_build_ioff(&control->id, kctl, index_offset);
+
+	/* 2026-07-28 AA audio-stutter investigation
+	 * (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md): logs every mixer/control
+	 * write on the system (any card, any control -- amixer cset,
+	 * MsnCoreApp's SoftVolCtrl::amixer_cset(), userspace ALSA-lib
+	 * "softvol" ctl plugins, anything). Whether or not "softmaster2" or
+	 * whatever MsnCoreApp uses for channel switching actually shows up
+	 * here settles an open question: some ALSA-lib virtual/software
+	 * controls (e.g. asound.conf `ctl { type softvol }` blocks) never
+	 * reach the kernel at all, handled entirely in userspace -- if
+	 * nothing logs here during a stutter despite the app definitely
+	 * touching *some* control, that itself is a real, useful negative
+	 * result pointing the investigation at userspace/alsa-lib instead
+	 * of the kernel. Rare enough in normal use (user/app-driven, not
+	 * per-audio-frame) to log unconditionally.
+	 */
+	printk(KERN_INFO "snd_ctl: elem_write card=%d iface=%d name='%s' numid=%u values=%ld,%ld at %lluns\n",
+	       card->number, control->id.iface, control->id.name, control->id.numid,
+	       control->value.integer.value[0], control->value.integer.value[1],
+	       ktime_to_ns(ktime_get()));
+
 	result = kctl->put(kctl, control);
 	if (result < 0)
 		return result;
