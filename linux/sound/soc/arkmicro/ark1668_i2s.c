@@ -12,6 +12,7 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
+#include <linux/ktime.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -287,6 +288,14 @@ static int ark_i2s_hw_params(
 	u32 val, freq;
 	void *sysreg;
 
+	/* 2026-07-28 AA audio-stutter investigation: rare event (stream
+	 * open/format-change, not per-period), safe to log directly.
+	 */
+	printk(KERN_INFO "ark1668-i2s: hw_params stream=%d rate=%u period_size=%u periods=%u format=%d\n",
+	       substream->stream, rate,
+	       (unsigned int)params_period_size(params), params_periods(params),
+	       params_format(params));
+
 	if (!i2s->nco_reg)
 		return 0;
 
@@ -311,6 +320,20 @@ static int ark_i2s_trigger(
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 
 	DBG("-->\n");
+
+	/* 2026-07-28 AA audio-stutter investigation
+	 * (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md): trigger events are rare
+	 * (once per start/stop/pause, not per-period), safe to log directly
+	 * to dmesg. Confirms/refutes whether the stream is being
+	 * stopped+restarted more often than expected during playback --
+	 * txctrl/rxctrl are no-ops here (see the file-level comment history
+	 * around ark_i2s_txctrl), so this is currently the only visibility
+	 * into trigger activity at all.
+	 */
+	printk(KERN_INFO "ark1668-i2s: trigger cmd=%d stream=%d (%s) at %lluns\n",
+	       cmd, substream->stream,
+	       substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture",
+	       ktime_to_ns(ktime_get()));
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:

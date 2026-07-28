@@ -22,6 +22,9 @@
 #include <linux/init.h>
 #include <linux/dmaengine.h>
 #include <linux/slab.h>
+#include <linux/ktime.h>
+#include <linux/ratelimit.h>
+#include <linux/math64.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
@@ -33,6 +36,18 @@ struct dmaengine_pcm_runtime_data {
 	dma_cookie_t cookie;
 
 	unsigned int pos;
+
+	/* 2026-07-28: AA audio-stutter investigation
+	 * (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md). SND_PCM_XRUN_DEBUG showed
+	 * no XRUNs despite audible stutters, which only proves the ring
+	 * buffer never went fully empty -- it says nothing about whether
+	 * individual periods complete on schedule. A period arriving late
+	 * (but not late enough to starve the buffer) can still be audible
+	 * and would never show up as an XRUN. Track inter-period timing here
+	 * so a late period is directly observable instead of inferred.
+	 */
+	ktime_t last_period_time;
+	bool have_last_period_time;
 };
 
 static inline struct dmaengine_pcm_runtime_data *substream_to_prtd(
@@ -141,10 +156,44 @@ static void dmaengine_pcm_dma_complete(void *arg)
 {
 	struct snd_pcm_substream *substream = arg;
 	struct dmaengine_pcm_runtime_data *prtd = substream_to_prtd(substream);
+	ktime_t now = ktime_get();
 
 	prtd->pos += snd_pcm_lib_period_bytes(substream);
 	if (prtd->pos >= snd_pcm_lib_buffer_bytes(substream))
 		prtd->pos = 0;
+
+	/* 2026-07-28 AA audio-stutter investigation: see the struct comment
+	 * above. Compare the actual gap since the previous period completion
+	 * against the period's expected duration (derived from rate/
+	 * period_size, valid once the stream is running). trace_printk goes
+	 * to the ftrace ring buffer (cat /sys/kernel/debug/tracing/trace),
+	 * not dmesg -- safe to leave firing on every period, no console/
+	 * printk overhead. The rate-limited printk is the one line that
+	 * actually reaches dmesg, and only when a period is genuinely late.
+	 */
+	if (substream->runtime && substream->runtime->rate) {
+		s64 actual_ns = prtd->have_last_period_time ?
+			ktime_to_ns(ktime_sub(now, prtd->last_period_time)) : 0;
+		s64 expected_ns = div_u64((u64)substream->runtime->period_size *
+					   NSEC_PER_SEC, substream->runtime->rate);
+
+		trace_printk("pcm period: stream=%d actual_ns=%lld expected_ns=%lld\n",
+			     substream->stream, actual_ns, expected_ns);
+
+		if (prtd->have_last_period_time && expected_ns > 0 &&
+		    (actual_ns > expected_ns + expected_ns / 4 ||
+		     actual_ns < expected_ns - expected_ns / 4)) {
+			static DEFINE_RATELIMIT_STATE(period_jitter_rs, HZ / 4, 5);
+
+			if (__ratelimit(&period_jitter_rs))
+				printk(KERN_WARNING
+				       "pcm_dmaengine: period jitter: stream=%d actual=%lldns expected=%lldns (%+lld%%)\n",
+				       substream->stream, actual_ns, expected_ns,
+				       div_s64((actual_ns - expected_ns) * 100, expected_ns));
+		}
+	}
+	prtd->last_period_time = now;
+	prtd->have_last_period_time = true;
 
 	snd_pcm_period_elapsed(substream);
 }
