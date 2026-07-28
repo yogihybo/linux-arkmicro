@@ -210,6 +210,21 @@ CONFIG_SND_SOC_ARK1668_DAC=y
 # symptom ("#0: Dummy 1", no real card) as all three prior sound bugs.
 CONFIG_SND_SIMPLE_CARD_UTILS=y
 CONFIG_SND_SIMPLE_CARD=y
+# Added 2026-07-28 for the AA audio stutter investigation
+# (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md). ALSA core normally detects a
+# PCM ring-buffer overrun/underrun (XRUN) silently -- it just flips
+# runtime->status->state to SNDRV_PCM_STATE_XRUN with no log line
+# unless SND_PCM_XRUN_DEBUG is on. That option's own Kconfig help text
+# is a direct match for our symptom: "if you have trouble with sound
+# clicking when system is loaded, it may help to determine the process
+# or driver which causes the scheduling gaps." Turning this on gives a
+# real dmesg timestamp + XRUN report the moment ALSA itself sees the
+# gap, instead of continuing to guess candidate kernel-side causes from
+# static analysis alone.
+CONFIG_SND_VERBOSE_PROCFS=y
+CONFIG_SND_DEBUG=y
+CONFIG_SND_PCM_XRUN_DEBUG=y
+CONFIG_SND_VERBOSE_PRINTK=y
 # CONFIG_HID_GENERIC is not set
 # CONFIG_USB_HID is not set
 CONFIG_USB=y
