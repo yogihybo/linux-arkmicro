@@ -26,72 +26,86 @@ struct ark_sddac {
 
 static int ark_sddac_get_l_playback_volume (struct snd_kcontrol * kcontrol, struct snd_ctl_elem_value * ucontrol)
 {
-//	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
-//	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
 
-//	ucontrol->value.integer.value[0] = dac->vol_l & 0x7f;
-//	//printk("get_l_playback_volume = %ld\n",ucontrol->value.integer.value[0]);
-	/* 2026-07-28 AA audio-stutter investigation: this get/set pair is a
-	 * no-op stub (see the whole function body commented out above) --
-	 * logging entry so it's visible in dmesg if/when MsnCoreApp/sink
-	 * ever actually calls it, since right now there's no way to tell.
+	/* 2026-07-28: was a no-op stub, same bug class as ark_sddac_mute
+	 * before its 2026-07-18 fix. Confirmed via disassembly of stock's
+	 * real vmlinux (sddac_get_l_playback_volume @ 0x802f63c4): reads
+	 * back the cached software value (dac->vol_l), not a live register
+	 * read -- exactly what this commented-out body already did.
 	 */
-	printk(KERN_INFO "ark1668-sddac: get_l_playback_volume called at %lluns\n",
-	       ktime_to_ns(ktime_get()));
+	ucontrol->value.integer.value[0] = dac->vol_l & 0x7f;
+	printk(KERN_INFO "ark1668-sddac: get_l_playback_volume = %ld at %lluns\n",
+	       ucontrol->value.integer.value[0], ktime_to_ns(ktime_get()));
 	return 0;
 }
 
 static int ark_sddac_set_l_playback_volume (struct snd_kcontrol * kcontrol, struct snd_ctl_elem_value * ucontrol)
 {
-//	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
-//	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
-//	unsigned int val = readl(dac->base + I2S_DACR0);
-//	dac->vol_l = ucontrol->value.integer.value[0];
-//	//printk("set_l_playback_volume = %d\n",dac->vol_l);
-//	val &= ~DACR0_LVOL_MASK;
-//	val |= DACR0_LVOL(dac->vol_l);
-//	//printk("new_l_playback_volume = 0x%x\n",DACR0_LVOL(dac->vol_l));
-//	writel(val, dac->base + I2S_DACR0);
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
+	unsigned int val = readl(dac->base + I2S_DACR0);
 
-	printk(KERN_INFO "ark1668-sddac: set_l_playback_volume requested=%ld (NO-OP, has no hardware effect) at %lluns\n",
-	       ucontrol->value.integer.value[0], ktime_to_ns(ktime_get()));
+	/* 2026-07-28: was a no-op stub. Confirmed via disassembly of
+	 * stock's real vmlinux (sddac_set_l_playback_volume @ 0x802f63ec):
+	 * caches the new value, then read-modify-writes I2S_DACR0 with the
+	 * L-channel field replaced (bits [6:0]) while preserving R's field
+	 * (bits [14:8]) -- byte-exact match for DACR0_LVOL_MASK/
+	 * DACR0_LVOL() already defined in ark_i2s.h and already used by
+	 * ark_sddac_mute's real implementation. This is the same register
+	 * ark_sddac_mute writes -- see that function's comment for the
+	 * broader implication of a volume-set landing here concurrently
+	 * with a mute/unmute.
+	 */
+	dac->vol_l = ucontrol->value.integer.value[0];
+	val &= ~DACR0_LVOL_MASK;
+	val |= DACR0_LVOL(dac->vol_l);
+	writel(val, dac->base + I2S_DACR0);
+
+	printk(KERN_INFO "ark1668-sddac: set_l_playback_volume = %d (I2S_DACR0=0x%x) at %lluns\n",
+	       dac->vol_l, val, ktime_to_ns(ktime_get()));
 	return 0;
 }
 
 static int ark_sddac_get_r_playback_volume (struct snd_kcontrol * kcontrol, struct snd_ctl_elem_value * ucontrol)
 {
-//	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
-//	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
 
-//	ucontrol->value.integer.value[0] = dac->vol_r & 0x7f;
-//	//printk("get_r_playback_volume = %ld\n",ucontrol->value.integer.value[0]);
-	printk(KERN_INFO "ark1668-sddac: get_r_playback_volume called at %lluns\n",
-	       ktime_to_ns(ktime_get()));
+	ucontrol->value.integer.value[0] = dac->vol_r & 0x7f;
+	printk(KERN_INFO "ark1668-sddac: get_r_playback_volume = %ld at %lluns\n",
+	       ucontrol->value.integer.value[0], ktime_to_ns(ktime_get()));
 	return 0;
 }
 
 static int ark_sddac_set_r_playback_volume (struct snd_kcontrol * kcontrol, struct snd_ctl_elem_value * ucontrol)
 {
-//	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
-//	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
-//	unsigned int val = readl(dac->base + I2S_DACR0);
-//	dac->vol_r = ucontrol->value.integer.value[0];
-//	//printk("set_r_playback_volume = %d\n",dac->vol_r);
-//	val &= ~DACR0_RVOL_MASK;
-//	val |= DACR0_RVOL(dac->vol_r);
-//	//printk("new_r_playback_volume = 0x%x\n",DACR0_RVOL(dac->vol_r));
-//	writel(val, dac->base + I2S_DACR0);
+	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
+	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
+	unsigned int val = readl(dac->base + I2S_DACR0);
 
-	printk(KERN_INFO "ark1668-sddac: set_r_playback_volume requested=%ld (NO-OP, has no hardware effect) at %lluns\n",
-	       ucontrol->value.integer.value[0], ktime_to_ns(ktime_get()));
+	dac->vol_r = ucontrol->value.integer.value[0];
+	val &= ~DACR0_RVOL_MASK;
+	val |= DACR0_RVOL(dac->vol_r);
+	writel(val, dac->base + I2S_DACR0);
+
+	printk(KERN_INFO "ark1668-sddac: set_r_playback_volume = %d (I2S_DACR0=0x%x) at %lluns\n",
+	       dac->vol_r, val, ktime_to_ns(ktime_get()));
 	return 0;
 }
 
 static const struct snd_kcontrol_new  ark_sddac_snd_controls[] = {
-	/* DAC volume control */
-	SOC_SINGLE_EXT("Left Playback Volume 2", 0, 0, 127, 0,
+	/* DAC volume control. Stock's real kcontrol names (confirmed via
+	 * strings on stock's vmlinux) are "Left Playback Volume"/"Right
+	 * Playback Volume" -- no "2" suffix. Renamed to match: if
+	 * userspace (SoftVolCtrl, or any amixer-name-based lookup) was
+	 * ever trying to reach these by stock's real name, the mismatched
+	 * "2" suffix would make that lookup silently fail today.
+	 */
+	SOC_SINGLE_EXT("Left Playback Volume", 0, 0, 127, 0,
 			ark_sddac_get_l_playback_volume, ark_sddac_set_l_playback_volume),
-	SOC_SINGLE_EXT("Right Playback Volume 2", 0, 0, 127, 0,
+	SOC_SINGLE_EXT("Right Playback Volume", 0, 0, 127, 0,
 			ark_sddac_get_r_playback_volume, ark_sddac_set_r_playback_volume),
 };
 
