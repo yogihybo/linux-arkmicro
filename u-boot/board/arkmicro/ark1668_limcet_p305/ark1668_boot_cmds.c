@@ -99,6 +99,7 @@ static unsigned long env_or_default_hex(const char *name, unsigned long fallback
 int do_bootnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	printf("[bootnand] booting from NAND with original dumped settings (ubi.mtd=6 root=ubi0:rootfs)\n");
+	run_command("bootlogofile bootlogo_nand.raw", 0);
 	return run_command("run nandboot", 0);
 }
 
@@ -341,6 +342,7 @@ int do_bootmmc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	printf("[bootmmc] booting kernel+DTB from SD card (mmc 0:1), rootfs on %s\n",
 	       env_or_default("mmcroot", "/dev/mmcblk0p2"));
+	run_command("bootlogofile bootlogo_sd.raw", 0);
 	return boot_from_block_dev("mmc");
 }
 
@@ -359,6 +361,7 @@ int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 	printf("[bootusb] booting kernel+DTB+rootfs from USB stick (usb 0:1), root=%s\n",
 	       env_or_default("usbroot", "/dev/sda2"));
+	run_command("bootlogofile bootlogo_usb.raw", 0);
 	return boot_from_block_dev("usb");
 }
 
