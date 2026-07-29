@@ -260,8 +260,9 @@
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
+	"bootlogofile bootlogo_usb.raw; " \
 	"if bootusb; then true; " \
-	"else run nandboot; fi"
+	"else bootlogofile bootlogo_nand.raw; run nandboot; fi"
 
 #else
 

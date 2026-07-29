@@ -351,7 +351,7 @@ void ark_display_init(int screen_id)
 #define BOOTLOGO_WIDTH		800
 #define BOOTLOGO_HEIGHT		480
 
-static int display_bootlogo_from_sd(void)
+static int display_bootlogo_file(const char *filename)
 {
 	char cmd[64];
 	unsigned long filesize;
@@ -367,13 +367,13 @@ static int display_bootlogo_from_sd(void)
 	 * is a lot easier to diagnose. */
 	memset((void *)BOOTLOGO_SD_ADDR, 0, BOOTLOGO_WIDTH * BOOTLOGO_HEIGHT * 4);
 
-	sprintf(cmd, "fatload mmc 0:1 0x%x bootlogo.raw", BOOTLOGO_SD_ADDR);
+	sprintf(cmd, "fatload mmc 0:1 0x%x %s", BOOTLOGO_SD_ADDR, filename);
 	printf("[bootlogo] loading -> `%s`\n", cmd);
 	ret = run_command(cmd, 0);
 	if (ret != 0) {
-		printf("[bootlogo] fatload of bootlogo.raw failed (ret=%d) — file "
+		printf("[bootlogo] fatload of %s failed (ret=%d) — file "
 		       "missing from SD card FAT partition, or mmc 0:1 not "
-		       "accessible; skipping splash\n", ret);
+		       "accessible; skipping splash\n", filename, ret);
 		return -1;
 	}
 
@@ -408,9 +408,34 @@ void ark_show_bootlogo(void)
 
 	/* Keep OSD2 layer enabled at 0x0be00000 (190MB) to match stock U-Boot state */
 	ark_osd_en_layer(OSD2_LAYER, 1);
-	if (display_bootlogo_from_sd() != 0)
+	if (display_bootlogo_file("bootlogo.raw") != 0)
 		printf("[bootlogo] no splash shown this boot (see reason above)\n");
 }
+
+/* bootlogofile <name> — swap the OSD1 splash to a different pre-rendered
+ * variant mid-boot (display is already initialized by ark_show_bootlogo()
+ * at this point, so this only needs to redo the fatload + OSD1 addr/enable
+ * steps, not the full ark_display_init()). Used by CONFIG_BOOTCOMMAND to
+ * show "Loading USB"/"Loading NAND" as the boot sequence actually reaches
+ * each stage -- see build_tools/generate_boot_status_logos.py for how the
+ * variant files are generated (same gradient/emblem/wordmark/font as
+ * bootlogo.raw, only the status line differs). Silently no-ops (keeps
+ * whatever was showing) if the named file isn't present on the SD card,
+ * same fail-safe behavior as the initial bootlogo.raw load. */
+int do_bootlogofile(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (argc < 2)
+		return cmd_usage(cmdtp);
+
+	display_bootlogo_file(argv[1]);
+	return 0;
+}
+
+U_BOOT_CMD(
+	bootlogofile, 2, 0, do_bootlogofile,
+	"swap the OSD1 boot splash to a different raw framebuffer file from the SD card",
+	"bootlogofile <filename.raw>\n"
+);
 
 int do_disconfig (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
