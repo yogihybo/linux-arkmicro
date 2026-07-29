@@ -357,6 +357,20 @@ static int display_bootlogo_file(const char *filename)
 	unsigned long filesize;
 	int ret;
 
+	/* Disable OSD1 before touching its live framebuffer. On the very
+	 * first call (ark_show_bootlogo()) this is a no-op -- OSD1 starts
+	 * disabled, from ark_display_init()'s default state. On a later
+	 * swap (bootlogofile), OSD1 is already enabled and pointed at this
+	 * same address from the previous load, and the LCDC composites from
+	 * it continuously at the panel refresh rate -- without disabling it
+	 * here first, the memset+fatload below overwrites a buffer the
+	 * display hardware is actively reading, and the screen shows
+	 * whatever partially-written garbage happens to be there at each
+	 * refresh (zeroed regions, half-loaded new bytes, stale old bytes)
+	 * for as long as the load takes -- the "multicolour striped screen
+	 * between each image" seen on real hardware (2026-07-29). */
+	ark_osd_en_layer(OSD1_LAYER, 0);
+
 	/* Zero the buffer before loading — if bootlogo.raw is undersized
 	 * (wrong resolution, truncated/corrupt conversion), fatload only
 	 * overwrites however many bytes the file actually has, leaving
