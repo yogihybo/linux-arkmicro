@@ -124,20 +124,37 @@ static int bootstock_file_from_block_dev(const char *iface, const char *env_var,
 	char cmd[64];
 	const char *stockfile = env_or_default(env_var, default_file);
 	unsigned long magic, ep, filesize;
+	int attempt;
 
-	/* File on a FAT block device only, NOT the "U-boot" NAND partition. */
-	sprintf(cmd, "fatload %s 0:1 0x%x %s", iface, STOCK_UBOOT_LOAD_ADDR, stockfile);
-	if (run_command(cmd, 0) != 0) {
-		printf("[chainload] fatload of %s from %s 0:1 failed — copy it to "
-		       "the %s FAT partition\n", stockfile, iface, iface);
-		return 1;
-	}
+	/*
+	 * File on a FAT block device only, NOT the "U-boot" NAND partition.
+	 * Retried a few times on a bad ARK header magic: this check has been
+	 * seen to intermittently fail ("comes and goes" across otherwise
+	 * identical boots), which fits a transient/marginal SD or USB read
+	 * corrupting part of the loaded binary far better than a
+	 * deterministic logic bug -- a single bad `fatload` shouldn't be
+	 * treated as a hard failure when a clean re-read is cheap and the
+	 * alternative is falling all the way back to `nandboot`.
+	 */
+	for (attempt = 1; attempt <= 3; attempt++) {
+		sprintf(cmd, "fatload %s 0:1 0x%x %s", iface, STOCK_UBOOT_LOAD_ADDR, stockfile);
+		if (run_command(cmd, 0) != 0) {
+			printf("[chainload] fatload of %s from %s 0:1 failed — copy it to "
+			       "the %s FAT partition\n", stockfile, iface, iface);
+			return 1;
+		}
 
-	magic = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x3c);
-	if (magic != ARK_HEADER_MAGIC) {
-		printf("[chainload] bad ARK header magic 0x%lx (expected 0x%x) — "
-		       "refusing to jump into garbage\n", magic, ARK_HEADER_MAGIC);
-		return 1;
+		magic = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x3c);
+		if (magic == ARK_HEADER_MAGIC)
+			break;
+
+		printf("[chainload] bad ARK header magic 0x%lx (expected 0x%x) on "
+		       "attempt %d/3", magic, ARK_HEADER_MAGIC, attempt);
+		if (attempt == 3) {
+			printf(" — giving up, refusing to jump into garbage\n");
+			return 1;
+		}
+		printf(" — retrying fatload\n");
 	}
 
 	filesize = *(volatile unsigned long *)(STOCK_UBOOT_LOAD_ADDR + 0x50);
@@ -156,9 +173,12 @@ static int bootstock_file_from_block_dev(const char *iface, const char *env_var,
 	 * after every real NAND transaction before touching these same
 	 * control registers -- reused here defensively, since whatever
 	 * NAND op ran last (kernel/arkdata/reservingtrack load, switchecc,
-	 * etc, run at a point in this build's boot sequence that varies
-	 * session to session depending on what the user did before typing
-	 * `bootstock`) might not have fully drained yet. Zeroing BCH_CR/
+	 * etc, run earlier in this build's own boot sequence -- note
+	 * `bootstock`/`boothybrid` are reached automatically via the
+	 * default CONFIG_BOOTCOMMAND fallback chain on every cold boot,
+	 * not typed by hand, so any variance here is real hardware/timing
+	 * marginality rather than user-command variability) might not have
+	 * fully drained yet. Zeroing BCH_CR/
 	 * NAND_CR out from under an in-flight transaction would leave the
 	 * controller in a genuinely undefined state for stock U-Boot's own
 	 * NAND driver to inherit -- a plausible explanation for
