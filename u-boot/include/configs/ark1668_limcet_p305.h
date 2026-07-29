@@ -240,14 +240,27 @@
 /* Import uEnv.txt from the SD card first, if present — this can override
  * ANY env var (bootargs, kernelfile, mmcroot, bootcmd itself, etc.)
  * without recompiling. If bootcmd wasn't overridden by that import, this
- * falls through to the compiled-in default above. */
+ * falls through to the compiled-in default above.
+ *
+ * boothybrid/bootstock chainload the ORIGINAL, unmodifiable stock U-Boot
+ * binary and hand control to it (see ark1668_boot_cmds.c). A bug inside
+ * that binary itself -- not our own code -- has been seen (2026-07-29)
+ * to intermittently HANG before the kernel loads, rather than failing
+ * cleanly. Because they used to sit in this if/elif chain, a hang there
+ * never returns, so the `nandboot` fallback below never ran either --
+ * the unit would just be stuck until power-cycled. `nandboot` (this
+ * build's own U-Boot booting the real stock kernel+rootfs directly from
+ * NAND, no chainload, no black-box binary involved) was hardware-
+ * confirmed 2026-07-24 to bring up the full stock kernel/MsnCoreApp/
+ * CarPlay/BT/WiFi stack end to end -- so it's now the default instead,
+ * removing this whole class of unfixable failure from the normal boot
+ * path. `boothybrid`/`bootstock` remain available as manual commands at
+ * the prompt for anyone who explicitly wants to test/compare them. */
 #define CONFIG_BOOTCOMMAND	\
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
 	"if bootusb; then true; " \
-	"elif boothybrid; then true; " \
-	"elif bootstock; then true; " \
 	"else run nandboot; fi"
 
 #else
