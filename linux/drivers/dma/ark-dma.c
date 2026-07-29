@@ -41,7 +41,10 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
 		enum dma_transfer_direction direction);
 void dw_dma_cyclic_free(struct dma_chan *chan);
 
-#define DRV_NAME	"dw_dmac"
+/* Matches stock's own driver name ("ark_dw_dmac.0: Arkmicro DMA Controller,
+ * 8 channels" in the real 3.4 kernel dmesg) -- purely cosmetic, DT probing
+ * matches on the "arkmicro,ark-dma" compatible string below, not this name. */
+#define DRV_NAME	"ark_dw_dmac"
 
 /*
  * This supports the Synopsys "DesignWare AHB Central DMA Controller",
@@ -1672,7 +1675,7 @@ static int dw_dma_probe(struct dw_dma_chip *chip)
 	tasklet_init(&dw->tasklet, dw_dma_tasklet, (unsigned long)dw);
 
 	err = request_irq(chip->irq, dw_dma_interrupt, IRQF_SHARED,
-			  "dw_dmac", dw);
+			  DRV_NAME, dw);
 	if (err)
 		goto err_pdata;
 
@@ -1772,7 +1775,7 @@ static int dw_dma_probe(struct dw_dma_chip *chip)
 	if (err)
 		goto err_dma_register;
 
-	dev_info(chip->dev, "DesignWare DMA Controller, %d channels\n",
+	dev_info(chip->dev, "Arkmicro DMA Controller, %d channels\n",
 		 pdata->nr_channels);
 
 	pm_runtime_put_sync_suspend(chip->dev);
