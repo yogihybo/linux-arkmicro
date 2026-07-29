@@ -139,6 +139,14 @@
 	 * removed — see ark1668_boot_cmds.c). */ \
 	"nandboot=echo Booting stock kernel ...; " \
 		"disconfig 0; " \
+		/* disconfig 0 calls ark_display_init() (full LCDC re-init),
+		 * which resets OSD1 layer state -- any bootlogofile call
+		 * BEFORE this point gets silently wiped out before it's ever
+		 * visible. Must come after. sleep gives it a moment on screen
+		 * before the NAND reads/bootz below take over (2026-07-29,
+		 * user reported not seeing the status change on bootnand). */ \
+		"bootlogofile bootlogo_nand.raw; " \
+		"sleep 1; " \
 		"backcarcheck; " \
 		"run nandargs; " \
 		"switchecc 2; " \
@@ -262,7 +270,7 @@
 	"fi; " \
 	"bootlogofile bootlogo_usb.raw; " \
 	"if bootusb; then true; " \
-	"else bootlogofile bootlogo_nand.raw; run nandboot; fi"
+	"else run nandboot; fi"
 
 #else
 

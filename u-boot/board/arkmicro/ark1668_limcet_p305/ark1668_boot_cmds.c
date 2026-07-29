@@ -99,7 +99,9 @@ static unsigned long env_or_default_hex(const char *name, unsigned long fallback
 int do_bootnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	printf("[bootnand] booting from NAND with original dumped settings (ubi.mtd=6 root=ubi0:rootfs)\n");
-	run_command("bootlogofile bootlogo_nand.raw", 0);
+	/* nandboot itself calls bootlogofile, positioned after its own
+	 * disconfig 0 (which resets OSD1 layer state via ark_display_init()
+	 * and would otherwise wipe out a bootlogofile call made here first). */
 	return run_command("run nandboot", 0);
 }
 
