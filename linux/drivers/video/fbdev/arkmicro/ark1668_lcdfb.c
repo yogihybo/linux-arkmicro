@@ -19,6 +19,8 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/workqueue.h>
+#include <linux/ktime.h>
+#include <linux/ratelimit.h>
 #include <video/of_display_timing.h>
 #include <video/display_timing.h>
 #include <video/videomode.h>
@@ -762,6 +764,13 @@ static irqreturn_t ark1668_lcdfb_interrupt(int irq, void *dev_id)
 
 		sinfo->vsync_flag = 1;
 		wake_up_interruptible(&sinfo->vsync_waitq);
+		/*
+		 * ftrace-only, every frame (panel refresh rate, content-
+		 * independent) -- lets a captured trace line this hard-IRQ
+		 * up directly against the pcm_dmaengine period-jitter
+		 * trace_printk lines to check for correlation/contention.
+		 */
+		trace_printk("lcdfb vsync irq: scheduling itu656 task\n");
 		schedule_work(&sinfo->task);
 	}
 
@@ -776,7 +785,28 @@ static void ark1668_lcdfb_task(struct work_struct *work)
         /*struct ark1668_lcdfb_info *sinfo =
                 container_of(work, struct ark1668_lcdfb_info, task);*/
 #ifdef CONFIG_ARK1668_ITU656
-        ark_itu656_display_int_handler();
+	/*
+	 * This runs on every single LCDC vsync frame interrupt (panel
+	 * refresh rate, content-independent), for as long as the display
+	 * is on -- not just when the backup camera is active. Timed to
+	 * correlate against the audio XRUN/mute-flap logging in
+	 * pcm_dmaengine.c / ark1668-sddac-codec.c: if this work item's
+	 * runtime or scheduling delay lines up with play:225/digital_mute
+	 * events, it's a real candidate for stealing CPU time from audio
+	 * on this single-core system, independent of AA video content.
+	 */
+	{
+		ktime_t __start = ktime_get();
+		s64 __ns;
+		static DEFINE_RATELIMIT_STATE(itu656_task_rs, HZ, 5);
+
+		ark_itu656_display_int_handler();
+
+		__ns = ktime_to_ns(ktime_sub(ktime_get(), __start));
+		trace_printk("itu656 display task: runtime_ns=%lld\n", __ns);
+		if (__ns > 1000000 && __ratelimit(&itu656_task_rs))
+			printk(KERN_WARNING "ark1668_lcdfb: itu656 display task took %lldns\n", __ns);
+	}
 #endif
 }
 
