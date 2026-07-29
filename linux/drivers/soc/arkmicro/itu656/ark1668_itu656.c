@@ -16,6 +16,8 @@
 #include <linux/gpio.h>
 #include <asm/setup.h>
 #include <linux/dma-mapping.h>
+#include <linux/ktime.h>
+#include <linux/ratelimit.h>
 #include "ark1668_itu656.h"
 
 
@@ -1261,11 +1263,24 @@ static irqreturn_t ark_itu656_int_handler(int irq, void *dev_id)
 	intr_stat = itu656_readl(ARK1668_ITU656_ISR);
 	itu656_writel(ARK1668_ITU656_ICR, 0xFF);
 	field = (intr_stat >> 8) & 0x1;
+
+	/*
+	 * Unconditional -- fires on this hard-IRQ (non-threaded, IRQF_SHARED)
+	 * every time regardless of dvr_dev->work_status (reverse-camera
+	 * active or not). Checking whether/how often this fires during
+	 * normal driving (no reverse gear) is the direct test for whether
+	 * the ITU656 sensor free-runs and this IRQ contends with audio's
+	 * DMA IRQ on this single-core system independent of AA video
+	 * content -- correlate against pcm_dmaengine/digital_mute logging.
+	 */
+	trace_printk("itu656 hw irq: intr_stat=0x%x work_status=%d\n",
+		     intr_stat, dvr_dev->work_status);
+
 	spin_lock_irqsave(&dvr_dev->spin_lock, flags);
 
 	if (!dvr_dev->interlace)
 		syschange_mask |= ACTIVE_PIX_CHANGED_INTERRUPT;
-	
+
 	if(intr_stat & syschange_mask)
 	{
 		dvr_dev->show_video = 0;
@@ -1274,9 +1289,9 @@ static irqreturn_t ark_itu656_int_handler(int irq, void *dev_id)
 			ark_disp_set_layer_en(TVOUT_LAYER, 0);
 		ark_itu656_disable_write();
 		mod_timer(&dvr_dev->timer, jiffies +  msecs_to_jiffies(50));
-	}	
+	}
 
-	if (!dvr_dev->work_status) goto end; 
+	if (!dvr_dev->work_status) goto end;
 
 	if (dvr_dev->system == PAL)
 		field = !field;
