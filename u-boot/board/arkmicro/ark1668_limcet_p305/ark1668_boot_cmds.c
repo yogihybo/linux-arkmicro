@@ -149,6 +149,38 @@ static int bootstock_file_from_block_dev(const char *iface, const char *env_var,
 	flush_cache(STOCK_UBOOT_LOAD_ADDR, filesize);
 	invalidate_icache_all();
 
+	/*
+	 * Wait for the NAND/BCH controller's own FSM to reach idle before
+	 * zeroing anything below. This build's own driver (ark_nand.c)
+	 * always does this same poll (rBCH_NAND_STATUS bits [5:0] == 0)
+	 * after every real NAND transaction before touching these same
+	 * control registers -- reused here defensively, since whatever
+	 * NAND op ran last (kernel/arkdata/reservingtrack load, switchecc,
+	 * etc, run at a point in this build's boot sequence that varies
+	 * session to session depending on what the user did before typing
+	 * `bootstock`) might not have fully drained yet. Zeroing BCH_CR/
+	 * NAND_CR out from under an in-flight transaction would leave the
+	 * controller in a genuinely undefined state for stock U-Boot's own
+	 * NAND driver to inherit -- a plausible explanation for
+	 * intermittent (not 100%-reproducible) "chainloads fine, then
+	 * fails to boot the stock kernel" reports, since a fixed,
+	 * always-present gap would be expected to fail consistently
+	 * instead. Bounded with a timeout (rather than looping forever
+	 * like the driver's own wait) so a genuinely wedged controller
+	 * doesn't hang the chainload silently -- prints a warning and
+	 * proceeds with the reset anyway rather than blocking forever.
+	 */
+	{
+		int timeout = 100000;
+		while (((*(volatile unsigned int *)(0xec000000 + 0x280)) & 0x3F) != 0
+		       && timeout--)
+			;
+		if (timeout <= 0)
+			printf("[chainload] warning: NAND/BCH FSM did not reach idle "
+			       "(BCH_NAND_STATUS=0x%08x) -- proceeding with reset anyway\n",
+			       *(volatile unsigned int *)(0xec000000 + 0x280));
+	}
+
 	printf("[chainload] resetting NAND/BCH controller registers (was BCH_CR=0x%08x)\n",
 	       *(volatile unsigned int *)(0xec000000 + 0x27c));
 
