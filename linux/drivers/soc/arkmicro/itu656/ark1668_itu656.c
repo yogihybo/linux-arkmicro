@@ -1593,6 +1593,15 @@ static long dvr_ioctl(struct file *filp,
 	       (dvr_dev == filp->private_data) ? "MATCH" : "*** MISMATCH ***",
 	       dvr_dev->start, dvr_start, (dvr_dev->start == dvr_start) ? "OK" : "*** CORRUPT ***",
 	       dvr_dev->stop, dvr_stop, (dvr_dev->stop == dvr_stop) ? "OK" : "*** CORRUPT ***");
+	printk(KERN_ALERT "[DIAG_ITU656_IOCTL] &priv_data=%px select_channel=%px detect_signal=%px "
+	       "get_progressive=%px display_effect=%px%s dvr_start_cb=%px dvr_stop_cb=%px\n",
+	       &dvr_dev->priv_data,
+	       dvr_dev->priv_data.select_channel, dvr_dev->priv_data.detect_signal,
+	       dvr_dev->priv_data.get_progressive, dvr_dev->priv_data.display_effect,
+	       (dvr_dev->priv_data.display_effect &&
+	        (unsigned long)dvr_dev->priv_data.display_effect == (unsigned long)dvr_dev)
+	           ? " *** CORRUPT: equals dvr_dev base addr ***" : "",
+	       dvr_dev->priv_data.dvr_start_cb, dvr_dev->priv_data.dvr_stop_cb);
 
 	//client = dvr_dev->client;
 
@@ -2048,6 +2057,23 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	dvr_dev->display_buffer = 0;
 	dvr_dev->carback_signal = 0;
 	memcpy(&dvr_dev->priv_data, pdata, sizeof(struct ark_private_data));
+	printk(KERN_ALERT "[DIAG_ITU656_PROBE] priv_data after memcpy: &priv_data=%px "
+	       "select_channel=%px (want %px) detect_signal=%px (want %px) "
+	       "get_progressive=%px (want %px) display_effect=%px (want %px)\n",
+	       &dvr_dev->priv_data,
+	       dvr_dev->priv_data.select_channel, pdata->select_channel,
+	       dvr_dev->priv_data.detect_signal, pdata->detect_signal,
+	       dvr_dev->priv_data.get_progressive, pdata->get_progressive,
+	       dvr_dev->priv_data.display_effect, pdata->display_effect);
+	printk(KERN_ALERT "[DIAG_ITU656_PROBE] priv_data after memcpy (cont): "
+	       "dvr_start_cb=%px (want %px) dvr_stop_cb=%px (want %px) "
+	       "enter_carback_cb=%px (want %px) exit_carback_cb=%px (want %px) "
+	       "dvr_config=%px (want %px)\n",
+	       dvr_dev->priv_data.dvr_start_cb, pdata->dvr_start_cb,
+	       dvr_dev->priv_data.dvr_stop_cb, pdata->dvr_stop_cb,
+	       dvr_dev->priv_data.enter_carback_cb, pdata->enter_carback_cb,
+	       dvr_dev->priv_data.exit_carback_cb, pdata->exit_carback_cb,
+	       dvr_dev->priv_data.dvr_config, pdata->dvr_config);
 
 	dvr_dev->ic_type = pdata->ic_type;
 	dvr_dev->old_cvbs_type = TYPE_UNKNOWN;
