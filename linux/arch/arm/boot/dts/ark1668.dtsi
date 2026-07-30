@@ -616,25 +616,41 @@
 			interrupt-parent = <&vich>;
             interrupts = <8>, <7>; /* <usb1 int>, <usb1_dma_int> */
             interrupt-names = "mc", "dma";
-            /* usb1 stays "otg": it registers the g_ncm gadget at boot,
-             * but this controller has NO external connector on this
-             * board -- corrected 2026-07-30, was previously wrongly
-             * described here as "CarPlay's wired networking interface".
-             * Every available boot log shows only the onboard RTL8811CU
-             * WiFi chip ever enumerating on this bus once the pointless
-             * peripheral-role attempt times out; no external device has
-             * ever been observed attaching to it. usb0 is the board's
-             * only external-facing connector (see its own dr_mode
-             * comment above). Whether wired CarPlay's real data path
-             * runs through usb0 instead is not yet confirmed -- see
-             * docs/WIRELESS_AND_INIT.md sec 7. A 2026-07-22 test briefly
-             * set this to "host" to rule out OTG negotiation as the
-             * cause of an unrelated boot failure (turned out to be a
-             * stale CRLF line ending in a flashed rootfs's inittab, not
-             * a kernel/USB issue) and was reverted back to "otg" here
-             * once that was confirmed -- that revert reasoning still
-             * stands regardless of this correction. */
-            dr_mode = "otg";
+            /* usb1 changed "otg" -> "host" (2026-07-30). This controller
+             * has NO external connector on this board -- it only ever
+             * talks to the onboard RTL8811CU WiFi chip, confirmed across
+             * every available boot log (never any external device).
+             * usb0 is the board's only external-facing connector (see
+             * its own dr_mode comment above).
+             *
+             * Real reason for this change, not just the dead-weight OTG
+             * negotiation delay: with usb1 also "otg", it was WINNING
+             * the kernel's gadget-UDC race against usb0 for the g_ncm
+             * driver. usb_gadget_probe_driver() (drivers/usb/gadget/
+             * udc/core.c) just binds to "the first" UDC with no driver
+             * attached -- g_ncm never sets an explicit udc_name. Direct
+             * evidence from real bootmmc logs (docs/logs/new uboot new
+             * kernel baseline v21_260729.txt, v22_260729.txt): usb0
+             * finishes its own OTG setup at t=0.969s, usb1 doesn't even
+             * start until t=1.316s, yet carplay-ncm0/g_ncm gadget
+             * registration consistently appears right after USB1's
+             * setup line, not usb0's -- meaning the gadget was binding
+             * to usb1, a controller with no external connector at all.
+             * This was the real, previously undiagnosed reason wired
+             * CarPlay (NCM) could never work: not a userspace bug, the
+             * gadget driver was bound to the wrong physical controller
+             * from boot. Locking usb1 to "host" removes it from UDC
+             * contention entirely, so g_ncm has no candidate left except
+             * usb0 -- the only connector that could ever carry it.
+             *
+             * A 2026-07-22 test briefly set this to "host" for an
+             * unrelated diagnostic (ruling out OTG negotiation as the
+             * cause of a CRLF-inittab boot-loop bug, unrelated to USB)
+             * and was reverted back to "otg" afterward since that
+             * specific bug wasn't USB-related -- this change is
+             * independent of that and driven by the UDC-race finding
+             * above, not a re-run of that old diagnostic. */
+            dr_mode = "host";
             multipoint = <1>;
             num-eps = <6>;
             ram-bits = <12>;
