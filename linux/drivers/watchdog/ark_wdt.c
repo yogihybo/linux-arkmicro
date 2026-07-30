@@ -52,7 +52,17 @@ struct ark_wdt {
 
 static int wdt_timeout = ARK_WATCHDOG_DEFAULT_TIME;
 static bool nowayout = WATCHDOG_NOWAYOUT;
-static int soft_noboot = 1;
+/* 2026-07-31: was 1 (soft/interrupt mode). With soft_noboot=1,
+ * ark_wdt_irq() unconditionally re-arms the counter and clears the
+ * interrupt on every single expiry, with no escalation logic at all --
+ * meaning an unfed watchdog can NEVER actually reset the board, making
+ * the whole subsystem a permanent no-op regardless of whether userspace
+ * ever feeds it. 0 enables ARK_WTCON_RSTEN instead of ARK_WTCON_INTEN,
+ * so an unfed countdown reaching zero resets the SoC directly in
+ * hardware -- required for a real userspace feed daemon to mean
+ * anything. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md's watchdog
+ * implementation entry. */
+static int soft_noboot = 0;
 
 module_param(wdt_timeout, int, 0);
 MODULE_PARM_DESC(wdt_timeout,
