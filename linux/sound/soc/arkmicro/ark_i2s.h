@@ -6,6 +6,13 @@
 #ifndef __ARK_I2S_H
 #define __ARK_I2S_H
 
+/* ark1668-sddac-codec.c -- the real, hardware-active DAC mute, called
+ * explicitly from ark1668_i2s.c's trigger function with a settle delay
+ * around DMA start/stop, matching stock's real architecture (see
+ * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md, 2026-07-30). mute=1 to mute,
+ * mute=0 to unmute. No-op if the codec hasn't probed yet. */
+void ark_audio_mute(int mute);
+
 /*
  * I2S Controller Register and Bit Definitions
  */

@@ -23,6 +23,7 @@
 #include "ark1668_i2s.h"
 //#include "ark1668_pcm.h"
 #include "ark1668_i2s_sddac_regs.h"
+#include "ark_i2s.h"	/* ark_audio_mute() -- see that header for why */
 //#include <linux/ark/ark_i2s.h>
 
 #define DRV_NAME	"ark1668-i2s"
@@ -215,7 +216,19 @@ static int ark_i2s_startup(
 		val = readl(i2s->base + ARK_I2SSDDAC_SACR1);
 		val &= ~ARK_I2SSDDAC_SACR1_DIS_PLAY;	//enable play
 		writel(val, i2s->base + ARK_I2SSDDAC_SACR1);
-		writel(0, i2s->base + ARK_I2SSDDAC_DACR0);
+
+		/* Removed (2026-07-30): unconditional writel(0, DACR0) here zeroed
+		 * both L/R volume on every single playback start/restart, racing
+		 * with whatever volume the codec driver (ark_sddac_mute/set_l_r_
+		 * playback_volume) had already set. Stock's real equivalent
+		 * function (ark_i2s_init_cfg, decompiled from vmlinux.elf) never
+		 * touches DACR0 at all -- that register is owned exclusively by
+		 * the codec driver on stock. Confirmed no stock counterpart; see
+		 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md for the comparison this
+		 * came from. Given this ran on every XRUN-driven trigger restart
+		 * (already-confirmed to happen up to ~24x/sec during a stutter
+		 * burst), this was adding an extra, unnecessary volume-register
+		 * write at exactly the same moments already under suspicion. */
 
 		val = readl(i2s->base + ARK_I2SSDDAC_DACR1);
 		val |= ARK_I2SSDDAC_DACR1_LRSW; 	// left/right audio play channel switch
@@ -340,20 +353,48 @@ static int ark_i2s_trigger(
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		/* TODO: start i2s */
-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			/* 2026-07-30: mute -> start -> settle delay -> unmute,
+			 * matching stock's real custom ark_pcm_trigger() (see
+			 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md) -- stock mutes
+			 * before dw_dma_cyclic_start(), waits ~2.5ms, then
+			 * unmutes, giving the DMA/FIFO a settle window before
+			 * audio is audible again. Previously this driver had no
+			 * equivalent: the real hardware mute was instead wired
+			 * into ASoC's automatic .digital_mute callback (now a
+			 * no-op, see ark1668-sddac-codec.c), which fires on
+			 * ASoC's own internal timing with no synchronization to
+			 * DMA readiness -- during an XRUN-recovery storm
+			 * (confirmed up to ~24 trigger cycles/sec), that meant
+			 * dozens of unsynchronized mute/unmute clicks instead of
+			 * clean, settled transitions. */
+			ark_audio_mute(1);
 			ark_i2s_txctrl(i2s, 1);
-		else
+			/* mdelay not udelay: 2.5ms exceeds ARM's compile-time-
+			 * constant udelay() safe range (triggers a deliberate
+			 * link failure via __bad_udelay). mdelay busy-waits in
+			 * safe internal chunks -- same semantics as stock's own
+			 * __const_udelay busy-wait, just via the standard API
+			 * for this magnitude. Rounded up to 3ms from stock's
+			 * ~2.5ms; the exact value isn't safety-critical, it's a
+			 * settle window. */
+			mdelay(3);
+			ark_audio_mute(0);
+		} else {
 			ark_i2s_rxctrl(i2s, 1);
+		}
 		/* TODO: Start DMA */
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		/* TODO: stop i2s */
-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			ark_audio_mute(1);
 			ark_i2s_txctrl(i2s, 0);
-		else
+		} else {
 			ark_i2s_rxctrl(i2s, 0);
+		}
 
 		break;
 	default:

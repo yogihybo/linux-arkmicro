@@ -24,6 +24,15 @@ struct ark_sddac {
 	unsigned int 	vol_r;
 };
 
+/* Single active DAC instance on this board -- needed so ark_audio_mute()
+ * below can be called from ark1668_i2s.c without a struct snd_soc_dai/
+ * component handle, matching how stock's own ark_audio_mute() (a real,
+ * EXPORT_SYMBOL'd function, confirmed via disassembly of the real stock
+ * vmlinux -- see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md) is called directly
+ * from stock's custom ark_pcm_trigger(), not through ASoC's automatic
+ * .digital_mute dispatch. */
+static struct ark_sddac *g_ark_sddac;
+
 static int ark_sddac_get_l_playback_volume (struct snd_kcontrol * kcontrol, struct snd_ctl_elem_value * ucontrol)
 {
 	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
@@ -137,38 +146,51 @@ static int ark_sddac_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int ark_sddac_mute(struct snd_soc_dai *dai, int mute)
+/* ark_audio_mute() -- the REAL, hardware-active mute, matching stock's
+ * own exported function of the same name (confirmed via disassembly of
+ * the real stock vmlinux.elf, 2026-07-30: EXPORT_SYMBOL'd, called
+ * explicitly from stock's custom ark_pcm_trigger() with a mute -> 2.5ms
+ * delay -> unmute sequence around every DMA cyclic start/stop, NOT from
+ * ASoC's automatic .digital_mute dispatch -- see docs/
+ * AUDIO_SUBSYSTEM_INVESTIGATION.md for the full comparison). Exported so
+ * ark1668_i2s.c's trigger function can call it directly with the same
+ * timing stock uses, tied to actual DMA readiness instead of ASoC's own
+ * internal (and XRUN-recovery-storm-prone) trigger/DAPM scheduling. */
+void ark_audio_mute(int mute)
 {
-	struct snd_soc_component *component = dai->component;
-	struct ark_sddac *dac = snd_soc_component_get_drvdata(component);
+	struct ark_sddac *dac = g_ark_sddac;
 
-	/* Was a no-op stub -- confirmed via stock's own boot log
-	 * (2026-07-18, "ark_audio_mute" lines) that real hardware writes
-	 * this register on every mute/unmute: 0 to mute, the configured
-	 * L/R gain to unmute. Same expression ark_sddac_codec_probe()
-	 * already uses at init; DACR0_LVOL/DACR0_RVOL (ark_i2s.h) already
-	 * had the correct real-hardware bit layout, this function just
-	 * never called them. */
+	if (!dac)
+		return;
 
-	/* 2026-07-28 AA audio-stutter investigation
-	 * (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md): this is a REAL,
-	 * hardware-active mute -- ASoC's core calls .digital_mute
-	 * automatically around stream trigger/prepare transitions (and
-	 * potentially DAPM power sequencing). If something is toggling
-	 * this more often than expected during otherwise-continuous
-	 * playback, that alone would produce an audible click/dropout
-	 * completely independent of ALSA's digital buffer health -- which
-	 * would explain why SND_PCM_XRUN_DEBUG found nothing. Rare enough
-	 * event in normal operation to log unconditionally.
-	 */
-	printk(KERN_INFO "ark1668-sddac: digital_mute mute=%d at %lluns\n",
+	printk(KERN_INFO "ark1668-sddac: ark_audio_mute mute=%d at %lluns\n",
 	       mute, ktime_to_ns(ktime_get()));
 
 	if (mute)
 		writel(0, dac->base + I2S_DACR0);
 	else
 		writel(DACR0_RVOL(dac->vol_r) | DACR0_LVOL(dac->vol_l), dac->base + I2S_DACR0);
+}
+EXPORT_SYMBOL(ark_audio_mute);
 
+static int ark_sddac_mute(struct snd_soc_dai *dai, int mute)
+{
+	/* 2026-07-30: confirmed via disassembly of the real stock vmlinux
+	 * that stock's own .digital_mute callback (sddac_mute) is a genuine
+	 * no-op -- it touches no hardware. The real, hardware-active mute
+	 * on stock is a *separate* exported function (ark_audio_mute,
+	 * above) called explicitly from stock's custom PCM trigger with a
+	 * deliberate 2.5ms settle delay, not from this automatic ASoC
+	 * callback. Matching that here: this function now only logs (kept
+	 * for tracing how often ASoC's own internal machinery attempts a
+	 * digital_mute, for comparison against the explicit
+	 * ark_audio_mute() calls below) and does not touch the register --
+	 * previously this function itself did the real write, meaning the
+	 * mute was being driven by ASoC's own trigger/DAPM timing instead
+	 * of by DMA readiness, with no settle delay at all. See
+	 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md. */
+	printk(KERN_INFO "ark1668-sddac: digital_mute (ASoC-driven, no-op, matches stock) mute=%d at %lluns\n",
+	       mute, ktime_to_ns(ktime_get()));
 	return 0;
 }
 
@@ -212,6 +234,8 @@ static int ark_sddac_codec_probe(struct snd_soc_component *component)
 	int ret = 0;
 
 	writel(DACR0_RVOL(dac->vol_r) | DACR0_LVOL(dac->vol_l), dac->base + I2S_DACR0);
+
+	g_ark_sddac = dac;
 
 	return ret;
 }
