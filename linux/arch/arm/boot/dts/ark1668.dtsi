@@ -616,18 +616,24 @@
 			interrupt-parent = <&vich>;
             interrupts = <8>, <7>; /* <usb1 int>, <usb1_dma_int> */
             interrupt-names = "mc", "dma";
-            /* usb1 stays "otg": it provides the g_ncm gadget (CarPlay's
-             * wired networking interface, see
-             * docs/WIRELESS_AND_INIT.md) which needs
-             * musb_gadget_setup() -- only called for MUSB_PERIPHERAL/
-             * MUSB_OTG, never for pure MUSB_HOST (musb_core.c's init
-             * switch, ~line 2828-2848). A 2026-07-22 test briefly set
-             * this to "host" to rule out OTG negotiation as the cause
-             * of an unrelated boot failure (turned out to be a stale
-             * CRLF line ending in a flashed rootfs's inittab, not a
-             * kernel/USB issue -- see docs/WIRELESS_AND_INIT.md sec 7)
-             * and was reverted back to "otg" here once that was
-             * confirmed. */
+            /* usb1 stays "otg": it registers the g_ncm gadget at boot,
+             * but this controller has NO external connector on this
+             * board -- corrected 2026-07-30, was previously wrongly
+             * described here as "CarPlay's wired networking interface".
+             * Every available boot log shows only the onboard RTL8811CU
+             * WiFi chip ever enumerating on this bus once the pointless
+             * peripheral-role attempt times out; no external device has
+             * ever been observed attaching to it. usb0 is the board's
+             * only external-facing connector (see its own dr_mode
+             * comment above). Whether wired CarPlay's real data path
+             * runs through usb0 instead is not yet confirmed -- see
+             * docs/WIRELESS_AND_INIT.md sec 7. A 2026-07-22 test briefly
+             * set this to "host" to rule out OTG negotiation as the
+             * cause of an unrelated boot failure (turned out to be a
+             * stale CRLF line ending in a flashed rootfs's inittab, not
+             * a kernel/USB issue) and was reverted back to "otg" here
+             * once that was confirmed -- that revert reasoning still
+             * stands regardless of this correction. */
             dr_mode = "otg";
             multipoint = <1>;
             num-eps = <6>;
