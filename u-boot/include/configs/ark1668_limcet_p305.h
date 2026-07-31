@@ -288,17 +288,20 @@
  * user-overridden `bootlimit` there is already in the environment by
  * the time `bootcheck` reads it.
  *
- * 2026-07-31: `carbackcamcheck` (ark1668_display_cfg.c) runs first,
- * unconditionally, before even the uEnv.txt import -- an instant,
+ * 2026-07-31: `carbackcamcheck` (ark1668_display_cfg.c) -- an instant,
  * U-Boot-level reverse-camera preview (ITU656 hardware bypass straight
  * into the LCDC video layer, no Linux involvement) if the reverse-gear
  * GPIO is already asserted at power-on, matching stock's own real
  * boot-time behavior (ported from stock's disassembled binary; see
- * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md). Deliberately first so it's
- * as fast as possible and independent of which boot medium/path ends up
- * chosen below. */
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md) -- was wired in here as the
+ * very first automatic step, but PULLED BACK OUT the same day: its
+ * register sequence (and the MCU UART notify it also does) has never
+ * actually been hardware-verified, even manually, and this project just
+ * had one fully-locked-board scare from a different unverified change
+ * in the same session. Still fully available as a manual command at the
+ * prompt (`carbackcamcheck`, or `itu656` directly) -- re-add the call
+ * below once confirmed working by hand. */
 #define CONFIG_BOOTCOMMAND	\
-	"carbackcamcheck; " \
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
