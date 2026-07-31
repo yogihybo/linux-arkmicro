@@ -39,16 +39,20 @@ CONFIG_FAT_WRITE=y
 CONFIG_CMD_MTDPARTS=y
 CONFIG_MTDIDS_DEFAULT="nand0=ark1680-nand"
 CONFIG_MTDPARTS_DEFAULT="mtdparts=ark1680-nand:128k(S-Loader),512k(U-boot),512k(U-boot_back),256K(U-boot-Env),256K(arkdata),4m(kernel),106m(rootfs),6m(userdata),512K(bootlogo),3m(bootanimation),3m(reversingtrack),256K(Unicode)"
-# 2026-07-31: was CONFIG_ENV_IS_NOWHERE=y -- confirmed via env/nowhere.c
-# that backend has no save/load implementation at all, meaning
-# saveenv/env_save() never persisted anything anywhere. Silently broke
-# the bootcount/bootlimit boot-supervision fallback (bootcheck relies on
-# bootcount surviving a real reset, which is exactly what "nowhere"
-# can't do). Switched to CONFIG_ENV_IS_IN_MMC: environment now lives in
-# a raw sector range on the SD card itself (CONFIG_ENV_OFFSET in
-# include/configs/ark1668_limcet_p305.h), inside the ~1MiB gap before
-# partition 1 that nothing else in this project's boot process uses.
-CONFIG_ENV_IS_IN_MMC=y
+# 2026-07-31: CONFIG_ENV_IS_IN_MMC tried (confirmed via env/nowhere.c
+# that the previous CONFIG_ENV_IS_NOWHERE=y backend never actually
+# persisted saveenv/env_save() anywhere -- silently broke the
+# bootcount/bootlimit boot-supervision fallback) but REVERTED same day:
+# hardware-tested and found it hangs the board completely, before even
+# "DRAM:"/"NAND:"/"MMC:" print -- confirmed via a clean .config diff
+# against a known-good week-old .config.old that CONFIG_ENV_IS_IN_MMC
+# was the ONLY functional difference. Root cause not yet found (see
+# docs/DEVICE_TEST_CHECKLIST_2026-07-18.md §83) -- reverted to restore
+# basic bootability rather than keep guessing on live hardware. The
+# bootcount persistence problem (see §82) is open again until this is
+# revisited properly. Do NOT re-enable without understanding why this
+# hangs so early first.
+CONFIG_ENV_IS_NOWHERE=y
 # CONFIG_ENV_IS_IN_NAND is not set
 # CONFIG_NET is not set
 CONFIG_MMC_DW=y

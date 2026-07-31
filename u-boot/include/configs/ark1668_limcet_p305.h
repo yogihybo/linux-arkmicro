@@ -183,24 +183,22 @@
  * docs/historical/HANDOFF_nand_ecc_uboot_vs_kernel.md §5. */
 #define CONFIG_SYS_BOOTPARAMS_LEN	SZ_4K
 
-/* Environment -- CONFIG_ENV_IS_IN_MMC (2026-07-31, see the defconfig
- * comment for why this changed from CONFIG_ENV_IS_NOWHERE). Offset is a
- * byte offset into the RAW SD card device (CONFIG_SYS_MMC_ENV_PART unset
- * -> defaults to "partition 0, the user area", i.e. the whole raw disk,
- * not one of the FAT/ext4 partitions build_bootable_sdcard.sh creates).
- * 0x40000 (256KB) sits well inside the ~1MiB gap before partition 1
- * (which starts at 1MiB/0x100000 -- see that script's `parted mkpart
- * primary fat32 1MiB ...`) with large margins on both sides: clear of
- * the MBR at the very start, and 0x40000 (256KB) of headroom before
- * CONFIG_ENV_SIZE's end (0x80000) and partition 1's start. U-Boot's own
- * binary lives as a regular FAT file inside partition 1 (read via the
- * SoC's Stepldr, not a raw-sector boot convention), so nothing else in
- * this project's boot process uses this gap. CONFIG_SYS_MMC_ENV_DEV=0
- * matches the SD card's own device number everywhere else in this
- * board's boot commands (`mmc 0:1`, `MMC: ARK_MMC0: 0` at boot). */
+/* Environment. CONFIG_ENV_IS_IN_MMC was tried 2026-07-31 (see
+ * env/nowhere.c's lack of any save/load implementation -- the previous
+ * CONFIG_ENV_IS_NOWHERE meant saveenv/env_save() never persisted
+ * anything at all) but REVERTED same day: hardware-tested and found it
+ * hangs the board completely before even "DRAM:"/"NAND:"/"MMC:" print.
+ * Root cause not yet found -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+ * §83. CONFIG_ENV_OFFSET/CONFIG_SYS_MMC_ENV_DEV below are dead with
+ * CONFIG_ENV_IS_NOWHERE active (kept, commented, for the next attempt --
+ * see that comment for the reasoning behind the specific values: 0x40000
+ * sits well inside the ~1MiB gap before partition 1, which starts at
+ * 1MiB/0x100000 in build_bootable_sdcard.sh). Do NOT re-enable
+ * CONFIG_ENV_IS_IN_MMC in the defconfig without understanding why this
+ * hangs so early first. */
 #define CONFIG_ENV_SIZE			0x40000	// 256K (2 erase blocks)
-#define CONFIG_ENV_OFFSET		0x40000
-#define CONFIG_SYS_MMC_ENV_DEV		0
+/* #define CONFIG_ENV_OFFSET		0x40000 */
+/* #define CONFIG_SYS_MMC_ENV_DEV	0 */
 #define CONFIG_SYS_LOAD_ADDR	(CONFIG_SYS_SDRAM_BASE + 0x1000000)
 
 /* Console UART */
