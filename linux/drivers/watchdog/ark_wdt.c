@@ -154,8 +154,25 @@ static unsigned int ark_wdt_set_timeout(struct watchdog_device *wdd, unsigned in
 	   actually make this value
 	*/
 
+	/* 2026-07-31: ARK_WTPSR (the prescaler register) REQUIRES a
+	 * power-of-two value -- confirmed empirically on real hardware via
+	 * the U-Boot side of this same watchdog block (identical register
+	 * layout, see linux-arkmicro/u-boot/arch/arm/mach-arkmicro/armv7/
+	 * reset.c's ark_wdt_arm()): prescaler=2 and prescaler=256 both
+	 * correctly fired a reset at the expected time; prescaler=290 (a
+	 * plain DIV_ROUND_UP() result, multiple bits set) never fired at
+	 * all. Very likely a one-hot/shift-selector field internally, not
+	 * a literal linear divisor. Round up to the next power of two
+	 * instead of using the raw DIV_ROUND_UP() result -- this board's
+	 * 15s default timeout (ARK_WATCHDOG_DEFAULT_TIME) needs this same
+	 * prescaler path and would have silently never fired either,
+	 * before this fix. */
 	if (count > ARK_WTCNT_MAXCNT) {
-		divisor = DIV_ROUND_UP(count, ARK_WTCNT_MAXCNT);
+		unsigned int min_divisor = DIV_ROUND_UP(count, ARK_WTCNT_MAXCNT);
+
+		divisor = 1;
+		while (divisor < min_divisor)
+			divisor <<= 1;
 		if (divisor > ARK_WTCON_PRESCALE_MAX) {
 			dev_err(wdt->dev, "timeout %d(ms) too big\n", timeout_ms);
 			return -EINVAL;
