@@ -130,6 +130,24 @@ __weak enum env_location env_get_location(enum env_operation op, int prio)
 		return gd->env_load_location;
 
 	case ENVOP_SAVE:
+		/* 2026-07-31: was missing the same prio bounds check LOAD/INIT
+		 * have -- unconditionally returned gd->env_load_location
+		 * regardless of prio, so a location whose driver has no .save
+		 * (e.g. ENVL_NOWHERE) made env_save()'s "for (prio = 0;
+		 * (drv = env_driver_lookup(ENVOP_SAVE, prio)); prio++)" loop
+		 * in this file spin forever: every iteration re-resolved the
+		 * exact same driver, saw drv->save == NULL, and looped again
+		 * with no way to ever reach ENVL_UNKNOWN. Confirmed via real
+		 * hardware hang (board/arkmicro/ark1668_limcet_p305's
+		 * do_bootnand()/do_bootcheck() both call env_save()
+		 * unconditionally; see
+		 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md §86) -- traced to
+		 * exactly this line. There is only ever one "current" save
+		 * location (whatever LOAD already chose), so prio 0 is the
+		 * only meaningful attempt; bound it the same way LOAD/INIT
+		 * already are. */
+		if (prio >= ARRAY_SIZE(env_locations))
+			return ENVL_UNKNOWN;
 		return gd->env_load_location;
 	}
 
