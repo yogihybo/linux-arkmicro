@@ -599,11 +599,29 @@ static void ark_uart2_init_once(void)
 	inited = 1;
 }
 
+/* 2026-07-31: bounded, not an unconditional busy-wait -- this runs
+ * automatically on every boot now (ark_carback_camera_check(), called
+ * from CONFIG_BOOTCOMMAND before anything else), on a UART2 init
+ * sequence that's never been hardware-verified. If any of the untested
+ * assumptions here are wrong (pinmux, clock, init register values) and
+ * TXFF never clears, an unbounded wait here would hang the ENTIRE
+ * automatic boot chain silently, forever, with zero console output --
+ * exactly matching a "nothing boots after the countdown" symptom.
+ * Times out and gives up on that one byte rather than risk that; same
+ * bounded-loop pattern already used elsewhere in this file (jpeghw). */
 static void ark_uart2_putc(unsigned char c)
 {
+	int timeout;
+
 	ark_uart2_init_once();
-	while (*(volatile unsigned int *)ARK_UART2_FR & ARK_UART2_FR_TXFF)
+
+	timeout = 100000;
+	while ((*(volatile unsigned int *)ARK_UART2_FR & ARK_UART2_FR_TXFF) && --timeout > 0)
 		;
+	if (timeout <= 0) {
+		printf("[carback] uart2 putc timed out, MCU notify may be incomplete\n");
+		return;
+	}
 	*(volatile unsigned int *)ARK_UART2_DR = c;
 }
 
