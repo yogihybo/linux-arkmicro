@@ -92,13 +92,33 @@
  * (clean stop+reprogram, no register conflict) -- every boot log checked
  * shows that happening within ~1s of the jump, so 20s gives a large,
  * safe margin against a false trigger during a legitimately-successful
- * boot. Deliberately NOT used anywhere near do_bootnand()/`nandboot` or
- * bootstock/bootstockusb/boothybrid below -- those boot STOCK's
- * original, untouched kernel+rootfs (or a fully separate chainloaded
- * stock U-Boot), which has no knowledge of our busybox watchdog feeder
- * -- arming it there would eventually fire mid-boot on a currently-
- * working path, a real regression, not a safety net. */
+ * boot.
+ *
+ * Originally deliberately NOT used anywhere near do_bootnand()/
+ * `nandboot` or bootstock/bootstockusb/boothybrid below, on the theory
+ * that those boot STOCK's original, untouched kernel+rootfs (or a fully
+ * separate chainloaded stock U-Boot), which has no knowledge of our
+ * busybox watchdog feeder -- arming it there could fire mid-boot on a
+ * currently-working path.
+ *
+ * REVERSED for do_bootnand() specifically (2026-07-31, same day):
+ * hardware testing found `bootnand` itself can hang, with no recovery
+ * short of a manual power-cycle -- clearly worse than the theoretical
+ * regression risk above. Accepted trade-off, not fully eliminated risk:
+ * stock's own kernel almost certainly has the same historically-dormant
+ * ark_wdt driver lineage ours had before this session's soft_noboot fix
+ * (auto-starts at probe, defaults to interrupt-only/self-healing mode)
+ * -- if so, stock's own driver probing within the armed window will
+ * silently neutralize our timer the same way ours used to, and this is
+ * effectively risk-free. If stock's kernel *doesn't* reach that probe
+ * for some reason, a long-running stock boot could theoretically still
+ * get an unexpected reset once the timeout elapses unfed -- not
+ * confirmed either way, flagging honestly rather than asserting this is
+ * fully safe. Still NOT applied to bootstock/bootstockusb/boothybrid
+ * (the fully-chainloaded-stock-U-Boot paths) -- no hang reported there,
+ * don't touch what isn't broken. */
 #define KERNEL_HANDOFF_WDT_MS	20000
+#define NANDBOOT_WDT_MS		30000
 extern void ark_wdt_arm(unsigned int timeout_ms);
 
 static const char *env_or_default(const char *name, const char *fallback)
@@ -135,12 +155,16 @@ int do_bootnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	env_set_ulong("bootcount", 0);
 	env_save();
 
+	/* 2026-07-31: arm the watchdog here too -- see the "REVERSED" note
+	 * above KERNEL_HANDOFF_WDT_MS/NANDBOOT_WDT_MS for why. 30s (vs 20s
+	 * for boot_from_block_dev) since this path does its own NAND I/O
+	 * (disconfig, reversingtrack read, kernel read) before ever reaching
+	 * bootz, not just a straight fatload+bootz on already-loaded data. */
+	ark_wdt_arm(NANDBOOT_WDT_MS);
+
 	/* nandboot itself calls bootlogofile, positioned after its own
 	 * disconfig 0 (which resets OSD1 layer state via ark_display_init()
-	 * and would otherwise wipe out a bootlogofile call made here first).
-	 * Deliberately no ark_wdt_arm() here -- see the comment above
-	 * KERNEL_HANDOFF_WDT_MS: this boots stock's own kernel, which never
-	 * feeds our watchdog. */
+	 * and would otherwise wipe out a bootlogofile call made here first). */
 	return run_command("run nandboot", 0);
 }
 
