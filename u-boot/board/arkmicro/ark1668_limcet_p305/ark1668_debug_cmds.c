@@ -312,18 +312,70 @@ void ark_itu656_camera_bypass_enable(void)
 		(NTSC_DATENA_INV << 11) | (NTSC_VSYNC_INV << 10) |
 		(NTSC_HSYNC_INV << 9) | (NTSC_FIELD_INV << 8);
 
-	/* NOTE: stock FUN_0006e9f0 also runs a block here (between
-	 * FUN_0006e9d8() and FUN_0006e82c(1)) that branches on a runtime
-	 * value read through unresolved pointers (DAT_0006ea90/94/98) —
-	 * likely current screen/resolution state. Left out rather than
-	 * guessed; if the picture looks wrong, that block is the first
-	 * place to look. */
-
-	/* Enable the ITU656 block itself (stock FUN_0006e9d8 / FUN_0006e82c(1)) */
+	/* Enable the ITU656 block itself (stock FUN_0006e9d8) */
 	*(volatile unsigned int *)(LCD_BASE + 0x320) |= 0x800;
 	*(volatile unsigned int *)(SYS_BASE + 0x1ec) |= 0x1ff0000;
 	*(volatile unsigned int *)(SYS_BASE + 0x1e8) =
 		(*(volatile unsigned int *)(SYS_BASE + 0x1e8) & 0xffffff0f) | 0x50;
+
+	/* 2026-07-31: previously-omitted VIDEO2 layer configuration, stock
+	 * FUN_0006e9f0 (the caller of both the block above and the one
+	 * below) -- this is the block a prior version of this comment
+	 * flagged as "left out rather than guessed... if the picture looks
+	 * wrong, that block is the first place to look." Confirmed on real
+	 * hardware (2026-07-31) that the picture DOES look wrong without
+	 * it (visible screen flickering) -- decoded and cross-validated
+	 * against this project's OWN independently-written kernel LCDC
+	 * driver (drivers/video/fbdev/arkmicro/ark1668_lcdc_funcs.c, the
+	 * already-hardware-confirmed Android Auto video scaler-bypass
+	 * fix), which uses these exact registers/bit positions for
+	 * VIDEO_LAYER2 -- not just a fresh guess at the disassembly.
+	 *
+	 * rLCD_VIDEO2_WIN_SIZE (0x32c): stock's literal 0x1202d0 decodes
+	 * as width=720 height=288, packed (height&0xfff)<<12 |
+	 * (width&0xfff) -- the exact convention
+	 * ark1668_lcdc_set_video_win_size() uses in that kernel driver.
+	 * This is the camera's own native source window, not
+	 * panel-dependent, reused verbatim.
+	 *
+	 * rLCD_VIDEO2_SIZE (0x330): stock computes this from a runtime
+	 * "current screen" struct (the active PANEL's own width/height,
+	 * same packing) -- for this board that's the confirmed 800x480
+	 * panel (every boot log's own "[screen_info] ... Width:800,
+	 * Height:480" line), hardcoded below the same way the NTSC_*
+	 * constants above are also fixed, board-specific values rather
+	 * than dynamically read.
+	 *
+	 * rLCD_VIDEO2_SCALE_CTL (0x354): stock's literal 0x80 = bit 7 only
+	 * ("YUV format" per that same kernel driver's own documented bit
+	 * meaning for this register) -- board-independent, reused
+	 * verbatim.
+	 *
+	 * rLCD_CONTROL (0x4) read-modify-write: sets bit 6, clears bits 7
+	 * and 9. Bit 6 is independently confirmed as VIDEO_LAYER2's enable
+	 * bit by ark1668_lcdc_set_video_en() in that same kernel driver
+	 * file (offset=6 for VIDEO_LAYER2) -- code written completely
+	 * independently of this U-Boot disassembly, a real cross-check,
+	 * not a guess. Bits 7/9's exact meaning isn't independently
+	 * confirmed; replicated verbatim rather than reinterpreted.
+	 *
+	 * Stock branches here on a runtime screen-type value (unresolved
+	 * in this port) between this rLCD_CONTROL path and an alternate
+	 * rLCD_TV_CONTROL path (LCD_BASE+0x2b0) for TV/composite output.
+	 * This board's screen type is confirmed RGB (ScreenType:0 in every
+	 * boot log), not a TV/composite output, so the rLCD_CONTROL path
+	 * is hardcoded here rather than conditionally selected. */
+#define ARK1668_ITU656_PANEL_WIDTH	800
+#define ARK1668_ITU656_PANEL_HEIGHT	480
+	*(volatile unsigned int *)(LCD_BASE + 0x32c) = 0x1202d0;
+	*(volatile unsigned int *)(LCD_BASE + 0x330) =
+		((ARK1668_ITU656_PANEL_HEIGHT & 0xfff) << 12) |
+		(ARK1668_ITU656_PANEL_WIDTH & 0xfff);
+	*(volatile unsigned int *)(LCD_BASE + 0x354) = 0x80;
+	*(volatile unsigned int *)(LCD_BASE + 0x4) =
+		(*(volatile unsigned int *)(LCD_BASE + 0x4) | 0x40) & ~(0x80 | 0x200);
+
+	/* stock FUN_0006e82c(1) */
 	*(volatile unsigned int *)(ITU656_BASE + 0x900) |= 1;
 	*(volatile unsigned int *)(ITU656_BASE) |= 6;
 	*(volatile unsigned int *)(ITU656_BASE + 0x8fc) = 0x1e0a;
