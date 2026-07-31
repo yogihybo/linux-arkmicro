@@ -508,11 +508,15 @@ U_BOOT_CMD(
  * benefit; see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 30.
  *
  * Stock's own MCU UART notification (two fixed frames sent whenever
- * this GPIO is read) is deliberately NOT ported -- despite the real,
- * decompiled protocol bytes being known, no caller of that function
- * could be found anywhere in stock's binary after an exhaustive search
- * (direct branch, literal pool, movw/movt, thumb interworking), so it
- * may be dead code in this build; not implemented blind. */
+ * this GPIO is read): an earlier session found the decompiled protocol
+ * bytes but could find no caller anywhere in stock's binary after an
+ * exhaustive search (direct branch, literal pool, movw/movt, thumb
+ * interworking) and left it unported as possibly-dead code. 2026-07-31:
+ * ported anyway per explicit instruction, despite that reachability
+ * doubt -- see ark_mcu_notify_backcar() below and
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md for the full reasoning and
+ * caveats (the onoff-value polarity in particular is an unconfirmed
+ * inference, not disassembly-proven). */
 #define ARK_BACKCAR_GPIO	5
 
 int do_backcarcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -539,6 +543,121 @@ int do_backcarcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 U_BOOT_CMD(
 	backcarcheck,	1,	0,	do_backcarcheck,
 	"read reverse-gear GPIO and configure ITU656 camera input",
+	""
+);
+
+/* 2026-07-31: stock's own U-Boot->MCU backcar-onoff UART notification,
+ * ported from FUN_0006ede4 in the real mtd1_uboot.bin. UART2
+ * (0xE8000000, CONFIG_SYS_SERIAL2) is a separate physical port from
+ * whatever's the active console -- not necessarily clocked/pinmuxed/
+ * baud-configured already, so this replicates stock's own one-time init
+ * sequence (FUN_0006ed64) before transmitting, rather than assuming the
+ * port is ready. Raw register pokes, matching this project's existing
+ * style for this class of hardware access (see ark_itu656_camera_bypass_enable()
+ * in ark1668_debug_cmds.c) rather than going through U-Boot's own
+ * multi-instance serial framework (drivers/serial/serial_pl01x.c),
+ * which has no clean API for "write to a specific non-console port".
+ *
+ * Frame bytes and the SYS_BASE+0x1e0 pinmux/init register values below
+ * are extracted directly from stock's rodata/instruction stream, not
+ * guessed -- see the plan file / docs for the full disassembly trail.
+ * The onoff-value polarity (does nonzero mean entering or leaving
+ * reverse?) is an unconfirmed inference: no direct caller of
+ * FUN_0006ede4 was found, so the exact call convention couldn't be
+ * checked against a real call site. Implemented here as nonzero =
+ * camera turning ON (send both frames), zero = OFF (send only the
+ * first frame) -- flip this if hardware testing shows the MCU reacting
+ * backwards. */
+#define ARK_UART2_BASE		0xE8000000
+#define ARK_UART2_DR		(ARK_UART2_BASE + 0x00)
+#define ARK_UART2_FR		(ARK_UART2_BASE + 0x18)
+#define ARK_UART2_FR_TXFF	(1 << 5)
+#define ARK_UART2_IBRD		(ARK_UART2_BASE + 0x24)
+#define ARK_UART2_FBRD		(ARK_UART2_BASE + 0x28)
+#define ARK_UART2_LCRH		(ARK_UART2_BASE + 0x2c)
+#define ARK_UART2_VENDOR34	(ARK_UART2_BASE + 0x34) /* meaning unknown, replicated verbatim */
+#define ARK_UART2_CR		(ARK_UART2_BASE + 0x30)
+#define ARK_UART2_VENDOR38	(ARK_UART2_BASE + 0x38) /* meaning unknown, replicated verbatim */
+
+static void ark_uart2_init_once(void)
+{
+	static int inited;
+	volatile unsigned int *pinmux = (volatile unsigned int *)(SYS_BASE + 0x1e0);
+
+	if (inited)
+		return;
+
+	*pinmux = (*pinmux & ~0xf00) | 0x500;
+
+	*(volatile unsigned int *)ARK_UART2_IBRD = 13;
+	*(volatile unsigned int *)ARK_UART2_FBRD = 1;
+	*(volatile unsigned int *)ARK_UART2_LCRH = 0x70;   /* 8N, FIFO enable */
+	*(volatile unsigned int *)ARK_UART2_VENDOR34 = 0x1d;
+	*(volatile unsigned int *)ARK_UART2_CR = 0x301;    /* UARTEN | TXE | RXE */
+	*(volatile unsigned int *)ARK_UART2_VENDOR38 = 0x50;
+
+	inited = 1;
+}
+
+static void ark_uart2_putc(unsigned char c)
+{
+	ark_uart2_init_once();
+	while (*(volatile unsigned int *)ARK_UART2_FR & ARK_UART2_FR_TXFF)
+		;
+	*(volatile unsigned int *)ARK_UART2_DR = c;
+}
+
+void ark_mcu_notify_backcar(int onoff)
+{
+	static const unsigned char frame1[7] = {0x0d, 0x24, 0x03, 0x00, 0x01, 0xff, 0x02};
+	static const unsigned char frame2[6] = {0x0d, 0x24, 0x02, 0x02, 0x04, 0xfb};
+	unsigned int i;
+
+	for (i = 0; i < sizeof(frame1); i++)
+		ark_uart2_putc(frame1[i]);
+	if (onoff) {
+		for (i = 0; i < sizeof(frame2); i++)
+			ark_uart2_putc(frame2[i]);
+	}
+
+	printf("[carback] notified mcu backcar onoff=%d\n", onoff);
+}
+
+/* 2026-07-31: automatic boot-time gate -- calls both the ITU656 camera
+ * bypass (ark1668_debug_cmds.c) and the MCU notify above when the
+ * reverse-gear GPIO is asserted, mirroring stock's own early-boot
+ * behavior (subagent disassembly found this reached "early in board
+ * init," independent of which boot medium ends up chosen). Invoked as
+ * the very first thing in CONFIG_BOOTCOMMAND via the carbackcamcheck
+ * command below, before uEnv.txt import / bootcheck / medium selection,
+ * so it fires as fast as possible after power-on. */
+void ark_carback_camera_check(void)
+{
+	const char *mode = env_get("carback_camera_mode");
+	int in_reverse;
+
+	if (mode && strcmp(mode, "0") == 0)
+		return; /* explicitly disabled, mirrors stock's env gate */
+
+	gpio_direction_input(ARK_BACKCAR_GPIO);
+	in_reverse = (gpio_get_value(ARK_BACKCAR_GPIO) == 0); /* active-low */
+
+	if (in_reverse) {
+		printf("[carback] reverse detected at boot -- enabling instant camera preview\n");
+		ark_itu656_camera_bypass_enable();
+		ark_mcu_notify_backcar(1);
+	}
+}
+
+int do_carbackcamcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	ark_carback_camera_check();
+	return 0;
+}
+
+U_BOOT_CMD(
+	carbackcamcheck,	1,	0,	do_carbackcamcheck,
+	"instant boot-time reverse-camera preview if the reverse-gear GPIO is asserted",
 	""
 );
 

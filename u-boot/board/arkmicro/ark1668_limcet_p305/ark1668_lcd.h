@@ -563,5 +563,11 @@ void arkdata_apply_vpinfo(vp_info *vp);
 #endif
 void ark_lcd_console_init(void);
 
+/* ark1668_debug_cmds.c -- ITU656 NTSC camera-input bypass register
+ * sequence (see do_itu656 there), reused by ark_carback_camera_check()
+ * in ark1668_display_cfg.c for the automatic boot-time reverse-camera
+ * preview. */
+void ark_itu656_camera_bypass_enable(void);
+
 
 #endif

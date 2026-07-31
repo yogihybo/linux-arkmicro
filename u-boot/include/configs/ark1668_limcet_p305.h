@@ -274,8 +274,19 @@
  * reliable known-good path) instead of retrying the same broken image
  * forever. The uEnv.txt import stays first/unconditional so a
  * user-overridden `bootlimit` there is already in the environment by
- * the time `bootcheck` reads it. */
+ * the time `bootcheck` reads it.
+ *
+ * 2026-07-31: `carbackcamcheck` (ark1668_display_cfg.c) runs first,
+ * unconditionally, before even the uEnv.txt import -- an instant,
+ * U-Boot-level reverse-camera preview (ITU656 hardware bypass straight
+ * into the LCDC video layer, no Linux involvement) if the reverse-gear
+ * GPIO is already asserted at power-on, matching stock's own real
+ * boot-time behavior (ported from stock's disassembled binary; see
+ * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md). Deliberately first so it's
+ * as fast as possible and independent of which boot medium/path ends up
+ * chosen below. */
 #define CONFIG_BOOTCOMMAND	\
+	"carbackcamcheck; " \
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \

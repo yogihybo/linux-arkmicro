@@ -275,7 +275,15 @@ U_BOOT_CMD(
 #define NTSC_FIELD_INV		0
 #define NTSC_HV_DELAY		1
 
-int do_itu656(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+/* 2026-07-31: extracted from do_itu656() below so the automatic
+ * reverse-gear boot-time camera preview (ark_carback_camera_check(),
+ * ark1668_display_cfg.c) can call the exact same, already-ported
+ * register sequence instead of duplicating it. Behavior unchanged --
+ * do_itu656 still calls this and is still manually invokable for
+ * testing. See this function's own history (docs/UBOOT_REVERSE_ENGINEERING.md
+ * §7) before trusting it further: never hardware-tested as of this
+ * refactor. */
+void ark_itu656_camera_bypass_enable(void)
 {
 	/* Enable pad/clock for the ITU656 block (stock FUN_0006e800) */
 	*(volatile unsigned int *)(SYS_BASE + 0x1ec) |= 0x1ff0000;
@@ -319,7 +327,11 @@ int do_itu656(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	*(volatile unsigned int *)(ITU656_BASE + 0x900) |= 1;
 	*(volatile unsigned int *)(ITU656_BASE) |= 6;
 	*(volatile unsigned int *)(ITU656_BASE + 0x8fc) = 0x1e0a;
+}
 
+int do_itu656(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	ark_itu656_camera_bypass_enable();
 	printf("[itu656] NTSC timing configured\n");
 	return 0;
 }
