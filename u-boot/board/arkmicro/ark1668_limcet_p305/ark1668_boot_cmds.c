@@ -116,6 +116,25 @@ static unsigned long env_or_default_hex(const char *name, unsigned long fallback
 int do_bootnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	printf("[bootnand] booting from NAND with original dumped settings (ubi.mtd=6 root=ubi0:rootfs)\n");
+
+	/* 2026-07-31: clear bootcheck's boot-attempt counter here, before
+	 * running nandboot below. U-Boot successfully reaching this point
+	 * (not hung/crashed earlier in its own init or in a failed bootusb
+	 * attempt) is itself evidence U-Boot/hardware is fundamentally
+	 * healthy -- that's the actual thing bootcount tracks, independent
+	 * of whether bootusb's kernel image specifically was good or bad.
+	 * Without this, bootcount would only ever get cleared by our own
+	 * rcS (which never runs under nandboot -- see the comment below),
+	 * so once it exceeded bootlimit the device would be PERMANENTLY
+	 * stuck skipping bootusb forever, even after whatever was wrong
+	 * with it got fixed. Deliberately done here in U-Boot itself, not
+	 * by patching stock's NAND-resident rootfs (which this project has
+	 * never written to and treats as the guaranteed-untouched, known-
+	 * good fallback -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+	 * §79). */
+	env_set_ulong("bootcount", 0);
+	env_save();
+
 	/* nandboot itself calls bootlogofile, positioned after its own
 	 * disconfig 0 (which resets OSD1 layer state via ark_display_init()
 	 * and would otherwise wipe out a bootlogofile call made here first).
