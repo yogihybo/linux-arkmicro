@@ -263,14 +263,29 @@
  * CarPlay/BT/WiFi stack end to end -- so it's now the default instead,
  * removing this whole class of unfixable failure from the normal boot
  * path. `boothybrid`/`bootstock` remain available as manual commands at
- * the prompt for anyone who explicitly wants to test/compare them. */
+ * the prompt for anyone who explicitly wants to test/compare them.
+ *
+ * 2026-07-31: gained a `bootcheck` gate (ark1668_boot_cmds.c) -- tracks
+ * consecutive boots that never confirm success (userspace clears
+ * `bootcount` via `fw_setenv bootcount 0` a short while after rcS
+ * reaches a stable point, see firmware_overlay/etc/rc.d/rcS). After
+ * `bootlimit` (default 3) consecutive unconfirmed attempts, skips
+ * `bootusb` entirely and goes straight to `nandboot` (stock, the most
+ * reliable known-good path) instead of retrying the same broken image
+ * forever. The uEnv.txt import stays first/unconditional so a
+ * user-overridden `bootlimit` there is already in the environment by
+ * the time `bootcheck` reads it. */
 #define CONFIG_BOOTCOMMAND	\
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
-	"bootlogofile bootlogo_usb.raw; " \
-	"if bootusb; then true; " \
-	"else run nandboot; fi"
+	"if bootcheck; then " \
+		"bootlogofile bootlogo_usb.raw; " \
+		"if bootusb; then true; else run nandboot; fi; " \
+	"else " \
+		"echo [bootcheck] bootlimit exceeded -- going straight to nandboot; " \
+		"run nandboot; " \
+	"fi"
 
 #else
 

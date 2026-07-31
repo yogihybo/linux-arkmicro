@@ -84,6 +84,23 @@
 
 #include "ark1668_lcd.h"
 
+/* 2026-07-31: watchdog block already used by reset_cpu() (see
+ * arch/arm/mach-arkmicro/armv7/reset.c) reused here to arm a real
+ * boot-supervision timeout right before jumping into THIS PROJECT'S OWN
+ * kernel in boot_from_block_dev() below. The kernel's own ark_wdt driver
+ * reprograms the timer to its own default (15s) as soon as it probes
+ * (clean stop+reprogram, no register conflict) -- every boot log checked
+ * shows that happening within ~1s of the jump, so 20s gives a large,
+ * safe margin against a false trigger during a legitimately-successful
+ * boot. Deliberately NOT used anywhere near do_bootnand()/`nandboot` or
+ * bootstock/bootstockusb/boothybrid below -- those boot STOCK's
+ * original, untouched kernel+rootfs (or a fully separate chainloaded
+ * stock U-Boot), which has no knowledge of our busybox watchdog feeder
+ * -- arming it there would eventually fire mid-boot on a currently-
+ * working path, a real regression, not a safety net. */
+#define KERNEL_HANDOFF_WDT_MS	20000
+extern void ark_wdt_arm(unsigned int timeout_ms);
+
 static const char *env_or_default(const char *name, const char *fallback)
 {
 	const char *v = env_get(name);
@@ -101,7 +118,10 @@ int do_bootnand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	printf("[bootnand] booting from NAND with original dumped settings (ubi.mtd=6 root=ubi0:rootfs)\n");
 	/* nandboot itself calls bootlogofile, positioned after its own
 	 * disconfig 0 (which resets OSD1 layer state via ark_display_init()
-	 * and would otherwise wipe out a bootlogofile call made here first). */
+	 * and would otherwise wipe out a bootlogofile call made here first).
+	 * Deliberately no ark_wdt_arm() here -- see the comment above
+	 * KERNEL_HANDOFF_WDT_MS: this boots stock's own kernel, which never
+	 * feeds our watchdog. */
 	return run_command("run nandboot", 0);
 }
 
@@ -109,6 +129,42 @@ U_BOOT_CMD(
 	bootnand, 1, 0, do_bootnand,
 	"boot from NAND using the original dumped stock settings",
 	"bootnand\n"
+);
+
+/* 2026-07-31: boot-attempt counter for the default autoboot chain only
+ * (CONFIG_BOOTCOMMAND calls this, not do_bootmmc/do_bootusb/do_bootnand
+ * themselves -- manually typing bootusb/bootmmc/bootnand at the prompt
+ * never touches bootcount at all, matching this file's existing
+ * "commands stay independently invokable" design). Persisted in the
+ * environment (NAND-backed, /dev/mtd3, survives a real power-cycle) --
+ * plain env_get_ulong/env_set_ulong/env_save rather than the generic
+ * drivers/bootcount/* framework, which isn't wired into board_r.c for
+ * this board anyway (would need the same explicit calls regardless) and
+ * whose one persistent backend (bootcount_env.c) is gated behind an
+ * upgrade_available flag meant for a different A/B-OTA use case. */
+int do_bootcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	ulong bootcount = env_get_ulong("bootcount", 10, 0);
+	ulong bootlimit = env_get_ulong("bootlimit", 10, 3); /* default 3 */
+
+	bootcount++;
+	env_set_ulong("bootcount", bootcount);
+	env_save();
+
+	printf("[bootcheck] bootcount=%lu bootlimit=%lu\n", bootcount, bootlimit);
+
+	if (bootlimit && bootcount > bootlimit) {
+		printf("[bootcheck] %lu consecutive unconfirmed boots (limit %lu) "
+		       "-- falling back to nandboot directly\n", bootcount, bootlimit);
+		return 1;
+	}
+	return 0;
+}
+
+U_BOOT_CMD(
+	bootcheck, 1, 0, do_bootcheck,
+	"increment/check the boot-attempt counter used by the default autoboot chain",
+	"bootcheck\n"
 );
 
 /* Fixed by the ARK header format (see inject_ark_header.py / docs) — Stepldr
@@ -335,6 +391,15 @@ static int boot_from_block_dev(const char *iface)
 	 * touches the USB controller so there's nothing to stop there. */
 	if (strcmp(iface, "usb") == 0)
 		run_command("usb stop", 0);
+
+	/* Arm the hardware watchdog right before the jump, after everything
+	 * above has already succeeded -- see the comment above
+	 * KERNEL_HANDOFF_WDT_MS for why this is safe and why it's only here,
+	 * not in do_bootnand()/bootstock. Catches a hung/failed jump (bad
+	 * kernel image, bad DTB, early kernel panic before our own ark_wdt
+	 * driver probes) by auto-resetting back to U-Boot instead of hanging
+	 * forever. */
+	ark_wdt_arm(KERNEL_HANDOFF_WDT_MS);
 
 	sprintf(cmd, "bootz 0x%lx - 0x%lx", kerneladdr, dtbaddr);
 	return run_command(cmd, 0);

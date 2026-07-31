@@ -34,7 +34,17 @@ extern unsigned long ark_get_apb_clock(void);
 
 #define div_round_up(x, div) (((x) + (div) - 1) / (div))
 
-static void ark_wdt_reset(u32 timeout_ms)
+/*
+ * Arms the hardware watchdog (RSTEN set -- a real, unassisted SoC reset,
+ * no OS involvement needed) to fire after timeout_ms if nothing
+ * reprograms it first. Originally private to reset_cpu() below with a
+ * short timeout as a "force an immediate reset" trick; also reused
+ * (2026-07-31) by board/arkmicro/ark1668_limcet_p305/ark1668_boot_cmds.c
+ * to arm a longer boot-supervision timeout right before jumping into the
+ * kernel -- same primitive, just a different caller-supplied timeout.
+ * Returns immediately, does not block.
+ */
+void ark_wdt_arm(u32 timeout_ms)
 {
 	u32 regbase = CONFIG_WATCHDOG_BASEADDR;
 	u32 freq = ark_get_apb_clock();
@@ -66,10 +76,10 @@ void reset_cpu(ulong addr)
 {
 	/* TODO: Program the system controller to reset */
 #ifdef CONFIG_ARK1668EFAMILY
-	ark_wdt_reset(2000);
+	ark_wdt_arm(2000);
 	ark1668e_softreset();
 #else
-	ark_wdt_reset(100);
+	ark_wdt_arm(100);
 #endif
 	/* loop for waiting reset */
 	while(1);
