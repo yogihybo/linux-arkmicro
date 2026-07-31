@@ -43,6 +43,22 @@ extern unsigned long ark_get_apb_clock(void);
  * to arm a longer boot-supervision timeout right before jumping into the
  * kernel -- same primitive, just a different caller-supplied timeout.
  * Returns immediately, does not block.
+ *
+ * 2026-07-31: WDT_PSR (the prescaler register) REQUIRES a power-of-two
+ * value -- confirmed empirically on real hardware (prescaler=2 and
+ * prescaler=256 both correctly fired a reset at the expected time;
+ * prescaler=290, the plain div_round_up() result for a 30s timeout,
+ * never fired at all even after 30+ seconds). Very likely a one-hot/
+ * shift-selector field internally (each bit position N meaning
+ * "divide by 2^N", only one bit meant to ever be set) rather than a
+ * literal linear divisor -- 290 = 0b100100010 has three bits set,
+ * 2 and 256 each have exactly one. No datasheet to confirm the exact
+ * mechanism against, but the empirical A/B result across three real
+ * hardware tests is unambiguous. This was a real, previously-undiscovered
+ * bug: the original reset_cpu() usage (100ms/2000ms) never exercised
+ * this path at all (both fit under the register's max with prescaler=1),
+ * so it was never caught until this session's longer boot-supervision
+ * timeouts needed it. See docs/DEVICE_TEST_CHECKLIST_2026-07-18.md §85.
  */
 void ark_wdt_arm(u32 timeout_ms)
 {
@@ -53,7 +69,11 @@ void ark_wdt_arm(u32 timeout_ms)
 	freq = div_round_up(freq, 128);
 	count = timeout_ms * (u64)freq / 1000;
 	if (count > 0xffff) {
-		divisor = div_round_up(count, 0xffff);
+		u32 min_divisor = div_round_up(count, 0xffff);
+
+		divisor = 1;
+		while (divisor < min_divisor)
+			divisor <<= 1;
 		if (divisor > 0xffff) {
 			printf("timeout %d too big\n", divisor);
 			return;
