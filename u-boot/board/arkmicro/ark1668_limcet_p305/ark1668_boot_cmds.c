@@ -400,6 +400,24 @@ static int boot_from_block_dev(const char *iface)
 		return 1;
 	}
 
+	/* 2026-07-31: reverse-camera parking-guide overlay data (RSTK-magic'd,
+	 * kernel's track_paint_init() checks for it at fixed physical
+	 * 0xfd00000 -- see NANDARGS's nandboot comment in
+	 * include/configs/ark1668_limcet_p305.h). Previously only ever loaded
+	 * by nandboot's own `nand read`; this path (bootmmc/bootusb) never
+	 * loaded it at all, so the guideline overlay silently never worked
+	 * here even though these are now the primary confirmed-working boot
+	 * paths. Always sourced from the SD card's FAT partition (mmc 0:1)
+	 * regardless of iface, same convention display_bootlogo_file() already
+	 * uses for its own assets -- even a bootusb test boot still has the SD
+	 * card mounted for auxiliary, non-kernel assets like this. Not fatal
+	 * if missing/fails: the kernel's own check already degrades gracefully
+	 * (prints "reservingtrack check failed!", skips the overlay) if this
+	 * memory region was never populated, so a warning is enough here. */
+	if (run_command("fatload mmc 0:1 0xfd00000 reversingtrack.raw", 0) != 0)
+		printf("[boot%s] warning: failed to load reversingtrack.raw -- "
+		       "reverse-camera guideline overlay will be unavailable\n", iface);
+
 	/* usb0 (the board's single external USB port) ships with
 	 * dr_mode="otg" in the DTS so bootmmc (the real vehicle boot path)
 	 * keeps real gadget capability for wired CarPlay. bootusb already
