@@ -39,7 +39,16 @@ CONFIG_FAT_WRITE=y
 CONFIG_CMD_MTDPARTS=y
 CONFIG_MTDIDS_DEFAULT="nand0=ark1680-nand"
 CONFIG_MTDPARTS_DEFAULT="mtdparts=ark1680-nand:128k(S-Loader),512k(U-boot),512k(U-boot_back),256K(U-boot-Env),256K(arkdata),4m(kernel),106m(rootfs),6m(userdata),512K(bootlogo),3m(bootanimation),3m(reversingtrack),256K(Unicode)"
-CONFIG_ENV_IS_NOWHERE=y
+# 2026-07-31: was CONFIG_ENV_IS_NOWHERE=y -- confirmed via env/nowhere.c
+# that backend has no save/load implementation at all, meaning
+# saveenv/env_save() never persisted anything anywhere. Silently broke
+# the bootcount/bootlimit boot-supervision fallback (bootcheck relies on
+# bootcount surviving a real reset, which is exactly what "nowhere"
+# can't do). Switched to CONFIG_ENV_IS_IN_MMC: environment now lives in
+# a raw sector range on the SD card itself (CONFIG_ENV_OFFSET in
+# include/configs/ark1668_limcet_p305.h), inside the ~1MiB gap before
+# partition 1 that nothing else in this project's boot process uses.
+CONFIG_ENV_IS_IN_MMC=y
 # CONFIG_ENV_IS_IN_NAND is not set
 # CONFIG_NET is not set
 CONFIG_MMC_DW=y
