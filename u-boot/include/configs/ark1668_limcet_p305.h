@@ -165,10 +165,25 @@
 		 * doesn't touch shared allocations), but it's a real, confirmed gap
 		 * regardless -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md. */ \
 		"nand read 0xfd00000 reversingtrack; " \
-		"if fatload mmc 0:1 ${kerneladdr} zImage_stock; then " \
-			"echo Loaded zImage_stock from SD card; " \
+		/* 2026-08-01: NAND is now tried FIRST, not the SD-staged
+		 * zImage_stock copy -- bootnand exists specifically to work
+		 * independent of the SD card (the last-resort path when USB/
+		 * SD have already failed), so preferring an SD file here was
+		 * backwards from its own purpose. The NAND "kernel" partition
+		 * itself was never the problem; this SD-first order only ever
+		 * existed because an earlier separate bootstockkernel command
+		 * got merged straight into this script (commit 0e8528f48) and
+		 * happened to keep its own SD-only logic first. switchecc 2
+		 * just above already configures the correct ECC settings for
+		 * NAND kernel/rootfs reads (docs/DEVICE_TEST_CHECKLIST_2026-07-18.md),
+		 * so there's no known reason NAND itself would fail here. SD
+		 * zImage_stock kept as a fallback in case a NAND read ever
+		 * does fail for some other reason. */ \
+		"if nand read ${kerneladdr} kernel; then " \
+			"echo Loaded kernel from NAND; " \
 		"else " \
-			"nand read ${kerneladdr} kernel; " \
+			"echo NAND kernel read failed -- falling back to SD zImage_stock; " \
+			"fatload mmc 0:1 ${kerneladdr} zImage_stock; " \
 		"fi; " \
 		"bootz ${kerneladdr}\0"
 
