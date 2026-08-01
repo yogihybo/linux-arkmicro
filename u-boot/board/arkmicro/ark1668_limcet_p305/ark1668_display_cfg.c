@@ -326,6 +326,24 @@ void ark_display_init(int screen_id)
 	rLCD_OSD2_SIZE = 0x001e0320;   /* 800x480, same format as OSD1 */
 	rLCD_OSD2_ADDR = 0x0be00000;   /* fixed, outside kernel-managed RAM */
 	rLCD_OSD2_CTL  = 0x002320ff;   /* enabled + format/order bits matching stock */
+
+	/* 2026-08-01: real hardware showed random/garbage colors flashing on
+	 * screen during each bootlogo swap (display_bootlogo_file() -- the
+	 * boot-stage status feature this fork added, cycling through
+	 * bootlogo.raw/_usb.raw/_sd.raw/_nand.raw as the boot progresses,
+	 * something real stock never does). That function correctly
+	 * disables OSD1 while overwriting its buffer (0b336e63f), but OSD2
+	 * -- enabled right here, unconditionally, on every boot -- sits
+	 * underneath it the whole time. This address has never been written
+	 * by anything at this point in boot, so whatever's visible through
+	 * the OSD1 gap during a swap is raw, uninitialized DRAM content, not
+	 * real image data. Zero it once here instead of leaving it garbage
+	 * -- matches what stock's own kernel-side driver will overwrite it
+	 * with real content later anyway once it actually starts using this
+	 * layer, so this doesn't change the eventual stock behavior, only
+	 * what shows through during this fork's own extra splash swaps. */
+	memset((void *)0x0be00000, 0, 800 * 480 * 4);
+
         ark_osd_en_layer(OSD2_LAYER, 1);
 	if (IS_TVENC_SCREEN(screen) && interlace) {
 		ark_set_osd_frame_mode(OSD2_LAYER, 1);
