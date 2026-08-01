@@ -317,6 +317,16 @@
  * prompt (`carbackcamcheck`, or `itu656` directly) -- re-add the call
  * below once confirmed working by hand. */
 #define CONFIG_BOOTCOMMAND	\
+	/* 2026-08-01: arm the watchdog as the very first thing autoboot
+	 * does once it's confirmed proceeding unattended -- see wdtarm's
+	 * own comment (ark1668_boot_cmds.c) and board_late_init()'s
+	 * comment (ark1668.c) for why this replaced arming in board code
+	 * directly (that fired even when the user stopped autoboot to
+	 * investigate a hang manually, resetting them out of their own
+	 * debugging session). Never runs at all if space is pressed to
+	 * stop autoboot -- this whole string doesn't execute in that
+	 * case, so nothing to disarm. */ \
+	"wdtarm; " \
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \

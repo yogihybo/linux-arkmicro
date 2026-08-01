@@ -158,25 +158,22 @@ int board_early_init_f(void)
  */
 #define ENABLE_LCDCONSOLE	0
 
-extern void ark_wdt_arm(unsigned int timeout_ms);
-
-/* 2026-08-01: real hardware reports occasional hangs with no serial
- * console attached (in-vehicle use) -- splash visible (ark_show_bootlogo()
- * completed) but boot never reaches bootusb/nandboot at all. Root cause:
- * everything from here through the autoboot countdown and
- * CONFIG_BOOTCOMMAND's own uEnv.txt fatload + bootcheck runs with ZERO
- * watchdog protection -- earlier and separate from the two fatload
- * sequences already covered (do_bootnand()'s NANDBOOT_WDT_MS arm,
- * boot_from_block_dev()'s KERNEL_HANDOFF_WDT_MS arm, both in
- * ark1668_boot_cmds.c). This is the earliest point in the whole
- * automatic-boot sequence it's safe to arm from -- before it,
- * ark_show_bootlogo() hasn't even run yet. 20s comfortably covers
- * ark_show_bootlogo()'s own 2 fatloads + the autoboot countdown +
- * uEnv.txt's fatload + bootcheck (every boot log shows this whole
- * window finishing in a couple of seconds); bootusb/nandboot then
- * re-arm with their own fresh timeouts before this one could expire on
- * a legitimately slow but successful boot. */
-#define BOARD_LATE_INIT_WDT_MS	20000
+/* 2026-08-01: previously armed the watchdog right here (BOARD_LATE_INIT_WDT_MS,
+ * 20s) to cover ark_show_bootlogo()'s fatloads + the autoboot countdown +
+ * CONFIG_BOOTCOMMAND's uEnv.txt fatload/bootcheck, none of which had any
+ * protection before. REMOVED after real hardware testing found a worse
+ * problem: this fires unconditionally as soon as board_late_init() runs,
+ * with no awareness of whether the user then presses space to stop
+ * autoboot and drop to the interactive prompt to investigate a hang --
+ * the timer keeps counting down regardless and resets the board out from
+ * under a manual debugging session, actively preventing the kind of
+ * investigation this was meant to help with. Replaced with `wdtarm`
+ * (ark1668_boot_cmds.c) called as the very first thing INSIDE
+ * CONFIG_BOOTCOMMAND instead -- only arms if autoboot actually proceeds
+ * unattended, never when a human stops to look around. This does
+ * reopen a narrower gap (ark_show_bootlogo()'s own 2 fatloads, before
+ * CONFIG_BOOTCOMMAND ever runs, are unprotected again) but that was never
+ * confirmed as an actual hang location, unlike this regression. */
 
 int board_late_init(void)
 {
@@ -184,8 +181,6 @@ int board_late_init(void)
 	char *need_update,*update_flash;
 	unsigned int loadaddr;
 	int do_update = 0, update_from_mmc = 1;
-
-	ark_wdt_arm(BOARD_LATE_INIT_WDT_MS);
 
 	ark_show_bootlogo();
 #if ENABLE_LCDCONSOLE

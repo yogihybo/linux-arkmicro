@@ -119,7 +119,34 @@
  * don't touch what isn't broken. */
 #define KERNEL_HANDOFF_WDT_MS	20000
 #define NANDBOOT_WDT_MS		30000
+#define BOOTCOMMAND_WDT_MS	20000
 extern void ark_wdt_arm(unsigned int timeout_ms);
+
+/* 2026-08-01: shell-command wrapper so CONFIG_BOOTCOMMAND (a plain env
+ * string, can't call ark_wdt_arm() directly) can arm the watchdog as its
+ * own first action -- see ark1668.c's board_late_init() comment for why
+ * this replaced arming unconditionally in board code. Arming only here,
+ * inside CONFIG_BOOTCOMMAND itself, means it never fires if the user
+ * presses space to stop autoboot (that command string never runs at
+ * all in that case), only when autoboot genuinely proceeds unattended.
+ * Takes an optional explicit ms argument; defaults to BOOTCOMMAND_WDT_MS
+ * for the plain `wdtarm` case CONFIG_BOOTCOMMAND actually uses. */
+int do_wdtarm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned long ms = BOOTCOMMAND_WDT_MS;
+
+	if (argc > 1)
+		ms = simple_strtoul(argv[1], NULL, 10);
+
+	ark_wdt_arm((unsigned int)ms);
+	return 0;
+}
+
+U_BOOT_CMD(
+	wdtarm, 2, 0, do_wdtarm,
+	"arm the hardware watchdog (default 20000ms if no argument given)",
+	"wdtarm [timeout_ms]\n"
+);
 
 static const char *env_or_default(const char *name, const char *fallback)
 {
