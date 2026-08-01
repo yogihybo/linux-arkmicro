@@ -158,12 +158,34 @@ int board_early_init_f(void)
  */
 #define ENABLE_LCDCONSOLE	0
 
+extern void ark_wdt_arm(unsigned int timeout_ms);
+
+/* 2026-08-01: real hardware reports occasional hangs with no serial
+ * console attached (in-vehicle use) -- splash visible (ark_show_bootlogo()
+ * completed) but boot never reaches bootusb/nandboot at all. Root cause:
+ * everything from here through the autoboot countdown and
+ * CONFIG_BOOTCOMMAND's own uEnv.txt fatload + bootcheck runs with ZERO
+ * watchdog protection -- earlier and separate from the two fatload
+ * sequences already covered (do_bootnand()'s NANDBOOT_WDT_MS arm,
+ * boot_from_block_dev()'s KERNEL_HANDOFF_WDT_MS arm, both in
+ * ark1668_boot_cmds.c). This is the earliest point in the whole
+ * automatic-boot sequence it's safe to arm from -- before it,
+ * ark_show_bootlogo() hasn't even run yet. 20s comfortably covers
+ * ark_show_bootlogo()'s own 2 fatloads + the autoboot countdown +
+ * uEnv.txt's fatload + bootcheck (every boot log shows this whole
+ * window finishing in a couple of seconds); bootusb/nandboot then
+ * re-arm with their own fresh timeouts before this one could expire on
+ * a legitimately slow but successful boot. */
+#define BOARD_LATE_INIT_WDT_MS	20000
+
 int board_late_init(void)
 {
 	char cmd[128];
 	char *need_update,*update_flash;
 	unsigned int loadaddr;
 	int do_update = 0, update_from_mmc = 1;
+
+	ark_wdt_arm(BOARD_LATE_INIT_WDT_MS);
 
 	ark_show_bootlogo();
 #if ENABLE_LCDCONSOLE
