@@ -370,6 +370,19 @@ static int boot_from_block_dev(const char *iface)
 		"console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8");
 	unsigned long machid = env_or_default_hex("machid", 0x1068);
 
+	/* 2026-08-01: moved here from right before the final bootz -- hardware
+	 * testing found occasional hangs partway through this function's own
+	 * fatload sequence (kernel zImage / DTB / reversingtrack.raw, the last
+	 * of which prints nothing on success so a hang there is silent),
+	 * needing a manual power-cycle + SD reseat to recover. Same class of
+	 * bug, same fix, as do_bootnand()'s NANDBOOT_WDT_MS arm above -- see
+	 * that comment's history. 20s is still a large, safe margin: every
+	 * boot log shows the whole fatload sequence + bootz + kernel reaching
+	 * its own ark_wdt probe finishing well under 5s combined, and the
+	 * kernel's own driver cleanly reprograms/neutralizes this timer as
+	 * soon as it probes either way. */
+	ark_wdt_arm(KERNEL_HANDOFF_WDT_MS);
+
 	/* bootusb previously always used mmcroot here regardless of iface —
 	 * loaded the kernel from USB but still told it to mount root from the
 	 * SD card. root= now follows the actual boot device. Note this only
@@ -453,15 +466,10 @@ static int boot_from_block_dev(const char *iface)
 	if (strcmp(iface, "usb") == 0)
 		run_command("usb stop", 0);
 
-	/* Arm the hardware watchdog right before the jump, after everything
-	 * above has already succeeded -- see the comment above
-	 * KERNEL_HANDOFF_WDT_MS for why this is safe and why it's only here,
-	 * not in do_bootnand()/bootstock. Catches a hung/failed jump (bad
-	 * kernel image, bad DTB, early kernel panic before our own ark_wdt
-	 * driver probes) by auto-resetting back to U-Boot instead of hanging
-	 * forever. */
-	ark_wdt_arm(KERNEL_HANDOFF_WDT_MS);
-
+	/* Watchdog is already armed at the top of this function (2026-08-01)
+	 * -- covers the fatload sequence above too now, not just this final
+	 * jump. Catches a hung/failed jump (bad kernel image, bad DTB, early
+	 * kernel panic before our own ark_wdt driver probes) the same way. */
 	sprintf(cmd, "bootz 0x%lx - 0x%lx", kerneladdr, dtbaddr);
 	return run_command(cmd, 0);
 }
