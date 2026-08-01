@@ -381,6 +381,25 @@ void ark_itu656_camera_bypass_enable(void)
 	*(volatile unsigned int *)(ITU656_BASE + 0x8fc) = 0x1e0a;
 }
 
+/* 2026-08-01: counterpart to ark_itu656_camera_bypass_enable() above --
+ * added after a real hardware regression: running `itu656` (or
+ * carbackcamcheck while in reverse) manually to verify the VIDEO_LAYER2
+ * fix, then continuing on to boot the stock UI in the same U-Boot
+ * session (no power cycle), left VIDEO_LAYER2 permanently enabled --
+ * there was no code anywhere to turn it back off. The stray YUV-format
+ * layer (rLCD_VIDEO2_SCALE_CTL's bit 7) blending over the RGB OSD with
+ * a stale/garbage buffer is what showed up as a red/blue color swap on
+ * the stock UI. Only undoes the rLCD_CONTROL bit this port actually
+ * understands (bit 6, VIDEO_LAYER2 enable, independently confirmed via
+ * ark1668_lcdc_set_video_en() in the kernel LCDC driver) -- deliberately
+ * does NOT touch bits 7/9 (meaning still unconfirmed, see the enable
+ * function's comment) or the ITU656 capture-input block itself, which
+ * do_backcarcheck's existing rITU656IN_IMR=0 already handles. */
+void ark_itu656_camera_bypass_disable(void)
+{
+	*(volatile unsigned int *)(LCD_BASE + 0x4) &= ~0x40;
+}
+
 int do_itu656(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	ark_itu656_camera_bypass_enable();

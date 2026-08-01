@@ -568,6 +568,7 @@ void ark_lcd_console_init(void);
  * in ark1668_display_cfg.c for the automatic boot-time reverse-camera
  * preview. */
 void ark_itu656_camera_bypass_enable(void);
+void ark_itu656_camera_bypass_disable(void);
 
 
 #endif

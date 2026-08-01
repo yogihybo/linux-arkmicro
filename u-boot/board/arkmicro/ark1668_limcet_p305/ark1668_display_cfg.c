@@ -532,6 +532,14 @@ int do_backcarcheck(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		PIX_LINE_NUM_DELTA = 0x1e0a;
 	} else {
 		rITU656IN_IMR = 0;
+		/* 2026-08-01: also make sure VIDEO_LAYER2 isn't left enabled
+		 * from an earlier manual `itu656`/`carbackcamcheck` test run
+		 * in this same U-Boot session -- backcarcheck runs
+		 * unconditionally on every boot path (nandboot etc.), so this
+		 * is the one place guaranteed to clean it up before Linux
+		 * starts. See ark_itu656_camera_bypass_disable()'s own
+		 * comment for the hardware-confirmed regression this fixes. */
+		ark_itu656_camera_bypass_disable();
 	}
 
 	printf("[backcarcheck] gpio%d=%d, in_reverse=%d.\n",
