@@ -192,11 +192,6 @@ static int __abortboot(int bootdelay)
 		if (ch == ' ')
 			abort = 1;	/* don't auto boot	*/
 	}
-	if(abort == 1)
-	{
-		//进入到uboot命令行关闭watchdog
-		ark_watchdog_stop();
-	}
 	while ((bootdelay > 0) && (!abort)) {
 		--bootdelay;
 		/* delay 1000 ms */
@@ -217,6 +212,24 @@ static int __abortboot(int bootdelay)
 		printf("\b\b\b%2d ", bootdelay);
 	}
 	putc('\n');
+
+	/* 2026-08-02: moved from right after the immediate-keypress check
+	 * above (where it only covered the narrow "space pressed before the
+	 * countdown loop even started" case) to here, covering every abort
+	 * path uniformly -- including any key pressed during the actual
+	 * countdown loop, and Ctrl-C specifically, neither of which
+	 * triggered ark_watchdog_stop() before. Real gap found on real
+	 * hardware: user connected a terminal mid-hang, pressed Ctrl-C,
+	 * successfully dropped to the interactive prompt -- but with a
+	 * watchdog armed early enough to cover this whole window (which
+	 * this project's own board code doesn't currently do, precisely
+	 * because of this gap, see ark1668.c's board_late_init() history),
+	 * an incomplete disarm here would reset the board out from under
+	 * that same manual investigation, the exact regression already
+	 * found and fixed once this session (checklist section 100a). */
+	if (abort)
+		ark_watchdog_stop();
+
 	return abort;
 }
 # endif	/* CONFIG_AUTOBOOT_KEYED */

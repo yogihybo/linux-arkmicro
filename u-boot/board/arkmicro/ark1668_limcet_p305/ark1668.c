@@ -170,10 +170,28 @@ int board_early_init_f(void)
  * investigation this was meant to help with. Replaced with `wdtarm`
  * (ark1668_boot_cmds.c) called as the very first thing INSIDE
  * CONFIG_BOOTCOMMAND instead -- only arms if autoboot actually proceeds
- * unattended, never when a human stops to look around. This does
- * reopen a narrower gap (ark_show_bootlogo()'s own 2 fatloads, before
- * CONFIG_BOOTCOMMAND ever runs, are unprotected again) but that was never
- * confirmed as an actual hang location, unlike this regression. */
+ * unattended, never when a human stops to look around. This did reopen a
+ * narrower gap (ark_show_bootlogo()'s own 2 fatloads, before
+ * CONFIG_BOOTCOMMAND ever runs, unprotected again).
+ *
+ * RESTORED, same day: real hardware hit exactly that reopened gap --
+ * user hung with no terminal attached, connected one mid-hang, and
+ * Ctrl-C successfully dropped to the interactive prompt (proving
+ * CONFIG_BOOTCOMMAND's own wdtarm/noctrlc hadn't run yet -- the hang was
+ * upstream of them, in this exact window). Safe to re-arm here now:
+ * found and fixed the real reason the original removal was necessary --
+ * common/autoboot.c's __abortboot() only called ark_watchdog_stop() (the
+ * SAME hardware watchdog ark_wdt_arm() controls, confirmed via the
+ * WDT_BASE register address both use) for the narrow "space pressed
+ * before the countdown loop even started" case, not for any abort during
+ * the actual countdown or via Ctrl-C. Fixed there to cover every abort
+ * path uniformly -- so now arming here is safe: if the user interrupts
+ * autoboot at all (space, or Ctrl-C once console-noise/musb theories
+ * were ruled out and this is legitimately possible), the watchdog gets
+ * disarmed automatically before they ever reach the prompt, closing the
+ * loop this section's original comment left open. */
+#define BOARD_LATE_INIT_WDT_MS	20000
+extern void ark_wdt_arm(unsigned int timeout_ms);
 
 int board_late_init(void)
 {
@@ -181,6 +199,8 @@ int board_late_init(void)
 	char *need_update,*update_flash;
 	unsigned int loadaddr;
 	int do_update = 0, update_from_mmc = 1;
+
+	ark_wdt_arm(BOARD_LATE_INIT_WDT_MS);
 
 	ark_show_bootlogo();
 #if ENABLE_LCDCONSOLE
