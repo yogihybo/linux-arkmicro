@@ -593,42 +593,26 @@ U_BOOT_CMD(
  * nandboot, not drop to the interactive prompt -- cli_loop() never
  * returns, so control genuinely stops here instead of continuing
  * through the rest of that chain.
- *
- * 2026-08-03: first hardware test showed this never actually caught a
- * keypress -- the original version checked tstc() exactly once,
- * instantaneously, right after "usb start" returned. There was no
- * real window for a human to press anything in that exact instant, so
- * functionally it could never fire no matter how fast someone was.
- * Given a real, short polling window instead (1s, matching one
- * "digit" of __abortboot()'s own countdown loop, common/autoboot.c)
- * with a printed prompt so there's something to react to -- still one
- * checkpoint (one place in the boot flow), just with an actual dwell
- * time to be usable, not one instant.
  */
 static void bootusb_check_abort(void)
 {
 	int boot_interrupt = 0;
 	int ch;
-	unsigned long ts;
 
 	arkdata_ini_get_int("BootInterrupt", 10, &boot_interrupt);
 	if (!boot_interrupt)
 		return;
 
-	printf("[bootusb] press spacebar to stop and drop to U-Boot prompt: 1 ");
-	ts = get_timer(0);
-	do {
-		if (tstc()) {
-			ch = getc();
-			if (ch == ' ' || ch == 0x03) {
-				printf("\n[bootusb] abort key pressed -- dropping to U-Boot prompt\n");
-				cli_loop();
-				/* not reached */
-			}
-			/* spurious byte -- ignore, keep polling out the window */
-		}
-	} while (get_timer(ts) < 1000);
-	printf("\b\b0 \n");
+	if (!tstc())
+		return;
+
+	ch = getc();
+	if (ch != ' ' && ch != 0x03)
+		return;	/* spurious byte -- ignore, keep booting */
+
+	printf("\n[bootusb] abort key pressed after USB start -- dropping to U-Boot prompt\n");
+	cli_loop();
+	/* not reached */
 }
 
 int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
