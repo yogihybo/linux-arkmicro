@@ -106,6 +106,16 @@ static void setup_i2s2(int id)
 }*/
 
 
+/* Deliberately empty, not an unfinished stub -- confirmed (2026-07-30
+ * audio-stutter investigation, docs/AUDIO_SUBSYSTEM_INVESTIGATION.md)
+ * against stock's own disassembled vmlinux that stock's equivalent
+ * trigger-control functions are equally inert (`mov r0,#0; bx lr`).
+ * The real hardware enable bits (I2SEN/TDMAENA/RDMAENA/SACR1 DIS_PLAY/
+ * DIS_REC) are set once in ark_i2s_startup() at stream open, not per
+ * trigger; DMA start/stop itself is owned entirely by the generic
+ * ASoC dmaengine_pcm framework (devm_snd_dmaengine_pcm_register()
+ * below), not this DAI driver. If re-flagged as a gap again, check
+ * that history first before adding register writes here. */
 static void ark_i2s_txctrl(struct ark_i2s_dev *i2s, int on)
 {
 }
@@ -352,7 +362,6 @@ static int ark_i2s_trigger(
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		/* TODO: start i2s */
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			/* 2026-07-30: mute -> start -> settle delay -> unmute,
 			 * matching stock's real custom ark_pcm_trigger() (see
@@ -383,12 +392,13 @@ static int ark_i2s_trigger(
 		} else {
 			ark_i2s_rxctrl(i2s, 1);
 		}
-		/* TODO: Start DMA */
+		/* DMA start is owned entirely by the generic ASoC dmaengine_pcm
+		 * framework (devm_snd_dmaengine_pcm_register() below), not this
+		 * DAI trigger callback -- nothing to do here. */
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		/* TODO: stop i2s */
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			ark_audio_mute(1);
 			ark_i2s_txctrl(i2s, 0);
