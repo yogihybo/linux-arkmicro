@@ -83,6 +83,7 @@
  */
 
 #include "ark1668_lcd.h"
+#include <console.h>
 
 /* 2026-07-31: watchdog block already used by reset_cpu() (see
  * arch/arm/mach-arkmicro/armv7/reset.c) reused here to arm a real
@@ -146,6 +147,50 @@ U_BOOT_CMD(
 	wdtarm, 2, 0, do_wdtarm,
 	"arm the hardware watchdog (default 20000ms if no argument given)",
 	"wdtarm [timeout_ms]\n"
+);
+
+/* 2026-08-01: real hardware found a second, code-level (not electrical)
+ * cause behind the same class of intermittent boot failure wdtarm above
+ * was added for. With the console UART's RX line not being actively
+ * driven by an open terminal, live testing showed `bootusb` (and
+ * apparently downstream effects on `nandboot` too) failing on THIS
+ * fork's compiled U-Boot specifically -- stock's own U-Boot, run on the
+ * identical physical hardware/wiring at the same time, always booted
+ * fine. Since the electrical environment was identical in both cases,
+ * this has to be a code difference, not floating-line noise alone.
+ * Found it: drivers/usb/musb-new/musb_uboot.c's musb_submit_urb() wait
+ * loop -- used for essentially every USB transaction during bootusb's
+ * enumeration -- calls ctrlc() on every iteration, aborting the whole
+ * USB operation with -EIO the instant it sees anything decode as 0x03
+ * (Ctrl-C) on the console RX line. An unattended/not-actively-read RX
+ * line picking up noise can trigger this by pure chance, and stock's
+ * much older (~2012.10) U-Boot's own USB driver very likely predates
+ * this check or doesn't share it -- a real code-level difference, not
+ * something fixable by changing register config to "match stock" the
+ * way most of this project's other hardware findings have been.
+ * disable_ctrlc()/ctrlc_disabled already exists in U-Boot's own
+ * common/console.c specifically for this class of "don't let stray
+ * input abort something critical" need -- reused here rather than
+ * patching the shared musb driver (which would also remove legitimate
+ * manual-abort capability at the interactive prompt, not just during
+ * automatic boot). Wired the same way as wdtarm: only takes effect
+ * while CONFIG_BOOTCOMMAND itself runs (never touched if autoboot is
+ * stopped manually), with a matching re-enable call at the very end of
+ * CONFIG_BOOTCOMMAND as a safety net in case boot fails and falls
+ * through to the interactive prompt anyway -- Ctrl-C needs to keep
+ * working there. */
+int do_noctrlc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int enable = (argc > 1) ? simple_strtoul(argv[1], NULL, 10) : 0;
+
+	disable_ctrlc(!enable);
+	return 0;
+}
+
+U_BOOT_CMD(
+	noctrlc, 2, 0, do_noctrlc,
+	"disable (or re-enable) Ctrl-C abort detection -- `noctrlc` disables, `noctrlc 1` re-enables",
+	"noctrlc [1]\n"
 );
 
 static const char *env_or_default(const char *name, const char *fallback)

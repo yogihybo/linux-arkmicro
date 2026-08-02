@@ -327,6 +327,15 @@
 	 * stop autoboot -- this whole string doesn't execute in that
 	 * case, so nothing to disarm. */ \
 	"wdtarm; " \
+	/* 2026-08-01: see noctrlc's own comment (ark1668_boot_cmds.c) --
+	 * a not-actively-read console RX line can pick up noise that
+	 * occasionally decodes as Ctrl-C, spuriously aborting USB
+	 * operations inside bootusb's own enumeration. Disabled only for
+	 * the duration of this unattended automatic sequence; re-enabled
+	 * at the very end as a safety net in case boot fails and falls
+	 * through to the interactive prompt. Never touched at all if
+	 * autoboot is stopped manually, same as wdtarm above. */ \
+	"noctrlc; " \
 	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
 		"env import -t ${loadaddr} ${filesize}; " \
 	"fi; " \
@@ -336,7 +345,8 @@
 	"else " \
 		"echo [bootcheck] bootlimit exceeded -- going straight to nandboot; " \
 		"run nandboot; " \
-	"fi"
+	"fi; " \
+	"noctrlc 1"
 
 #else
 
