@@ -181,7 +181,7 @@ static int __abortboot(int bootdelay)
 #ifdef CONFIG_MENUPROMPT
 	printf(CONFIG_MENUPROMPT);
 #else
-	printf("Hit space to stop autoboot: %2d ", bootdelay);
+	printf("Press spacebar to stop autoboot: %2d ", bootdelay);
 #endif
 	/*
 	 * Check if key already pressed
