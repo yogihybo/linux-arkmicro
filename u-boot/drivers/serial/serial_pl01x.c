@@ -223,21 +223,33 @@ int pl01x_serial_init(void)
  * that should drain in microseconds under any remotely healthy
  * condition; a genuinely stuck TX (whatever the real cause turns out to
  * be) now drops the character and returns instead of hanging the whole
- * automatic boot sequence forever on the very next print statement. */
+ * automatic boot sequence forever on the very next print statement.
+ *
+ * CORRECTION, same day: the first version of this fix used get_timer(),
+ * which real hardware testing immediately broke on -- a data
+ * abort/reset loop starting right after "DRAM: 180 MiB" prints, before
+ * NAND:/MMC: even show, meaning it happened during this exact early
+ * console-init code. get_timer() depends on the timer subsystem already
+ * being initialized, and serial console init runs very early in
+ * board_init_f -- almost certainly before that's ready. Switched to a
+ * plain bounded iteration counter instead, matching how every other
+ * early-boot bounded loop in this codebase already does it (e.g. the
+ * NAND/BCH FSM-idle wait in ark1668_boot_cmds.c uses `int timeout =
+ * 100000; timeout--`, not get_timer()) -- no dependency on any
+ * subsystem being ready yet, safe to call from the very first
+ * character ever printed. */
 static void pl01x_serial_putc(const char c)
 {
-	ulong start;
+	int timeout;
 
 	if (c == '\n') {
-		start = get_timer(0);
-		while (pl01x_putc(base_regs, '\r') == -EAGAIN &&
-		       get_timer(start) < 100)
+		timeout = 100000;
+		while (pl01x_putc(base_regs, '\r') == -EAGAIN && --timeout > 0)
 			;
 	}
 
-	start = get_timer(0);
-	while (pl01x_putc(base_regs, c) == -EAGAIN &&
-	       get_timer(start) < 100)
+	timeout = 100000;
+	while (pl01x_putc(base_regs, c) == -EAGAIN && --timeout > 0)
 		;
 }
 
@@ -262,20 +274,27 @@ static int pl01x_serial_tstc(void)
 
 static void pl01x_serial_setbrg(void)
 {
-	ulong start = get_timer(0);
+	int timeout;
 
 	/*
 	 * Flush FIFO and wait for non-busy before changing baudrate to avoid
 	 * crap in console
 	 *
-	 * 2026-08-02: same unbounded-loop class as pl01x_serial_putc() above
-	 * -- only ran once at console init rather than per-character, but
-	 * WATCHDOG_RESET() is a generic feed macro, not a real timeout.
-	 * Bounded for consistency/safety. */
-	while (!(readl(&base_regs->fr) & UART_PL01x_FR_TXFE) &&
-	       get_timer(start) < 100)
+	 * 2026-08-02: same unbounded-loop class as pl01x_serial_putc() above,
+	 * same iteration-counter fix (see that function's comment for why
+	 * NOT get_timer() -- this runs even earlier, at console init, before
+	 * anything has ever been printed, and was the actual cause of a real
+	 * data-abort/reset-loop regression on real hardware when this was
+	 * first tried with get_timer()). WATCHDOG_RESET() alone is a generic
+	 * feed macro, not a real timeout, for both loops here -- the second
+	 * (FR_BUSY) was already unbounded in the original upstream driver,
+	 * not something introduced this session, bounded now while already
+	 * here. */
+	timeout = 1000000;
+	while (!(readl(&base_regs->fr) & UART_PL01x_FR_TXFE) && --timeout > 0)
 		WATCHDOG_RESET();
-	while (readl(&base_regs->fr) & UART_PL01x_FR_BUSY)
+	timeout = 1000000;
+	while ((readl(&base_regs->fr) & UART_PL01x_FR_BUSY) && --timeout > 0)
 		WATCHDOG_RESET();
 	pl01x_serial_init_baud(gd->baudrate);
 }

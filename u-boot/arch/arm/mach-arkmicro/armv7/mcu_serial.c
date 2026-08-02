@@ -216,12 +216,19 @@ int mcu_serial_init(void)
 
 /* 2026-08-02: same unbounded-loop fix as mcu_serial_getc() above, same
  * reasoning (real bug in source, but this whole file is confirmed
- * linker-eliminated for this board -- see that function's comment). */
+ * linker-eliminated for this board -- see that function's comment).
+ * CORRECTION, same day: switched from get_timer() to a plain iteration
+ * counter -- get_timer() caused a real data-abort/reset-loop regression
+ * in serial_pl01x.c's console putc (see that file's matching fix
+ * comment) by depending on the timer subsystem being ready before it
+ * necessarily is this early in boot. Matched here for consistency even
+ * though this file is confirmed unlinked for this board -- no reason to
+ * leave the same landmine in source that's already been hit once. */
 void mcu_serial_putc(const unsigned char c)
 {
-	ulong start = get_timer(0);
+	int timeout = 1000000;
 
-	while (pl01x_putc(base_regs, c) == -EAGAIN && get_timer(start) < 1000)
+	while (pl01x_putc(base_regs, c) == -EAGAIN && --timeout > 0)
 		;
 }
 
@@ -243,13 +250,16 @@ void mcu_serial_puts(const unsigned char *s)
  * times elsewhere (ark_uart2_putc(), the original bootnand env_save()
  * hang). Bounded here defensively rather than leaving a live landmine
  * in case anything ever calls it, same reasoning as those earlier
- * fixes -- 1 second is generous for a byte that should already be
- * waiting if this is ever actually used for a real handshake. */
+ * fixes -- generous for a byte that should already be waiting if this
+ * is ever actually used for a real handshake.
+ *
+ * CORRECTION, same day: switched from get_timer() to a plain iteration
+ * counter -- see mcu_serial_putc()'s comment above for why. */
 int mcu_serial_getc(void)
 {
-	ulong start = get_timer(0);
+	int timeout = 1000000;
 
-	while (get_timer(start) < 1000) {
+	while (--timeout > 0) {
 		int ch = pl01x_getc(base_regs);
 
 		if (ch == -EAGAIN) {
