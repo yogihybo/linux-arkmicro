@@ -214,9 +214,15 @@ int mcu_serial_init(void)
 	return 0;
 }
 
+/* 2026-08-02: same unbounded-loop fix as mcu_serial_getc() above, same
+ * reasoning (real bug in source, but this whole file is confirmed
+ * linker-eliminated for this board -- see that function's comment). */
 void mcu_serial_putc(const unsigned char c)
 {
-	while (pl01x_putc(base_regs, c) == -EAGAIN);
+	ulong start = get_timer(0);
+
+	while (pl01x_putc(base_regs, c) == -EAGAIN && get_timer(start) < 1000)
+		;
 }
 
 void mcu_serial_puts(const unsigned char *s)

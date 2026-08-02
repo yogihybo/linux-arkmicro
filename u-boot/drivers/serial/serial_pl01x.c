@@ -207,12 +207,38 @@ int pl01x_serial_init(void)
 	return 0;
 }
 
+/* 2026-08-02: genuinely unbounded before -- this is pl01x_putc()'s TX-FIFO-
+ * full wait, with no timeout at all, and it's the function behind every
+ * single printf() call throughout this project's entire boot sequence
+ * (CONFIG_DM_SERIAL is unset, confirmed via `nm u-boot`, so this legacy
+ * non-DM putc is the one actually linked in, not the newer DM variant
+ * further down this file). Found while investigating an intermittent
+ * hang that only shows up with the console not actively read -- this is
+ * the single highest-exposure unbounded loop in the whole boot path,
+ * unlike the other two found the same day (mcu_serial_getc(),
+ * display_updatelogo()'s frame-interrupt waits) which both turned out to
+ * be entirely linker-eliminated dead code. Bounded defensively with the
+ * same get_timer()-based pattern already used elsewhere in this project
+ * (ark_uart2_putc(), mcu_serial_getc()) -- 100ms is generous for a FIFO
+ * that should drain in microseconds under any remotely healthy
+ * condition; a genuinely stuck TX (whatever the real cause turns out to
+ * be) now drops the character and returns instead of hanging the whole
+ * automatic boot sequence forever on the very next print statement. */
 static void pl01x_serial_putc(const char c)
 {
-	if (c == '\n')
-		while (pl01x_putc(base_regs, '\r') == -EAGAIN);
+	ulong start;
 
-	while (pl01x_putc(base_regs, c) == -EAGAIN);
+	if (c == '\n') {
+		start = get_timer(0);
+		while (pl01x_putc(base_regs, '\r') == -EAGAIN &&
+		       get_timer(start) < 100)
+			;
+	}
+
+	start = get_timer(0);
+	while (pl01x_putc(base_regs, c) == -EAGAIN &&
+	       get_timer(start) < 100)
+		;
 }
 
 static int pl01x_serial_getc(void)
@@ -236,11 +262,18 @@ static int pl01x_serial_tstc(void)
 
 static void pl01x_serial_setbrg(void)
 {
+	ulong start = get_timer(0);
+
 	/*
 	 * Flush FIFO and wait for non-busy before changing baudrate to avoid
 	 * crap in console
-	 */
-	while (!(readl(&base_regs->fr) & UART_PL01x_FR_TXFE))
+	 *
+	 * 2026-08-02: same unbounded-loop class as pl01x_serial_putc() above
+	 * -- only ran once at console init rather than per-character, but
+	 * WATCHDOG_RESET() is a generic feed macro, not a real timeout.
+	 * Bounded for consistency/safety. */
+	while (!(readl(&base_regs->fr) & UART_PL01x_FR_TXFE) &&
+	       get_timer(start) < 100)
 		WATCHDOG_RESET();
 	while (readl(&base_regs->fr) & UART_PL01x_FR_BUSY)
 		WATCHDOG_RESET();
