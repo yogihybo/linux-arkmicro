@@ -225,9 +225,25 @@ void mcu_serial_puts(const unsigned char *s)
 		mcu_serial_putc(*s++);
 }
 
+/* 2026-08-02: genuinely unbounded before -- looped forever waiting for a
+ * byte with only WATCHDOG_RESET() (a generic feed macro, not a real
+ * timeout) as the only thing standing between this and hanging forever
+ * if nothing ever arrives on this UART. Not currently called anywhere
+ * in this board's own boot path (mcu_serial_init()'s only caller in
+ * this whole tree is a different board, arkn141-sqwf.c) -- but this is
+ * genuinely dead vendor code sitting compiled-in via
+ * CONFIG_MCU_SERIAL_PORT, and an unbounded blocking read is exactly
+ * the class of bug this project has already found and fixed multiple
+ * times elsewhere (ark_uart2_putc(), the original bootnand env_save()
+ * hang). Bounded here defensively rather than leaving a live landmine
+ * in case anything ever calls it, same reasoning as those earlier
+ * fixes -- 1 second is generous for a byte that should already be
+ * waiting if this is ever actually used for a real handshake. */
 int mcu_serial_getc(void)
 {
-	while (1) {
+	ulong start = get_timer(0);
+
+	while (get_timer(start) < 1000) {
 		int ch = pl01x_getc(base_regs);
 
 		if (ch == -EAGAIN) {
@@ -237,6 +253,8 @@ int mcu_serial_getc(void)
 
 		return ch;
 	}
+
+	return -1;
 }
 
 void mcu_serial_send(const unsigned char *buf, int len)
