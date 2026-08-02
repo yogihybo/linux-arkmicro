@@ -185,7 +185,7 @@ static int __abortboot(int bootdelay)
 {
 	int abort = 0;
 	unsigned long ts;
-	int boot_interrupt = 1;	/* fail-safe default: countdown/abort stays active */
+	int boot_interrupt = 0;	/* default: prompt skipped, see below */
 
 	/*
 	 * 2026-08-03: SD-card-toggleable kill switch for the whole abort
@@ -193,14 +193,21 @@ static int __abortboot(int bootdelay)
 	 * cmdline.txt -- lets a "production" SD card close the noise-abort
 	 * exposure investigated above entirely (no prompt printed, no
 	 * tstc() polling at all, so there's genuinely nothing listening
-	 * to abort on) while a "debug" SD card just omits the key (or sets
-	 * it to 1) and gets today's normal behavior back. arkdata.ini
-	 * missing/unreadable/key absent all fail safe to enabled, matching
-	 * this reader's existing fail-safe contract everywhere else it's
-	 * used.
+	 * to abort on).
+	 *
+	 * 2026-08-03: default flipped to OFF (skip the prompt) -- an
+	 * arkdata.ini that's missing/unreadable, or simply doesn't have a
+	 * BootInterrupt key yet (every card built before this change),
+	 * now behaves the same as BootInterrupt=0. This is a deliberate
+	 * departure from this reader's usual fail-safe-to-compiled-
+	 * default contract everywhere else it's used (LCD timing/RgbMode
+	 * missing key = keep the old value) -- here the "old value" IS
+	 * the noise-exposed behavior this toggle exists to get away from,
+	 * so failing toward it would defeat the point. Set
+	 * BootInterrupt=1 explicitly in arkdata.ini to get the prompt
+	 * back (e.g. for active development/debugging).
 	 */
-	if (arkdata_ini_get_int("BootInterrupt", 10, &boot_interrupt) != 0)
-		boot_interrupt = 1;
+	arkdata_ini_get_int("BootInterrupt", 10, &boot_interrupt);
 
 	if (!boot_interrupt) {
 		debug_bootkeys("BootInterrupt=0 in arkdata.ini -- autoboot abort disabled\n");
