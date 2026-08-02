@@ -70,6 +70,31 @@ int ark_dwmci_init(char *name, u32 regbase, int bus_width, int index)
 	dwmci_select_pad();
 	dwmci_reset();
 
+	/* 2026-08-02: real hardware only shows the intermittent early hang
+	 * on genuine cold boots (power-on), never on a warm reset (via the
+	 * `reset` command or a watchdog-triggered reset) -- both re-run this
+	 * exact same boot ROM/Stepldr/U-Boot init chain, so at the code
+	 * level they're identical. The one thing that's genuinely different
+	 * is the physical power state: this board has no software-
+	 * controlled SD card power rail (confirmed separately), so on a
+	 * warm reset the card's VDD never actually drops -- it stays
+	 * continuously powered and already-initialized the whole time. On a
+	 * true cold boot, the card is ALSO powering up from zero, alongside
+	 * everything else, and needs real time to physically stabilize
+	 * before it can reliably respond to commands. Upstream mmc_go_idle()
+	 * already has its own short, fixed udelay(1000)/udelay(2000) around
+	 * CMD0, but that's the same on every boot -- no extra cushion for a
+	 * card still settling from a genuine cold power-up specifically.
+	 * This is a real, board-independent SD/eMMC characteristic (not an
+	 * ARK1668-specific quirk), so a small settle delay here, right after
+	 * the controller's own reset and before add_dwmci() lets the generic
+	 * MMC framework start issuing commands, is the correct place for it
+	 * -- a fixed 200ms added to every boot regardless of hot/cold (this
+	 * function runs either way), negligible against this board's total
+	 * boot time, in exchange for giving a genuinely powering-up card
+	 * real settle time on a cold boot specifically. */
+	mdelay(200);
+
 	host->name = name;
 	host->ioaddr = (void *)regbase;
 	host->buswidth = bus_width;
