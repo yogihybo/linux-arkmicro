@@ -77,10 +77,29 @@ extern int dvr_exit_carback(void);
 extern int dvr_detect_carback_signal(void);
 extern int ark_disp_set_layer_en(int layer_id, int enable);
 extern int dvr_exit_wait(void);
+extern int ark1668_itu656_is_probed(void);
 
 static struct ark_carback *g_carback = NULL; 
 
 
+/* 2026-08-03: found via a full dmesg capture that this never ran on
+ * real hardware -- rn6752_probe() (drivers/soc/arkmicro/itu656/
+ * ark1668_itu656.c's own probe, ark1668_itu656_probe()) calls this at
+ * the very end of ITS probe, but ark-carback's platform driver hadn't
+ * probed yet at that point in the real boot sequence, so g_carback
+ * was still NULL here and this bailed out via the check below every
+ * single time. Real consequence, bigger than just the at-boot
+ * reverse-gear check: itu656_init only ever gets set to 1 inside this
+ * function, and carback_int_work() (the reverse-gear GPIO IRQ's
+ * deferred work handler) unconditionally no-ops whenever
+ * itu656_init==0 -- so this silently broke reverse-gear detection
+ * entirely, not just its at-boot state, for as long as the two
+ * drivers happened to probe in this order. Fixed at the other end
+ * too (ark_carback_probe() below, right after g_carback is set) so
+ * whichever of the two drivers actually probes second is the one that
+ * ends up triggering this, regardless of link/registration order --
+ * see that call site's own comment for why it's gated on
+ * ark1668_itu656_is_probed() rather than called unconditionally. */
 void carback_first_enter(void)
 {
         if(!g_carback){
@@ -402,7 +421,22 @@ static int ark_carback_probe(struct platform_device *pdev)
                 return err;
         }
     
-        g_carback =  carback;       
+        g_carback =  carback;
+
+        /* 2026-08-03: symmetric half of the probe-order fix -- see
+         * carback_first_enter()'s own comment above for the full
+         * explanation. Only call through if itu656 has already probed
+         * (g_dvr_dev set): carback_first_enter() unconditionally calls
+         * dvr_enter_carback() whenever the detect GPIO reads "active",
+         * which dereferences itu656's g_dvr_dev with no NULL check of
+         * its own -- calling this unconditionally here, before itu656
+         * has necessarily probed, would Oops instead of just silently
+         * no-opping the way the original ordering bug did. If itu656
+         * probes first, its own existing call (end of
+         * ark1668_itu656_probe()) already covers this case; if
+         * ark-carback probes first, this call covers it instead. */
+        if (ark1668_itu656_is_probed())
+                carback_first_enter();
 
         return 0;
 

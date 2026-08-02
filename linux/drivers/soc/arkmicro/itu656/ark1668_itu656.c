@@ -100,6 +100,19 @@ extern struct ark_private_data *g_itu656in_priv;
 
 extern void carback_first_enter(void);
 
+/* 2026-08-03: probe-order fix, see ark-carback.c's own probe for the
+ * other half. g_dvr_dev is only ever non-NULL once this driver's own
+ * probe has set it (line ~2039, well before the carback_first_enter()
+ * call at the end of that same probe) -- lets ark-carback's probe
+ * safely check "has itu656 already come up" before calling into
+ * dvr_enter_carback() itself, which dereferences g_dvr_dev
+ * unconditionally and would Oops if called too early. */
+int ark1668_itu656_is_probed(void)
+{
+	return g_dvr_dev != NULL;
+}
+EXPORT_SYMBOL(ark1668_itu656_is_probed);
+
 static void ark_disp_set_tvout_next_oddfield_bufaddr(unsigned int addr)
 {
 
