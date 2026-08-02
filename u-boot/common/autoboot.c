@@ -185,12 +185,32 @@ static int __abortboot(int bootdelay)
 #endif
 	/*
 	 * Check if key already pressed
+	 *
+	 * 2026-08-02: tstc() only means "a byte is pending" -- it says
+	 * nothing about which byte. With no console cable attached, the
+	 * console UART's RX pin is undriven, and real hardware testing
+	 * showed a genuinely cold boot (never a warm reset, never with a
+	 * console attached) can get stuck sitting at this prompt --
+	 * consistent with electrical noise during power-up being
+	 * misread by the UART receiver as a spurious byte and aborting
+	 * autoboot outright. A real console holds RX at a defined idle
+	 * level, which is why attaching one to investigate always made
+	 * the problem disappear. Fixed by requiring the actual byte to be
+	 * space or Ctrl-C (0x03) before treating it as a real abort
+	 * request -- any other byte (i.e. noise) is consumed and ignored,
+	 * autoboot continues. Checked against the real factory-dumped
+	 * U-Boot log (docs/logs/archived/uboot original dumped log_260715.txt)
+	 * first: stock has this identical tstc()-driven prompt too, so this
+	 * isn't a design stock omits -- it's a real gap on both, just
+	 * tightened here to only the two keys that were ever intended to
+	 * work.
 	 */
 	if (tstc()) {	/* we got a key press	*/
 		int ch = getc();  /* consume input	*/
-		puts("\b\b\b 0");
-		if (ch == ' ')
+		if (ch == ' ' || ch == 0x03) {
+			puts("\b\b\b 0");
 			abort = 1;	/* don't auto boot	*/
+		}
 	}
 	while ((bootdelay > 0) && (!abort)) {
 		--bootdelay;
@@ -198,14 +218,16 @@ static int __abortboot(int bootdelay)
 		ts = get_timer(0);
 		do {
 			if (tstc()) {	/* we got a key press	*/
-				abort  = 1;	/* don't auto boot	*/
-				bootdelay = 0;	/* no more delay	*/
+				int ch = getc();  /* consume input, always */
+				if (ch == ' ' || ch == 0x03) {
+					abort  = 1;	/* don't auto boot	*/
+					bootdelay = 0;	/* no more delay	*/
 # ifdef CONFIG_MENUKEY
-				menukey = getc();
-# else
-				(void) getc();	/* consume input	*/
+					menukey = ch;
 # endif
-				break;
+					break;
+				}
+				/* spurious byte -- ignore, keep counting down */
 			}
 			udelay(10000);
 		} while (!abort && get_timer(ts) < 1000);
