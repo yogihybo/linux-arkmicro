@@ -84,7 +84,6 @@
 
 #include "ark1668_lcd.h"
 #include <console.h>
-#include <cli.h>
 
 /* 2026-07-31: watchdog block already used by reset_cpu() (see
  * arch/arm/mach-arkmicro/armv7/reset.c) reused here to arm a real
@@ -561,60 +560,6 @@ U_BOOT_CMD(
 	"bootmmc\n"
 );
 
-/*
- * 2026-08-03: single abort checkpoint for bootusb, added on request --
- * __abortboot()'s own countdown (common/autoboot.c) runs before
- * CONFIG_BOOTCOMMAND even starts, well before "usb start" below, so it
- * can never be a "USB boot" checkpoint in any meaningful sense (no USB
- * block device exists yet at that point). This is the earliest point in
- * bootusb specifically where checking makes sense at all.
- *
- * Deliberately just one checkpoint, not polling for the whole fatload
- * sequence that follows -- that would reopen the same "any noise during
- * an unattended sequence" exposure noctrlc (CONFIG_BOOTCOMMAND, see its
- * own comment above) exists to close for the USB driver's own Ctrl-C
- * check. This checkpoint reads tstc()/getc() directly instead of relying
- * on that global ctrlc()/disable_ctrlc() mechanism -- CONFIG_BOOTCOMMAND
- * has already called `noctrlc` by the time do_bootusb() runs, so this
- * would be silently defeated by that same protection otherwise.
- *
- * Reuses arkdata.ini's BootInterrupt key (see common/autoboot.c) rather
- * than a second flag -- same intent applies here: 0 (the default) means
- * don't poll console input at all, matching the "closed" state the
- * countdown fix already gives a production card; 1 restores the ability
- * to manually intervene, here too.
- *
- * Only space/Ctrl-C are treated as a real abort request, matching
- * autoboot.c's own fix (84a77c2ad) -- any other byte (noise) is
- * consumed and ignored, bootusb proceeds normally. On a real abort,
- * cli_loop() is called directly rather than returning an error code:
- * a plain `return 1` here would just make CONFIG_BOOTCOMMAND's
- * `if bootusb; then true; else run nandboot; fi` fall through to
- * nandboot, not drop to the interactive prompt -- cli_loop() never
- * returns, so control genuinely stops here instead of continuing
- * through the rest of that chain.
- */
-static void bootusb_check_abort(void)
-{
-	int boot_interrupt = 0;
-	int ch;
-
-	arkdata_ini_get_int("BootInterrupt", 10, &boot_interrupt);
-	if (!boot_interrupt)
-		return;
-
-	if (!tstc())
-		return;
-
-	ch = getc();
-	if (ch != ' ' && ch != 0x03)
-		return;	/* spurious byte -- ignore, keep booting */
-
-	printf("\n[bootusb] abort key pressed after USB start -- dropping to U-Boot prompt\n");
-	cli_loop();
-	/* not reached */
-}
-
 int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	printf("[bootusb] starting USB...\n");
@@ -622,7 +567,6 @@ int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("[bootusb] usb start failed\n");
 		return 1;
 	}
-	bootusb_check_abort();
 	printf("[bootusb] booting kernel+DTB+rootfs from USB stick (usb 0:1), root=%s\n",
 	       env_or_default("usbroot", "/dev/sda2"));
 	run_command("bootlogofile bootlogo_usb.raw", 0);
