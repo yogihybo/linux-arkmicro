@@ -20,37 +20,32 @@
 #include <sound/soc.h>
 #include <linux/clk.h>
 #include <sound/dmaengine_pcm.h>
-//#include <mach/va_map.h>
 #include "ark1668_i2s.h"
-//#include "ark1668_pcm.h"
 #include "ark1668_i2s_sddac_regs.h"
 #include "ark_i2s.h"	/* ark_audio_mute() -- see that header for why */
-//#include <linux/ark/ark_i2s.h>
 
 #define DRV_NAME	"ark1668-i2s"
 #define DMA_ENABLE
 
 #undef ARK_I2S_DEBUG
 #ifdef ARK_I2S_DEBUG
-#define DBG(f, a...) pr_debug("%s-%d: "f, __FUNCTION__, __LINE__, ##a)
+#define DBG(f, a...) pr_debug("%s-%d: "f, __func__, __LINE__, ##a)
 #else
 #define DBG(...)
 #endif
 
-#define ERR(f, a...) pr_err("%s-%d: "f, __FUNCTION__, __LINE__, ##a)
+#define ERR(f, a...) pr_err("%s-%d: "f, __func__, __LINE__, ##a)
 
 
 struct ark_i2s_dev {
-	//struct  platform_device		*pdev;
 	struct  device	*dev;
-	void __iomem 	*base; 
+	void __iomem 	*base;
 	struct clk 				*clk;
 	u32	nco_reg;
 	struct snd_dmaengine_dai_dma_data capture_dma_data;
 	struct snd_dmaengine_dai_dma_data playback_dma_data;
 	int master;
 	u32 fmt;
-	//struct ark_pcm_dma_params 	dma_params[2];
 
 	/* 2026-08-03: deferred-unmute timer, see ark_i2s_trigger()'s START
 	 * case for why this replaced a synchronous mdelay(3). */
@@ -60,55 +55,12 @@ struct ark_i2s_dev {
 static void i2s_poweron(struct ark_i2s_dev *i2s)
 {
 	uint32_t val;
-//	void __iomem	*Sys_base;
-//	void __iomem	*i2s_base;
-//	Sys_base = ioremap(SYS_BASE, 0x1000);
-//	if(!Sys_base)
-//		goto unmap_sysreg;
-//	i2s_base = ioremap(I2S_BASE, 0x1000);
-//	if(!i2s_base)
-//		goto unmap_i2sreg;
-	
-//	if(i2s->pdev->id == 0)
-//	{
-		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
-		//val &= ~(ARK_I2SSDDAC_SACR0_VREF_PD | ARK_I2SSDDAC_SACR0_DAC_PD | ARK_I2SSDDAC_SACR0_SARADC_EN);
-		val &= ~(ARK_I2SSDDAC_SACR0_VREF_PD | ARK_I2SSDDAC_SACR0_DAC_PD);
-		val |= (ARK_I2SSDDAC_SACR0_SARADC_POW_EN | ARK_I2SSDDAC_SACR0_BCKD);	// Bitclock output
-		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
-//	}
-//	else if(i2s->pdev->id == 1)
-//	{
-//#if 0	//set in ark_i2s_init_cfg()
-//		val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
-//		val &= ~(ARK_I2SSDDAC_SACR0_BCKD);		// Bitclock intput
-//		val |= ARK_I2SSDDAC_SACR0_SARADC_POW_EN;
-//		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
-//#endif
-//	}
 
-//unmap_sysreg:
-//			iounmap(Sys_base);
-//unmap_i2sreg:
-//			iounmap(i2s_base);
+	val = readl(i2s->base + ARK_I2SSDDAC_SACR0);
+	val &= ~(ARK_I2SSDDAC_SACR0_VREF_PD | ARK_I2SSDDAC_SACR0_DAC_PD);
+	val |= (ARK_I2SSDDAC_SACR0_SARADC_POW_EN | ARK_I2SSDDAC_SACR0_BCKD);	// Bitclock output
+	writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
 }
-
-static void setup_i2s2(int id)
-{
-}
-
-/*static void dump_i2s_registers(struct ark_i2s_dev *i2s)
-{
-	printk("ARK_I2SSDDAC_SACR0  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_SACR0));
-	printk("ARK_I2SSDDAC_SACR1  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_SACR1));
-	printk("ARK_I2SSDDAC_SACR1  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_DACR0));
-	printk("ARK_I2SSDDAC_SASR0  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_SASR0));
-	printk("ARK_I2SSDDAC_DACR1  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_DACR1));
-	printk("ARK_I2SSDDAC_SAIMR  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_SAIMR));
-	printk("ARK_I2SSDDAC_SAICR  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_SAICR));
-	printk("ARK_I2SSDDAC_ADCR0  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_ADCR0));
-	printk("ARK_I2SSDDAC_SADR  = 0x%08x\n", readl(i2s->base + ARK_I2SSDDAC_SADR));
-}*/
 
 
 /* Deliberately empty, not an unfinished stub -- confirmed (2026-07-30
@@ -129,18 +81,12 @@ static void ark_i2s_rxctrl(struct ark_i2s_dev *i2s, int on)
 {
 }
 
-static void ark_i2s_init_cfg(struct ark_i2s_dev *i2s, int id)
-{
-
-}
-
 static int ark_i2s_startup(
 	struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
-{//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 	unsigned int val;
 	void __iomem	*Sys_base;
-	void __iomem	*i2s_base;
 	struct platform_device *pdev = to_platform_device(i2s->dev);
 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	unsigned long physical_base = res ? res->start : 0;
@@ -149,8 +95,7 @@ static int ark_i2s_startup(
 	if(!Sys_base)
 		goto unmap_sysreg;
 
-	//printk("==============[%s]:[ %d] stream=%d base=0x%08lx\n", __FUNCTION__, __LINE__, substream->stream, physical_base);
-	if (physical_base == 0xe8200000) {
+	if (physical_base == I2S1_BASE) {
 		// External I2S (I2S2/ADC block) pinmux configuration
 		val = readl(Sys_base + ARK_SYS_PAD_CTRL09);
 		val |= (ARK_SYS_I2S2_BCLK | ARK_SYS_I2S2_SADATA | ARK_SYS_I2S2_SYNC);
@@ -327,8 +272,7 @@ unmap_sysreg:
 static int ark_i2s_hw_params(
 	struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params,
 	struct snd_soc_dai *dai)
-{	//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	//struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
+{
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 	u32 rate = params_rate(params);
 	u32 step = 256 * 2, modulo;
@@ -375,7 +319,7 @@ static void ark_i2s_unmute_timer_cb(struct timer_list *t)
 
 static int ark_i2s_trigger(
 	struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
-{//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	int ret = 0;
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 
@@ -478,7 +422,7 @@ static int ark_i2s_trigger(
 
 static int ark_i2s_set_fmt(
 	struct snd_soc_dai *dai, unsigned int fmt)
-{//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 	
 	/* interface format */
@@ -502,7 +446,7 @@ static int ark_i2s_set_fmt(
 }
 
 static int ark_i2s_probe(struct snd_soc_dai *dai)
-{//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 	int ret = 0;
 
@@ -514,7 +458,7 @@ static int ark_i2s_probe(struct snd_soc_dai *dai)
 }
 
 static int ark_i2s_remove(struct snd_soc_dai *dai)
-{//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+{
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 
 	del_timer_sync(&i2s->unmute_timer);
@@ -526,8 +470,7 @@ static int ark_i2s_remove(struct snd_soc_dai *dai)
 
 #ifdef CONFIG_PM
 static int ark_i2s_suspend(struct snd_soc_dai *cpu_dai)
-{//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-
+{
 	/* TODO: suspend i2s, disable clock */
 
 	return 0;
@@ -535,7 +478,6 @@ static int ark_i2s_suspend(struct snd_soc_dai *cpu_dai)
 
 static int ark_i2s_resume(struct snd_soc_dai *cpu_dai)
 {
-	//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
 
 	/* TODO: enable clock and resume i2s */
 
@@ -581,15 +523,13 @@ static struct snd_soc_dai_driver ark_i2s_dai = {
 };
 
 static struct snd_pcm_hardware ark1668_pcm_hardware = {
-#if 0
 	.info 				= (SNDRV_PCM_INFO_MMAP |
  						SNDRV_PCM_INFO_MMAP_VALID |
 						SNDRV_PCM_INFO_PAUSE |
  						SNDRV_PCM_INFO_RESUME |
 						SNDRV_PCM_INFO_INTERLEAVED |
 						SNDRV_PCM_INFO_BLOCK_TRANSFER),
-	.formats 			= SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE |
-						SNDRV_PCM_FMTBIT_S32_LE,
+	.formats 			= SNDRV_PCM_FMTBIT_S16_LE,
 	.rates 				= (SNDRV_PCM_RATE_11025 | SNDRV_PCM_RATE_16000 |
 						SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_32000 |
 						SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 |
@@ -600,36 +540,11 @@ static struct snd_pcm_hardware ark1668_pcm_hardware = {
 	.rate_max			= 192000,
 	.channels_min 		= 1,
 	.channels_max 		= 2,
-	.buffer_bytes_max 	= 64 * 65536,//64 * 4096,
-	.period_bytes_min 	= 64,
-	.period_bytes_max 	= 65536,//4096,
-	.periods_min 		= 1,
-	.periods_max 		= 64,
-#else
-	.info 				= (SNDRV_PCM_INFO_MMAP |
- 						SNDRV_PCM_INFO_MMAP_VALID |
-						SNDRV_PCM_INFO_PAUSE |
- 						SNDRV_PCM_INFO_RESUME | 
-						SNDRV_PCM_INFO_INTERLEAVED |
-						SNDRV_PCM_INFO_BLOCK_TRANSFER),
-	.formats 			= SNDRV_PCM_FMTBIT_S16_LE,
-	.rates 				= (SNDRV_PCM_RATE_11025 | SNDRV_PCM_RATE_16000 |
-						SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_32000 |
-						SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 |
-						SNDRV_PCM_RATE_64000 | SNDRV_PCM_RATE_88200 |
-						SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_176400 | 
-						SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_8000),
-	.rate_min 			= 8000,//11025
-	.rate_max			= 192000,
-	.channels_min 		= 1,
-	.channels_max 		= 2,
 	.buffer_bytes_max 	= 64 * 4096,
 	.period_bytes_min 	= 64,
 	.period_bytes_max 	= 4096,
 	.periods_min 		= 1,
 	.periods_max 		= 64,
-//	.fifo_size 			= 32,
-#endif
 };
 
 static const struct snd_dmaengine_pcm_config 
@@ -677,10 +592,10 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 		void __iomem *sys_base = ioremap(SYS_BASE, 0x1000);
 		if (sys_base) {
 			u32 reset_val = readl(sys_base + 0x6c);
-			if (mem->start == 0xe8200000) {
+			if (mem->start == I2S1_BASE) {
 				reset_val &= ~(1 << 0); /* Release I2S2 reset */
 				dev_info(&pdev->dev, "releasing soft reset for I2S2 (ADC/external I2S) at 0xe8200000\n");
-			} else if (mem->start == 0xe4000000) {
+			} else if (mem->start == I2S_BASE) {
 				reset_val &= ~(1 << 2); /* Release I2S1 reset */
 				dev_info(&pdev->dev, "releasing soft reset for I2S1 (DAC/internal I2S) at 0xe4000000\n");
 			}
@@ -706,7 +621,7 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	{
 		void __iomem *audio_clk_base = ioremap(0xe4a00000, 0x1000);
 		if (audio_clk_base) {
-			if (mem->start == 0xe8200000) {
+			if (mem->start == I2S1_BASE) {
 				val = readl(audio_clk_base + 0x1e4);
 				writel(val | 0x3f000000, audio_clk_base + 0x1e4);
 				val = readl(audio_clk_base + 0x1e8);
@@ -716,7 +631,7 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 				val = readl(audio_clk_base + 0x1d8);
 				writel(val & ~0x80000000, audio_clk_base + 0x1d8);
 				dev_info(&pdev->dev, "enabled external I2S2/CS4334 clock-gate bits at 0xe4a00000\n");
-			} else if (mem->start == 0xe4000000) {
+			} else if (mem->start == I2S_BASE) {
 				val = readl(audio_clk_base + 0x1f0);
 				writel(val | 0x400, audio_clk_base + 0x1f0);
 				dev_info(&pdev->dev, "enabled internal I2S1 clock-gate bit at 0xe4a00000+0x1f0\n");
@@ -770,7 +685,6 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	ret = devm_snd_dmaengine_pcm_register(&pdev->dev,
 						&ark1668_i2s_dmaengine_pcm_config,
 						0);
-//	ret = devm_snd_dmaengine_pcm_register(&pdev->dev, NULL, 0);
 	if (ret) {
 		dev_err(&pdev->dev, "Could not register PCM\n");
 		return ret;
@@ -779,14 +693,6 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	dev_dbg(&pdev->dev, "probe end\n");
 	return 0;
 }
-
-//static int ark1668_i2s_drv_remove(struct platform_device *pdev)
-//{
-//	struct ark_i2s_dev *i2s = platform_get_drvdata(pdev);
-//	struct resource *mem;
-
-//	return 0;
-//}
 
 static const struct of_device_id ark1668_i2s_match[] = {
 	{ .compatible = "arkmicro,ark1668-i2s", },
