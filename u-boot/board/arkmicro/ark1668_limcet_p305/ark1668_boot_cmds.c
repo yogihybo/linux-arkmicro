@@ -414,7 +414,9 @@ U_BOOT_CMD(
 
 int do_bootstockusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("[bootstockusb] starting USB...\n");
+	/* No "[bootstockusb] starting USB..." line here -- "usb start"
+	 * below already prints its own "starting USB...\n" (cmd/usb.c),
+	 * a second, near-identical line right above it added nothing. */
 	if (run_command("usb start", 0) != 0) {
 		printf("[bootstockusb] usb start failed\n");
 		return 1;
@@ -562,7 +564,8 @@ U_BOOT_CMD(
 
 int do_bootusb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	printf("[bootusb] starting USB...\n");
+	/* No "[bootusb] starting USB..." line here -- same reasoning as
+	 * do_bootstockusb() above, see its comment. */
 	if (run_command("usb start", 0) != 0) {
 		printf("[bootusb] usb start failed\n");
 		return 1;

@@ -1231,10 +1231,17 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 		udelay(1);
 	}
 
-	if(timeout)
-		printf("=============== usb_lowlevel_init time is %d us===============\r\n", musb_cfg.timeout-timeout);
+	/* 2026-08-03: tidied up -- these were unconditional printf()s (not
+	 * debug()), so the "===============" bring-up banners landed in
+	 * every single boot log regardless of build config. Downgraded to
+	 * debug() (silent unless DEBUG is defined for this file) and
+	 * shortened; the pass/fail information they carried is still
+	 * visible in the higher-level "[bootusb]"/cmd/usb.c output either
+	 * way (device found or usb_lowlevel_init failing outright). */
+	if (timeout)
+		debug("musb_hcd: usb_lowlevel_init took %d us\n", musb_cfg.timeout - timeout);
 	else
-		printf("=============== usb_lowlevel_init %d us timeout===============\r\n", musb_cfg.timeout);
+		debug("musb_hcd: usb_lowlevel_init timed out after %d us\n", musb_cfg.timeout);
 
 	/* Nothing responded on this port — try the other physical USB port
 	 * before giving up. This board has two independent MUSB instances
@@ -1244,7 +1251,7 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 	 * weak stub (returns -1) on any board that doesn't implement it, so
 	 * this retry is inert everywhere except ark1668_limcet_p305. */
 	if (!timeout && musb_ark_configure_port(1) == 0) {
-		printf("usb_lowlevel_init: port 0 empty, retrying on port 1\n");
+		debug("musb_hcd: port 0 empty, retrying on port 1\n");
 		musbr = musb_cfg.regs;
 		musb_configure_ep(&epinfo[0], ARRAY_SIZE(epinfo));
 		musb_start();
@@ -1257,9 +1264,9 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 		}
 
 		if (timeout)
-			printf("=============== port 1 usb_lowlevel_init time is %d us===============\r\n", musb_cfg.timeout-timeout);
+			debug("musb_hcd: port 1 usb_lowlevel_init took %d us\n", musb_cfg.timeout - timeout);
 		else
-			printf("=============== port 1 usb_lowlevel_init %d us timeout===============\r\n", musb_cfg.timeout);
+			debug("musb_hcd: port 1 usb_lowlevel_init timed out after %d us\n", musb_cfg.timeout);
 	}
 
 	/* if musb core is not in host mode, then return */
@@ -1284,7 +1291,7 @@ int usb_lowlevel_init(int index, enum usb_init_type init, void **controller)
 			((readb(&musbr->devctl) & MUSB_DEVCTL_FSDEV) ?
 			MUSB_TYPE_SPEED_FULL : MUSB_TYPE_SPEED_LOW);
 
-	printf("=============== usb_lowlevel_init device is %s===============\r\n", 
+	debug("musb_hcd: usb_lowlevel_init device is %s\n",
 		(readb(&musbr->power) & MUSB_POWER_HSMODE)?"high speed":"no high speed");
 
 	return 0;
