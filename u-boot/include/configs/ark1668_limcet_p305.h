@@ -353,8 +353,16 @@
 	 * uEnv.txt && env import -t ${loadaddr} ${filesize}` at the
 	 * prompt. Revert if this doesn't change anything -- would mean the
 	 * hang is actually in bootcheck (env_save()) or later, not here. */ \
+	/* 2026-08-03: removed a "bootlogofile bootlogo_usb.raw" call that
+	 * used to sit right here -- do_bootusb() itself already calls this
+	 * unconditionally (ark1668_boot_cmds.c), so this outer copy was a
+	 * genuine duplicate: real hardware logs showed the exact same
+	 * fatload+OSD1-push sequence running twice back to back on every
+	 * automatic bootusb, costing ~527ms and a full splash repaint for
+	 * nothing. Removing it here (not do_bootusb()'s own call) keeps
+	 * manually typing `bootusb` at the prompt working identically --
+	 * that path never went through this string at all. */ \
 	"if bootcheck; then " \
-		"bootlogofile bootlogo_usb.raw; " \
 		"if bootusb; then true; else run nandboot; fi; " \
 	"else " \
 		"echo [bootcheck] bootlimit exceeded -- going straight to nandboot; " \
