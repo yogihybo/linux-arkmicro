@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/ktime.h>
+#include <linux/timer.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -50,6 +51,10 @@ struct ark_i2s_dev {
 	int master;
 	u32 fmt;
 	//struct ark_pcm_dma_params 	dma_params[2];
+
+	/* 2026-08-03: deferred-unmute timer, see ark_i2s_trigger()'s START
+	 * case for why this replaced a synchronous mdelay(3). */
+	struct timer_list unmute_timer;
 };
 
 static void i2s_poweron(struct ark_i2s_dev *i2s)
@@ -354,6 +359,19 @@ static int ark_i2s_hw_params(
 	return 0;
 }
 
+/* 2026-08-03: deferred-unmute callback, see ark_i2s_trigger()'s START
+ * case for why this replaced a synchronous mdelay(3) there. Runs in
+ * softirq (timer) context, not atomic/IRQ-disabled the way trigger()
+ * itself is -- ark_audio_mute() is a plain register read-modify-write,
+ * safe to call from here. */
+static void ark_i2s_unmute_timer_cb(struct timer_list *t)
+{
+	/* Container lookup not actually needed -- ark_audio_mute() targets
+	 * the single shared DAC instance on this board (see
+	 * ark1668-sddac-codec.c), not a specific ark_i2s_dev. t is unused
+	 * beyond identifying which timer fired. */
+	ark_audio_mute(0);
+}
 
 static int ark_i2s_trigger(
 	struct snd_pcm_substream *substream, int cmd, struct snd_soc_dai *dai)
@@ -395,19 +413,32 @@ static int ark_i2s_trigger(
 			 * DMA readiness -- during an XRUN-recovery storm
 			 * (confirmed up to ~24 trigger cycles/sec), that meant
 			 * dozens of unsynchronized mute/unmute clicks instead of
-			 * clean, settled transitions. */
+			 * clean, settled transitions.
+			 *
+			 * 2026-08-03 CRITICAL CORRECTION: the mdelay(3) this
+			 * comment used to describe was a real bug, not just a
+			 * missed optimization. snd_pcm_start() (sound/core/
+			 * pcm_native.c) wraps the entire .trigger() dispatch in
+			 * snd_pcm_stream_lock_irq() -- genuine local_irq_disable()
+			 * -- around *every* call to this function, including the
+			 * ones ALSA's own start_threshold logic issues
+			 * automatically after each XRUN-recovery snd_pcm_prepare().
+			 * A synchronous mdelay(3) here was therefore blocking
+			 * *all* interrupts system-wide (network RX, USB, timers,
+			 * the audio DMA IRQ itself) for the full 3ms, and at the
+			 * documented ~24 trigger cycles/sec during a storm, that
+			 * is ~72ms/sec of total interrupt blackout concentrated
+			 * in exactly the moments this single-core system can
+			 * least afford it -- actively compounding the XRUN storm
+			 * this fix was meant to make audible, not causing it.
+			 * Fixed by deferring the unmute to i2s->unmute_timer
+			 * (see struct ark_i2s_dev) instead of blocking here --
+			 * mute and the settle window are preserved, but trigger()
+			 * now returns immediately, giving ALSA core back its IRQs
+			 * right away. */
 			ark_audio_mute(1);
 			ark_i2s_txctrl(i2s, 1);
-			/* mdelay not udelay: 2.5ms exceeds ARM's compile-time-
-			 * constant udelay() safe range (triggers a deliberate
-			 * link failure via __bad_udelay). mdelay busy-waits in
-			 * safe internal chunks -- same semantics as stock's own
-			 * __const_udelay busy-wait, just via the standard API
-			 * for this magnitude. Rounded up to 3ms from stock's
-			 * ~2.5ms; the exact value isn't safety-critical, it's a
-			 * settle window. */
-			mdelay(3);
-			ark_audio_mute(0);
+			mod_timer(&i2s->unmute_timer, jiffies + msecs_to_jiffies(3));
 		} else {
 			ark_i2s_rxctrl(i2s, 1);
 		}
@@ -419,6 +450,17 @@ static int ark_i2s_trigger(
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			/* del_timer() (not _sync()) -- this runs with IRQs
+			 * disabled too (same snd_pcm_stream_lock_irq() wrapper
+			 * as START), so it must not block waiting for the timer
+			 * callback to finish if it's mid-flight; a race where
+			 * the callback's ark_audio_mute(0) runs microseconds
+			 * after this ark_audio_mute(1) is harmless (mute is
+			 * simply reasserted on the very next STOP/START), the
+			 * real hazard being a *stale* unmute firing long after
+			 * this stream has stopped, which del_timer() prevents
+			 * in the common case. */
+			del_timer(&i2s->unmute_timer);
 			ark_audio_mute(1);
 			ark_i2s_txctrl(i2s, 0);
 		} else {
@@ -475,6 +517,7 @@ static int ark_i2s_remove(struct snd_soc_dai *dai)
 {//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
 	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
 
+	del_timer_sync(&i2s->unmute_timer);
 	ark_i2s_txctrl(i2s, 0);
 	ark_i2s_rxctrl(i2s, 0);
 
@@ -619,7 +662,8 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	}
 	
 	i2s->dev = &pdev->dev;
-	
+	timer_setup(&i2s->unmute_timer, ark_i2s_unmute_timer_cb, 0);
+
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	i2s->base = devm_ioremap_resource(&pdev->dev, mem);
 	if (IS_ERR(i2s->base)) {
