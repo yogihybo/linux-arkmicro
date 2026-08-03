@@ -68,8 +68,6 @@
 	#endif
 #endif
 
-#define CONFIG_IEEE80211_BAND_5GHZ
-
 /* Set CONFIG_IOCTL_CFG80211 from Makefile */
 #ifdef CONFIG_IOCTL_CFG80211
 	/*
@@ -84,7 +82,6 @@
 	#define CONFIG_SET_SCAN_DENY_TIMER
 #endif /* CONFIG_IOCTL_CFG80211 */
 
-#define CONFIG_AP_MODE
 #ifdef CONFIG_AP_MODE
 	#define CONFIG_INTERRUPT_BASED_TXBCN /* Tx Beacon when driver receive related interrupt*/
 	#if defined(CONFIG_CONCURRENT_MODE) && defined(CONFIG_INTERRUPT_BASED_TXBCN)
@@ -100,9 +97,6 @@
 	#endif
 	/*#define CONFIG_FIND_BEST_CHANNEL*/
 #endif
-
-
-#define CONFIG_P2P
 
 #ifdef CONFIG_P2P
 	#define CONFIG_WFD	/* Wi-Fi display */
@@ -134,9 +128,6 @@
 
 /*#define CONFIG_RTW_80211K*/
 
-#define CONFIG_LAYER2_ROAMING
-#define CONFIG_LAYER2_ROAMING_RESUME
-
 /*
  * Hareware/Firmware Related Config
  */
@@ -152,8 +143,6 @@
 #ifdef CONFIG_XMIT_ACK
 	#define CONFIG_ACTIVE_KEEP_ALIVE_CHECK
 #endif
-
-#define CONFIG_DFS
 
 #define DISABLE_BB_RF		0
 #define RTW_NOTCH_FILTER	0 /* 0:Disable, 1:Enable */
@@ -183,7 +172,7 @@
 #define CONFIG_RTW_NAPI_V2
 #endif
 
-/*#define CONFIG_BEAMFORMING*/ 
+#define CONFIG_BEAMFORMING
 
 #define CONFIG_REDUCE_TX_CPU_LOADING
 
@@ -197,6 +186,7 @@
 /*#define CONFIG_FILE_FWIMG*/
 #define CONFIG_LONG_DELAY_ISSUE
 /*#define CONFIG_PATCH_JOIN_WRONG_CHANNEL*/
+#define CONFIG_RX_PACKET_APPEND_FCS
 
 
 /*
@@ -237,8 +227,11 @@
 
 #ifdef CONFIG_POWER_SAVING
 	#define CONFIG_IPS
-	#define CONFIG_LPS
+	#ifdef CONFIG_IPS
+		/* #define CONFIG_FWLPS_IN_IPS */
+	#endif /* CONFIG_IPS */
 
+	#define CONFIG_LPS
 	#if defined(CONFIG_LPS) && (defined(CONFIG_GSPI_HCI) || defined(CONFIG_SDIO_HCI))
 	#define CONFIG_LPS_LCLK
 	#endif
@@ -302,7 +295,7 @@
 #define CONFIG_HW_ANTENNA_DIVERSITY
 #endif /* CONFIG_ANTENNA_DIVERSITY */
 
-#ifdef RTK_129X_PLATFORM
+#ifdef CONFIG_PLATFORM_RTK129X
 	#ifdef CONFIG_REDUCE_TX_CPU_LOADING
 	#undef CONFIG_REDUCE_TX_CPU_LOADING
 	#endif

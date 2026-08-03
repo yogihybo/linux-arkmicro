@@ -49,6 +49,10 @@
 #include "halmac_8812f/halmac_init_8812f.h"
 #endif
 
+#if HALMAC_8822E_SUPPORT
+#include "halmac_8822e/halmac_init_8822e.h"
+#endif
+
 #if HALMAC_PLATFORM_TESTPROGRAM
 #include "halmisc_api_88xx.h"
 #endif
@@ -137,6 +141,7 @@ init_adapter_param_88xx(struct halmac_adapter *adapter)
 	adapter->sdio_hw_info.spec_ver = HALMAC_SDIO_SPEC_VER_2_00;
 	adapter->sdio_hw_info.clock_speed = 50;
 	adapter->sdio_hw_info.block_size = 512;
+	adapter->sdio_hw_info.tx_512_by_byte_mode = 0;
 	adapter->sdio_hw_info.tx_seq = 1;
 	adapter->sdio_fs.macid_map = (u8 *)NULL;
 
@@ -163,6 +168,7 @@ init_adapter_param_88xx(struct halmac_adapter *adapter)
 
 	adapter->pcie_refautok_en = 1;
 	adapter->pwr_off_flow_flag = 0;
+	adapter->curr_bw = HALMAC_BW_20;
 
 	adapter->rx_ignore_info.hdr_chk_mask = 1;
 	adapter->rx_ignore_info.fcs_chk_mask = 1;
@@ -215,26 +221,32 @@ mount_api_88xx(struct halmac_adapter *adapter)
 	api->halmac_cfg_ch_bw = cfg_ch_bw_88xx;
 	api->halmac_cfg_bw = cfg_bw_88xx;
 	api->halmac_init_mac_cfg = init_mac_cfg_88xx;
+#if (HALMAC_8821C_SUPPORT || HALMAC_8822B_SUPPORT || \
+     HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT)
 	api->halmac_dump_efuse_map = dump_efuse_map_88xx;
 	api->halmac_dump_efuse_map_bt = dump_efuse_map_bt_88xx;
 	api->halmac_write_efuse_bt = write_efuse_bt_88xx;
 	api->halmac_read_efuse_bt = read_efuse_bt_88xx;
-	api->halmac_cfg_efuse_auto_check = cfg_efuse_auto_check_88xx;
 	api->halmac_dump_logical_efuse_map = dump_log_efuse_map_88xx;
 	api->halmac_dump_logical_efuse_mask = dump_log_efuse_mask_88xx;
 	api->halmac_pg_efuse_by_map = pg_efuse_by_map_88xx;
 	api->halmac_mask_logical_efuse = mask_log_efuse_88xx;
-	api->halmac_get_efuse_size = get_efuse_size_88xx;
 	api->halmac_get_efuse_available_size = get_efuse_available_size_88xx;
-	api->halmac_get_c2h_info = get_c2h_info_88xx;
-
-	api->halmac_get_logical_efuse_size = get_log_efuse_size_88xx;
 
 	api->halmac_write_logical_efuse = write_log_efuse_88xx;
+	api->halmac_write_logical_efuse_word = write_log_efuse_word_88xx;
 	api->halmac_read_logical_efuse = read_logical_efuse_88xx;
 
 	api->halmac_write_wifi_phy_efuse = write_wifi_phy_efuse_88xx;
 	api->halmac_read_wifi_phy_efuse = read_wifi_phy_efuse_88xx;
+#endif
+#if HALMAC_88XX_SUPPORT
+	api->halmac_cfg_efuse_auto_check = cfg_efuse_auto_check_88xx;
+	api->halmac_get_efuse_size = get_efuse_size_88xx;
+	api->halmac_get_logical_efuse_size = get_log_efuse_size_88xx;
+#endif
+
+	api->halmac_get_c2h_info = get_c2h_info_88xx;
 
 	api->halmac_ofld_func_cfg = ofld_func_cfg_88xx;
 	api->halmac_h2c_lb = h2c_lb_88xx;
@@ -269,6 +281,7 @@ mount_api_88xx(struct halmac_adapter *adapter)
 	api->halmac_drop_scan_packet = drop_scan_packet_88xx;
 
 	api->halmac_start_iqk = start_iqk_88xx;
+	api->halmac_start_dpk = start_dpk_88xx;
 	api->halmac_ctrl_pwr_tracking = ctrl_pwr_tracking_88xx;
 	api->halmac_psd = psd_88xx;
 	api->halmac_cfg_la_mode = cfg_la_mode_88xx;
@@ -396,6 +409,10 @@ mount_api_88xx(struct halmac_adapter *adapter)
 	} else if (adapter->chip_id == HALMAC_CHIP_ID_8812F) {
 #if HALMAC_8812F_SUPPORT
 		mount_api_8812f(adapter);
+#endif
+	} else if (adapter->chip_id == HALMAC_CHIP_ID_8822E) {
+#if HALMAC_8822E_SUPPORT
+		mount_api_8822e(adapter);
 #endif
 	} else {
 		PLTFM_MSG_ERR("[ERR]Chip ID undefine!!\n");
@@ -588,6 +605,9 @@ reset_ofld_feature_88xx(struct halmac_adapter *adapter,
 		state->fw_snding_state.proc_status = HALMAC_CMD_PROCESS_IDLE;
 		state->fw_snding_state.cmd_cnstr_state = HALMAC_CMD_CNSTR_IDLE;
 		break;
+	case HALMAC_FEATURE_DPK:
+		state->dpk_state.proc_status = HALMAC_CMD_PROCESS_IDLE;
+		break;
 	case HALMAC_FEATURE_ALL:
 		state->cfg_param_state.proc_status = HALMAC_CMD_PROCESS_IDLE;
 		state->cfg_param_state.cmd_cnstr_state = HALMAC_CMD_CNSTR_IDLE;
@@ -673,14 +693,13 @@ verify_io_88xx(struct halmac_adapter *adapter)
 	enum halmac_ret_status ret_status = HALMAC_RET_SUCCESS;
 
 	if (adapter->intf == HALMAC_INTERFACE_SDIO) {
+#if HALMAC_SDIO_SUPPORT
 		offset = REG_PAGE5_DUMMY;
 		if (0 == (offset & 0xFFFF0000))
 			offset |= WLAN_IOREG_OFFSET;
-#if HALMAC_SDIO_SUPPORT
+
 		ret_status = cnv_to_sdio_bus_offset_88xx(adapter, &offset);
-#else
-		return HALMAC_RET_WRONG_INTF;
-#endif
+
 		/* Verify CMD52 R/W */
 		wvalue8 = 0xab;
 		PLTFM_SDIO_CMD52_W(offset, wvalue8);
@@ -727,6 +746,9 @@ verify_io_88xx(struct halmac_adapter *adapter)
 			PLTFM_MSG_ERR("[ERR]cmd52 is used\n");
 			ret_status = HALMAC_RET_PLATFORM_API_INCORRECT;
 		}
+#else
+		return HALMAC_RET_WRONG_INTF;
+#endif
 	} else {
 		wvalue32 = 0x77665511;
 		PLTFM_REG_W32(REG_PAGE5_DUMMY, wvalue32);

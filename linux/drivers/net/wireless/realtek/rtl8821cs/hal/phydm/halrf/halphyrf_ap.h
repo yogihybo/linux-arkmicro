@@ -52,6 +52,7 @@
 #if (RTL8814B_SUPPORT == 1)
 	#include "halrf/rtl8814b/halrf_iqk_8814b.h"
 	#include "halrf/rtl8814b/halrf_dpk_8814b.h"
+	#include "halrf/rtl8814b/halrf_txgapk_8814b.h"
 #endif
 
 #if (RTL8197G_SUPPORT == 1)
@@ -85,6 +86,7 @@ struct txpwrtrack_cfg {
 	u8		swing_table_size_ofdm;
 	u8		threshold_iqk;
 	u8		threshold_dpk;
+	u8		threshold_lck;
 	u8		average_thermal_num;
 	u8		rf_path_count;
 	u32		thermal_reg_addr;

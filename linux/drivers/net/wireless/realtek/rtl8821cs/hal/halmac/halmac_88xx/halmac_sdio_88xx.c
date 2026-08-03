@@ -378,6 +378,7 @@ sdio_hw_info_88xx(struct halmac_adapter *adapter,
 	adapter->sdio_hw_info.clock_speed = info->clock_speed;
 	adapter->sdio_hw_info.spec_ver = info->spec_ver;
 	adapter->sdio_hw_info.block_size = info->block_size;
+	adapter->sdio_hw_info.tx_512_by_byte_mode = info->tx_512_by_byte_mode;
 
 	/*SW*/
 	adapter->sdio_hw_info.io_warn_flag = info->io_warn_flag;
@@ -461,11 +462,13 @@ leave_sdio_suspend_88xx(struct halmac_adapter *adapter)
 			return HALMAC_RET_SDIO_LEAVE_SUSPEND_FAIL;
 	}
 
-	value8 = HALMAC_REG_R8(REG_HCI_OPT_CTRL + 2);
-	if (adapter->sdio_hw_info.spec_ver == HALMAC_SDIO_SPEC_VER_3_00)
-		HALMAC_REG_W8(REG_HCI_OPT_CTRL + 2, value8 | BIT(2));
-	else
-		HALMAC_REG_W8(REG_HCI_OPT_CTRL + 2, value8 & ~(BIT(2)));
+	if (adapter->chip_id != HALMAC_CHIP_ID_8822E) {
+		value8 = HALMAC_REG_R8(REG_HCI_OPT_CTRL + 2);
+		if (adapter->sdio_hw_info.spec_ver == HALMAC_SDIO_SPEC_VER_3_00)
+			HALMAC_REG_W8(REG_HCI_OPT_CTRL + 2, value8 | BIT(2));
+		else
+			HALMAC_REG_W8(REG_HCI_OPT_CTRL + 2, value8 & ~(BIT(2)));
+	}
 
 	return HALMAC_RET_SUCCESS;
 }

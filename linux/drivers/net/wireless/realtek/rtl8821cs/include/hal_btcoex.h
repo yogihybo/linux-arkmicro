@@ -49,7 +49,9 @@ void hal_btcoex_ConnectNotify(PADAPTER padapter, u8 action);
 void hal_btcoex_MediaStatusNotify(PADAPTER padapter, u8 mediaStatus);
 void hal_btcoex_SpecialPacketNotify(PADAPTER padapter, u8 pktType);
 void hal_btcoex_IQKNotify(PADAPTER padapter, u8 state);
+void hal_btcoex_WLRFKNotify(PADAPTER padapter, u8 path, u8 type, u8 state);
 void hal_btcoex_BtInfoNotify(PADAPTER padapter, u8 length, u8 *tmpBuf);
+void hal_btcoex_le_audio_info_notify(PADAPTER padapter, u8 length, u8 *tmpBuf);
 void hal_btcoex_BtMpRptNotify(PADAPTER padapter, u8 length, u8 *tmpBuf);
 void hal_btcoex_SuspendNotify(PADAPTER padapter, u8 state);
 void hal_btcoex_HaltNotify(PADAPTER padapter, u8 do_halt);
@@ -61,6 +63,7 @@ s32 hal_btcoex_IsBTCoexRejectAMPDU(PADAPTER padapter);
 s32 hal_btcoex_IsBTCoexCtrlAMPDUSize(PADAPTER padapter);
 u32 hal_btcoex_GetAMPDUSize(PADAPTER padapter);
 void hal_btcoex_SetManualControl(PADAPTER padapter, u8 bmanual);
+void hal_btcoex_set_policy_control(PADAPTER padapter, u8 btc_policy);
 u8 hal_btcoex_1Ant(PADAPTER padapter);
 u8 hal_btcoex_IsBtControlLps(PADAPTER);
 u8 hal_btcoex_IsLpsOn(PADAPTER);
@@ -91,7 +94,6 @@ u16 hal_btcoex_btreg_write(PADAPTER padapter, u8 type, u16 addr, u16 val);
 void hal_btcoex_set_rfe_type(u8 type);
 void hal_btcoex_switchband_notify(u8 under_scan, u8 band_type);
 void hal_btcoex_WlFwDbgInfoNotify(PADAPTER padapter, u8* tmpBuf, u8 length);
-void hal_btcoex_rx_rate_change_notify(PADAPTER padapter, u8 is_data_frame, u8 rate_id);
 u16 hal_btcoex_btset_testode(PADAPTER padapter, u8 type);
 
 #ifdef CONFIG_RF4CE_COEXIST

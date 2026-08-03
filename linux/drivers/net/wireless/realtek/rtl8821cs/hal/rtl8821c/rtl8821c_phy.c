@@ -210,6 +210,7 @@ static u8 _init_phy_parameter_rf(PADAPTER adapter)
 	enum rf_path eRFPath;
 	PBB_REGISTER_DEFINITION_T pPhyReg;
 	PHAL_DATA_TYPE hal = GET_HAL_DATA(adapter);
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(adapter);
 	enum hal_status status;
 	int res;
 	u8 ret = _TRUE;
@@ -218,7 +219,7 @@ static u8 _init_phy_parameter_rf(PADAPTER adapter)
 	/*
 	 * Initialize RF
 	 */
-	for (eRFPath = RF_PATH_A; eRFPath < hal->NumTotalRFPath; eRFPath++) {
+	for (eRFPath = RF_PATH_A; eRFPath < hal_spec->rf_reg_path_num; eRFPath++) {
 		pPhyReg = &hal->PHYRegDef[eRFPath];
 
 		/* Initialize RF from configuration file */
@@ -430,6 +431,9 @@ void rtl8821c_set_tx_power_index(PADAPTER adapter, u32 powerindex, enum rf_path 
 		goto exit;
 	}
 
+	/* For phydm error handling we have to pass RF_PATH_A to the phydm API,
+	 * although some RFE types of 2.4G use RF_PATH_B.
+	 */
 	reg_path = RF_PATH_A;
 	rate = MRateToHwRate(rate);
 
@@ -762,7 +766,18 @@ void rtl8821c_switch_chnl_and_set_bw(PADAPTER adapter)
 
 	/* 2. set channel register */
 	if (hal->bSwChnl) {
-		ret = config_phydm_switch_channel_8821c(pDM_Odm, hal->current_channel);
+		if (_rtw_memcmp(adapter_to_rfctl(adapter)->alpha2, "CN", 2) == _TRUE
+			&& (phy_is_tx_power_limit_needed(adapter)
+				#ifdef CONFIG_MP_INCLUDED
+				|| rtw_mp_mode_check(adapter)
+				#endif
+			)
+		)
+			ret = config_phydm_switch_channel_cn_8821c(pDM_Odm, hal->current_channel,
+                                                                   hal->current_channel_bw);
+		else
+			ret = config_phydm_switch_channel_8821c(pDM_Odm, hal->current_channel);
+
 		hal->bSwChnl = _FALSE;
 
 		if (!ret) {

@@ -178,13 +178,6 @@ tx_allowed_sdio_8821c(struct halmac_adapter *adapter, u8 *buf, u32 size)
 
 	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
 
-	if (!fs_info->macid_map) {
-		PLTFM_MSG_ERR("[ERR]halmac allocate Macid_map Fail!!\n");
-		return HALMAC_RET_MALLOC_FAIL;
-	}
-
-	PLTFM_MEMSET(fs_info->macid_map, 0x00, fs_info->macid_map_size);
-
 	tx_agg_num = GET_TX_DESC_DMA_TXAGG_NUM(buf);
 	tx_agg_num = (tx_agg_num == 0) ? 1 : tx_agg_num;
 
@@ -203,7 +196,7 @@ tx_allowed_sdio_8821c(struct halmac_adapter *adapter, u8 *buf, u32 size)
 			status = chk_oqt_8821c(adapter, tx_agg_num, buf,
 					       macid_cnt);
 			if (status != HALMAC_RET_SUCCESS) {
-				PLTFM_MSG_WARN("[WARN]oqt buffer full!!\n");
+				PLTFM_MSG_WARN("[WARN]oqt buffer full, cnt = %d\n", cnt);
 				return status;
 			}
 
@@ -600,7 +593,7 @@ chk_oqt_8821c(struct halmac_adapter *adapter, u32 tx_agg_num, u8 *buf,
 	case HALMAC_QSEL_BK:
 	case HALMAC_QSEL_BK_V2:
 		if (macid_cnt > WLAN_ACQ_NUM_MAX &&
-		    tx_agg_num > OQT_ENTRY_AC_8821C) {
+		    tx_agg_num > (OQT_ENTRY_AC_8821C - 1)) {
 			PLTFM_MSG_WARN("[WARN]txagg num %d > oqt entry\n",
 				       tx_agg_num);
 			PLTFM_MSG_WARN("[WARN]macid cnt %d > acq max\n",
@@ -609,32 +602,36 @@ chk_oqt_8821c(struct halmac_adapter *adapter, u32 tx_agg_num, u8 *buf,
 
 		cnt = 10;
 		do {
-			if (fs_info->ac_empty >= macid_cnt) {
+			if (fs_info->ac_oqt_num == OQT_ENTRY_AC_8821C &&
+			    fs_info->ac_empty >= macid_cnt) {
 				fs_info->ac_empty -= macid_cnt;
 				break;
-			}
-
-			if (fs_info->ac_oqt_num >= tx_agg_num) {
+			} else if (fs_info->ac_oqt_num > tx_agg_num) {
 				fs_info->ac_empty = 0;
-				fs_info->ac_oqt_num -= (u8)tx_agg_num;
+				fs_info->ac_oqt_num = 0;
 				break;
 			}
 
 			update_oqt_free_space_8821c(adapter);
 
 			cnt--;
-			if (cnt == 0)
+			if (cnt == 0) {
+				PLTFM_MSG_WARN("ac_oqt_num %d, ac_empty %d, tx_agg_num %d, macid_cnt %d\n",
+					       fs_info->ac_oqt_num, fs_info->ac_empty, tx_agg_num, macid_cnt);
 				return HALMAC_RET_OQT_NOT_ENOUGH;
+			}
 		} while (1);
 		break;
 	case HALMAC_QSEL_MGNT:
 	case HALMAC_QSEL_HIGH:
-		if (tx_agg_num > OQT_ENTRY_NOAC_8821C)
+		if (tx_agg_num > (OQT_ENTRY_NOAC_8821C - 1))
 			PLTFM_MSG_WARN("[WARN]tx_agg_num %d > oqt entry\n",
 				       tx_agg_num);
+
 		cnt = 10;
 		do {
-			if (fs_info->non_ac_oqt_num >= tx_agg_num) {
+			if ((fs_info->non_ac_oqt_num > tx_agg_num) &&
+			    (fs_info->non_ac_oqt_num == OQT_ENTRY_NOAC_8821C)) {
 				fs_info->non_ac_oqt_num -= (u8)tx_agg_num;
 				break;
 			}
@@ -642,8 +639,11 @@ chk_oqt_8821c(struct halmac_adapter *adapter, u32 tx_agg_num, u8 *buf,
 			update_oqt_free_space_8821c(adapter);
 
 			cnt--;
-			if (cnt == 0)
+			if (cnt == 0) {
+				PLTFM_MSG_WARN("non_ac_oqt_num %d, tx_agg_num %d\n",
+					       fs_info->non_ac_oqt_num, tx_agg_num);
 				return HALMAC_RET_OQT_NOT_ENOUGH;
+			}
 		} while (1);
 		break;
 	default:
@@ -985,9 +985,9 @@ chk_rqd_page_num_8821c(struct halmac_adapter *adapter, u8 *buf, u32 *rqd_pg_num,
 {
 	u8 *pkt;
 	u8 qsel_first;
-	u32 i;
-	u32 pkt_size;
+	u32 i, pkt_size;
 	enum halmac_ret_status status = HALMAC_RET_SUCCESS;
+	struct halmac_sdio_free_space *fs_info = &adapter->sdio_fs;
 
 	pkt = buf;
 
@@ -996,6 +996,13 @@ chk_rqd_page_num_8821c(struct halmac_adapter *adapter, u8 *buf, u32 *rqd_pg_num,
 	status = chk_dma_mapping_8821c(adapter, cur_fs, qsel_first);
 	if (status != HALMAC_RET_SUCCESS)
 		return status;
+
+	if (!fs_info->macid_map) {
+		PLTFM_MSG_ERR("[ERR]halmac allocate Macid_map Fail!!\n");
+		return HALMAC_RET_MALLOC_FAIL;
+	}
+
+	PLTFM_MEMSET(fs_info->macid_map, 0x00, fs_info->macid_map_size);
 
 	for (i = 0; i < tx_agg_num; i++) {
 		/*QSEL parser*/

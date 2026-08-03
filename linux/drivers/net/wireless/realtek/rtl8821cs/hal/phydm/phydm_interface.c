@@ -436,6 +436,44 @@ void odm_move_memory(struct dm_struct *dm, void *dest, void *src, u32 length)
 #endif
 }
 
+u16 odm_convert_to_le16(u16 value)
+{
+#if (DM_ODM_SUPPORT_TYPE & ODM_AP)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211_V2)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
+	return value;
+#elif (DM_ODM_SUPPORT_TYPE & ODM_IOT)
+	return cpu_to_le16(value);
+#else
+	return value;
+#endif
+}
+
+u32 odm_convert_to_le32(u32 value)
+{
+#if (DM_ODM_SUPPORT_TYPE & ODM_AP)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211_V2)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
+	return value;
+#elif (DM_ODM_SUPPORT_TYPE & ODM_IOT)
+	return cpu_to_le32(value);
+#else
+	return value;
+#endif
+}
+
 void odm_memory_set(struct dm_struct *dm, void *pbuf, s8 value, u32 length)
 {
 #if (DM_ODM_SUPPORT_TYPE & ODM_AP)
@@ -702,13 +740,9 @@ void odm_initialize_timer(struct dm_struct *dm, struct phydm_timer_list *timer,
 			  const char *sz_id)
 {
 #if (DM_ODM_SUPPORT_TYPE & ODM_AP)
-	/*init_timer(timer);
+	init_timer(timer);
 	timer->function = call_back_func;
-	timer->data = (unsigned long)dm;*/
-	_init_timer(timer, NULL, call_back_func, dm);
-#if 0
-	/*@mod_timer(timer, jiffies+RTL_MILISECONDS_TO_JIFFIES(10));	*/
-#endif
+	timer->data = (unsigned long)dm;
 #elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211)
 	timer_setup(timer, call_back_func, 0);
 #elif (DM_ODM_SUPPORT_TYPE & ODM_CE)
@@ -794,7 +828,7 @@ u8 phydm_trans_h2c_id(struct dm_struct *dm, u8 phydm_h2c_id)
 
 #elif (DM_ODM_SUPPORT_TYPE & ODM_AP)
 #if ((RTL8881A_SUPPORT == 1) || (RTL8192E_SUPPORT == 1) || (RTL8814A_SUPPORT == 1) || (RTL8822B_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8192F_SUPPORT == 1)) /*@jj add 20170822*/
-		if (dm->support_ic_type == ODM_RTL8881A || dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type & PHYDM_IC_3081_SERIES)
+		if (dm->support_ic_type & (ODM_RTL8881A | ODM_RTL8192E | ODM_RTL8192F | PHYDM_IC_3081_SERIES))
 			platform_h2c_id = H2C_88XX_RSSI_REPORT;
 		else
 #endif
@@ -856,7 +890,7 @@ u8 phydm_trans_h2c_id(struct dm_struct *dm, u8 phydm_h2c_id)
 
 #elif (DM_ODM_SUPPORT_TYPE & ODM_AP)
 #if ((RTL8881A_SUPPORT == 1) || (RTL8192E_SUPPORT == 1) || (RTL8814A_SUPPORT == 1) || (RTL8822B_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8192F_SUPPORT == 1)) /*@jj add 20170822*/
-		if (dm->support_ic_type == ODM_RTL8881A || dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type & PHYDM_IC_3081_SERIES)
+		if (dm->support_ic_type & (ODM_RTL8881A | ODM_RTL8192E | ODM_RTL8192F | PHYDM_IC_3081_SERIES))
 			platform_h2c_id = H2C_88XX_RA_PARA_ADJUST;
 		else
 #endif
@@ -907,7 +941,7 @@ u8 phydm_trans_h2c_id(struct dm_struct *dm, u8 phydm_h2c_id)
 
 #elif (DM_ODM_SUPPORT_TYPE & ODM_AP)
 #if ((RTL8881A_SUPPORT == 1) || (RTL8192E_SUPPORT == 1) || (RTL8814A_SUPPORT == 1) || (RTL8822B_SUPPORT == 1) || (RTL8197F_SUPPORT == 1) || (RTL8192F_SUPPORT == 1)) /*@jj add 20170822*/
-		if (dm->support_ic_type == ODM_RTL8881A || dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type & PHYDM_IC_3081_SERIES)
+		if (dm->support_ic_type & (ODM_RTL8881A | ODM_RTL8192E | ODM_RTL8192F | PHYDM_IC_3081_SERIES))
 			platform_h2c_id = H2C_88XX_FW_TRACE_EN;
 		else
 #endif
@@ -925,7 +959,8 @@ u8 phydm_trans_h2c_id(struct dm_struct *dm, u8 phydm_h2c_id)
 
 	case PHYDM_H2C_TXBF:
 #if ((RTL8192E_SUPPORT == 1) || (RTL8812A_SUPPORT == 1))
-		platform_h2c_id = 0x41; /*@H2C_TxBF*/
+		if (dm->support_ic_type & (ODM_RTL8192E | ODM_RTL8812))
+			platform_h2c_id = 0x41; /*@H2C_TxBF*/
 #endif
 		break;
 
@@ -1273,7 +1308,7 @@ odm_dpk_by_fw(struct dm_struct *dm)
 #if (DM_ODM_SUPPORT_TYPE & ODM_WIN)
 	struct _ADAPTER *adapter = dm->adapter;
 
-	if (HAL_MAC_FWDPK_Trigger(&GET_HAL_MAC_INFO(adapter)) == 0)
+	if (hal_mac_fwdpk_trigger(&GET_HAL_MAC_INFO(adapter)) == 0)
 		dpk_result = HAL_STATUS_SUCCESS;
 #else
 	dpk_result = rtw_phydm_fw_dpk(dm);
@@ -1333,82 +1368,6 @@ void phydm_enable_rx_related_interrupt_handler(struct dm_struct *dm)
 #endif
 }
 
-#if 0
-boolean
-phydm_get_txbf_en(
-	struct dm_struct		*dm,
-	u16							mac_id,
-	u8							i
-)
-{
-	boolean txbf_en = false;
-
-#if (DM_ODM_SUPPORT_TYPE & ODM_WIN)
-#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && !defined(DM_ODM_CE_MAC80211)
-
-#ifdef CONFIG_BEAMFORMING
-	enum beamforming_cap beamform_cap;
-	void *adapter = dm->adapter;
-	#ifdef PHYDM_BEAMFORMING_SUPPORT
-	beamform_cap =
-	phydm_beamforming_get_entry_beam_cap_by_mac_id(dm, mac_id);
-	#else/*@for drv beamforming*/
-	beamform_cap =
-	beamforming_get_entry_beam_cap_by_mac_id(&adapter->mlmepriv, mac_id);
-	#endif
-	if (beamform_cap & (BEAMFORMER_CAP_HT_EXPLICIT | BEAMFORMER_CAP_VHT_SU))
-		txbf_en = true;
-	else
-		txbf_en = false;
-#endif /*@#ifdef CONFIG_BEAMFORMING*/
-
-#elif (DM_ODM_SUPPORT_TYPE & ODM_AP)
-
-#ifdef PHYDM_BEAMFORMING_SUPPORT
-	u8 idx = 0xff;
-	boolean act_bfer = false;
-	BEAMFORMING_CAP beamform_cap = BEAMFORMING_CAP_NONE;
-	PRT_BEAMFORMING_ENTRY	entry = NULL;
-	struct rtl8192cd_priv *priv			= dm->priv;
-	#if (defined(CONFIG_PHYDM_ANTENNA_DIVERSITY))
-	struct _BF_DIV_COEX_	*dm_bdc_table = &dm->dm_bdc_table;
-
-	dm_bdc_table->num_txbfee_client = 0;
-	dm_bdc_table->num_txbfer_client = 0;
-	#endif
-#endif
-
-#ifdef PHYDM_BEAMFORMING_SUPPORT
-	beamform_cap = Beamforming_GetEntryBeamCapByMacId(priv, mac_id);
-	entry = Beamforming_GetEntryByMacId(priv, mac_id, &idx);
-	if (beamform_cap & (BEAMFORMER_CAP_HT_EXPLICIT | BEAMFORMER_CAP_VHT_SU)) {
-		if (entry->Sounding_En)
-			txbf_en = true;
-		else
-			txbf_en = false;
-		act_bfer = true;
-	}
-	#if (defined(CONFIG_PHYDM_ANTENNA_DIVERSITY)) /*@BDC*/
-	if (act_bfer == true) {
-		dm_bdc_table->w_bfee_client[i] = true; /* @AP act as BFer */
-		dm_bdc_table->num_txbfee_client++;
-	} else
-		dm_bdc_table->w_bfee_client[i] = false; /* @AP act as BFer */
-
-	if (beamform_cap & (BEAMFORMEE_CAP_HT_EXPLICIT | BEAMFORMEE_CAP_VHT_SU)) {
-		dm_bdc_table->w_bfer_client[i] = true; /* @AP act as BFee */
-		dm_bdc_table->num_txbfer_client++;
-	} else
-		dm_bdc_table->w_bfer_client[i] = false; /* @AP act as BFer */
-
-	#endif
-#endif
-
-#endif
-	return txbf_en;
-}
-#endif
-
 void phydm_iqk_wait(struct dm_struct *dm, u32 timeout)
 {
 #if (DM_ODM_SUPPORT_TYPE == ODM_CE)
@@ -1434,7 +1393,9 @@ u8 phydm_get_hwrate_to_mrate(struct dm_struct *dm, u8 rate)
 void phydm_set_crystalcap(struct dm_struct *dm, u8 crystal_cap)
 {
 #if (DM_ODM_SUPPORT_TYPE == ODM_IOT)
+#if (! RTL8730A_SUPPORT)
 	ROM_odm_SetCrystalCap(dm, crystal_cap);
+#endif
 #endif
 }
 
@@ -1517,6 +1478,33 @@ u8 phydm_get_tx_power_dbm(struct dm_struct *dm, u8 rf_path,
 	tx_power_dbm = PHY_GetTxPowerFinalAbsoluteValue(dm, rf_path, rate, bandwidth, channel);
 #endif
 	return tx_power_dbm;
+}
+
+s16 phydm_get_tx_power_mdbm(struct dm_struct *dm, u8 rf_path,
+					u8 rate, u8 bandwidth, u8 channel)
+{
+	s16 tx_power_dbm = 0;
+#if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
+	struct _ADAPTER *adapter = dm->adapter;
+	tx_power_dbm = PHY_GetTxPowerFinalAbsoluteValuemdBm(adapter, rf_path, rate, bandwidth, channel);
+#endif
+
+#if (DM_ODM_SUPPORT_TYPE == ODM_CE)
+	tx_power_dbm = rtw_odm_get_tx_power_mbm(dm, rf_path, rate, bandwidth, channel);
+#endif
+
+#if (DM_ODM_SUPPORT_TYPE == ODM_AP)
+	tx_power_dbm = PHY_GetTxPowerFinalAbsoluteValuembm(dm, rf_path, rate, bandwidth, channel);
+#endif
+	return tx_power_dbm;
+}
+
+u32 phydm_rfe_ctrl_gpio(struct dm_struct *dm, u8 gpio_num)
+{
+#if (DM_ODM_SUPPORT_TYPE == ODM_CE)
+	return rtw_phydm_rfe_ctrl_gpio(dm->adapter, gpio_num);
+#endif
+	return 0;
 }
 
 u64 phydm_division64(u64 x, u64 y)
