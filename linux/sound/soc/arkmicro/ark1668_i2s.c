@@ -261,11 +261,30 @@ static int ark_i2s_startup(
 				|ARK_I2SSDDAC_SACR0_VREF_PD
 				|ARK_I2SSDDAC_SACR0_RFTH
 #if defined(CONFIG_FM1288_Driver)
-				|ARK_I2SSDDAC_SACR0_BCKD		//the module of fm1288 is weird, when capturing, 
+				|ARK_I2SSDDAC_SACR0_BCKD		//the module of fm1288 is weird, when capturing,
 				|ARK_I2SSDDAC_SACR0_SYNCD		//you must set the direction of the tow guys output as playback
 #endif
 				|ARK_I2SSDDAC_SACR0_I2SEN);
 		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
+
+		/* 2026-08-03 AA mic-quality investigation
+		 * (docs/AUDIO_SUBSYSTEM_INVESTIGATION.md / project_mic_capture_investigation):
+		 * SARADC_POW_EN was just asserted above in the same register
+		 * write as everything else, with nothing giving the SAR-ADC's
+		 * voltage reference (VREF) time to settle before RDMAENA
+		 * enables the RX DMA a few lines below and real sampling
+		 * begins. This is the same class of gap already found (and
+		 * fixed) on the playback side -- ark_i2s_trigger()'s
+		 * mdelay(3) settle window between starting the DAC and
+		 * unmuting -- just never applied here. No datasheet-derived
+		 * settle time is available for this specific SAR-ADC, so 3ms
+		 * is a starting-point guess by analogy to the playback fix,
+		 * not a measured value -- revisit if voice-recognition
+		 * transcription quality doesn't improve, or if it turns out
+		 * capture-direction ALSA XRUNs (dmesg "XRUN: pcmC0D0c",
+		 * CONFIG_SND_PCM_XRUN_DEBUG) are the dominant mechanism
+		 * instead. */
+		mdelay(3);
 
 		val = readl(i2s->base + ARK_I2SSDDAC_SAIMR);
 		val &= ~(ARK_I2SSDDAC_SAIMR_RFS 
