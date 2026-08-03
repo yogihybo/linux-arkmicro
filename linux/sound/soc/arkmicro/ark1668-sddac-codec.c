@@ -126,11 +126,6 @@ static const struct snd_soc_dapm_widget ark_sddac_dapm_widgets[] = {
 static int ark_sddac_startup(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
 {
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	}else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE){
-		//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	}
 	return 0 ;
 }
 
@@ -254,7 +249,7 @@ static int ark_sddac_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct resource *res;
 	int ret;
-	printk("start:================[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+
 	dac = devm_kzalloc(dev, sizeof(*dac), GFP_KERNEL);
 	if (!dac)
 		return -ENOMEM;
@@ -279,7 +274,6 @@ static int ark_sddac_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to register codec: %d\n", ret);
 		goto err;
 	}
-	printk("end:===============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
 	return 0;
 
 err:

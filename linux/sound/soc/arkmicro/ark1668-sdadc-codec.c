@@ -78,11 +78,6 @@
 static int ark_sdadc_startup(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *dai)
 {
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		//printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	}else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE){
-		printk("==============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
-	}
 	return 0 ;
 }
 
@@ -151,7 +146,7 @@ static int ark_sdadc_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	int ret;
-	printk("start:================[%s]:[ %d]\n", __FUNCTION__, __LINE__);
+
 	ret = devm_snd_soc_register_component(dev, &ark_sdadc_component_driver,
 			&ark_sdadc_dai,
 			1);
@@ -159,7 +154,6 @@ static int ark_sdadc_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to register codec: %d\n", ret);
 		return ret;
 	}
-	printk("end:===============[%s]:[ %d]\n", __FUNCTION__, __LINE__);
 	return 0;
 }
 
