@@ -21,7 +21,11 @@
 #define NUM_STA MACID_NUM_SW_LIMIT
 
 #ifndef CONFIG_RTW_MACADDR_ACL
+	#ifdef CONFIG_AP_MODE
 	#define CONFIG_RTW_MACADDR_ACL 1
+	#else
+	#define CONFIG_RTW_MACADDR_ACL 0
+	#endif
 #endif
 
 #ifndef CONFIG_RTW_PRE_LINK_STA
@@ -157,7 +161,9 @@ struct	stainfo_stats	{
 	u32 rxratecnt[128];	/* Read & Clear, in proc_get_rx_stat() */
 	u32 tx_ok_cnt;		/* Read & Clear, in proc_get_tx_stat() */
 	u32 tx_fail_cnt;	/* Read & Clear, in proc_get_tx_stat() */
+	u32 tx_fail_cnt_sum;	/* cumulative counts */
 	u32 tx_retry_cnt;	/* Read & Clear, in proc_get_tx_stat() */
+	u32 tx_retry_cnt_sum;	/* cumulative counts */
 #ifdef CONFIG_RTW_MESH
 	u32 rx_hwmp_pkts;
 	u32 last_rx_hwmp_pkts;
@@ -263,6 +269,7 @@ struct sta_info {
 	_lock	lock;
 	_list	list; /* free_sta_queue */
 	_list	hash_list; /* sta_hash */
+	bool is_freeing;
 	/* _list asoc_list; */ /* 20061114 */
 	/* _list sleep_list; */ /* sleep_q */
 	/* _list wakeup_list; */ /* wakeup_q */
@@ -278,6 +285,10 @@ struct sta_info {
 #endif
 	_queue sleep_q;
 	unsigned int sleepq_len;
+#ifdef CONFIG_RTW_MGMT_QUEUE
+	_queue mgmt_sleep_q;
+	unsigned int mgmt_sleepq_len;
+#endif
 
 	uint state;
 	uint qos_option;
@@ -288,6 +299,7 @@ struct sta_info {
 	u8 rm_diag_token;
 #endif /* CONFIG_RTW_80211K */
 
+	systime	resp_nonenc_eapol_key_starttime;
 	uint	ieee8021x_blocked;	/* 0: allowed, 1:blocked */
 	uint	dot118021XPrivacy; /* aes, tkip... */
 	union Keytype	dot11tkiptxmickey;
@@ -295,6 +307,7 @@ struct sta_info {
 	union Keytype	dot118021x_UncstKey;
 	union pn48		dot11txpn;			/* PN48 used for Unicast xmit */
 	union pn48		dot11rxpn;			/* PN48 used for Unicast recv. */
+	ATOMIC_T	keytrack;
 #ifdef CONFIG_RTW_MESH
 	/* peer's GTK, RX only */
 	u8 group_privacy;
@@ -303,6 +316,7 @@ struct sta_info {
 	union pn48 gtk_pn;
 	#ifdef CONFIG_IEEE80211W
 	/* peer's IGTK, RX only */
+	enum security_type dot11wCipher;
 	u8 igtk_bmp;
 	u8 igtk_id;
 	union Keytype igtk;
@@ -382,6 +396,10 @@ struct sta_info {
 
 	unsigned int expire_to;
 
+	int flags;
+
+	u8 bpairwise_key_installed;
+
 #ifdef CONFIG_AP_MODE
 
 	_list asoc_list;
@@ -392,7 +410,6 @@ struct sta_info {
 	unsigned char chg_txt[128];
 
 	u16 capability;
-	int flags;
 
 	int dot8021xalg;/* 0:disable, 1:psk, 2:802.1x */
 	int wpa_psk;/* 0:disable, bit(0): WPA, bit(1):WPA2 */
@@ -402,11 +419,6 @@ struct sta_info {
 	int wpa2_pairwise_cipher;
 
 	u32 akm_suite_type;
-
-	u8 bpairwise_key_installed;
-#ifdef CONFIG_RTW_80211R
-	u8 ft_pairwise_key_installed;
-#endif
 
 #ifdef CONFIG_NATIVEAP_MLME
 	u8 wpa_ie[32];
@@ -456,9 +468,9 @@ struct sta_info {
 	u8 op_wfd_mode;
 #endif
 
-#ifdef CONFIG_TX_MCAST2UNI
+#if !defined(CONFIG_ACTIVE_KEEP_ALIVE_CHECK) && defined(CONFIG_80211N_HT)
 	u8 under_exist_checking;
-#endif /* CONFIG_TX_MCAST2UNI */
+#endif
 
 	u8 keep_alive_trycnt;
 
@@ -504,6 +516,16 @@ struct sta_info {
 	bool vendor_8812;
 #endif
 
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	u8 tbtx_enable;			/* Does this sta_info support & enable TBTX function? */
+//	u8 tbtx_timeslot;		/* This sta_info belong to which time slot.	*/
+#endif
+
+#ifdef CONFIG_RTW_80211R
+	struct rtw_sta_ft_info_t ft_peer;
+	u8 ft_pairwise_key_installed;
+#endif
+
 	/*
 	 * Vaiables for queuing TX pkt a short period of time
 	 * to wait something ready.
@@ -512,6 +534,8 @@ struct sta_info {
 	struct __queue tx_queue;
 	_workitem tx_q_work;
 };
+
+#define STA_MACADDR(sta) (sta)->cmn.mac_addr
 
 #ifdef CONFIG_RTW_MESH
 #define STA_SET_MESH_PLINK(sta, link) (sta)->plink = link
@@ -693,15 +717,23 @@ struct	sta_priv {
 	#if CONFIG_RTW_PRE_LINK_STA
 	struct pre_link_sta_ctl_t pre_link_sta_ctl;
 	#endif
-
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	u8 tbtx_asoc_list_cnt;
+	struct sta_info *token_holder[NR_MAXSTA_INSLOT];
+	struct sta_info *last_token_holder;
+	ATOMIC_T nr_token_keeper;
+#endif
 #endif /* CONFIG_AP_MODE */
 
 #ifdef CONFIG_ATMEL_RC_PATCH
 	u8 atmel_rc_pattern[6];
 #endif
+
+	/* tx report, single request allowed for now */
 	u8 c2h_sta_mac[ETH_ALEN];
 	u8 c2h_adapter_id;
 	struct submit_ctx *gotc2h;
+	_lock tx_rpt_lock;
 };
 
 
@@ -733,13 +765,20 @@ struct sta_info *rtw_get_stainfo_by_offset(struct sta_priv *stapriv, int offset)
 extern struct sta_info *rtw_alloc_stainfo(struct	sta_priv *pstapriv, const u8 *hwaddr);
 extern u32	rtw_free_stainfo(_adapter *padapter , struct sta_info *psta);
 extern void rtw_free_all_stainfo(_adapter *padapter);
-extern struct sta_info *rtw_get_stainfo(struct sta_priv *pstapriv, const u8 *hwaddr);
+extern struct sta_info *rtw_get_stainfo(struct sta_priv *stapriv, const u8 *hwaddr);
+struct sta_info *rtw_get_stainfo_to_free(struct sta_priv *stapriv, const u8 *hwaddr);
+void rtw_stainfo_claim_to_free_no_lock(struct sta_info *sta);
+void rtw_stainfo_claim_to_free(struct sta_info *sta);
 extern u32 rtw_init_bcmc_stainfo(_adapter *padapter);
 extern struct sta_info *rtw_get_bcmc_stainfo(_adapter *padapter);
 
 #ifdef CONFIG_AP_MODE
 u16 rtw_aid_alloc(_adapter *adapter, struct sta_info *sta);
 void dump_aid_status(void *sel, _adapter *adapter);
+void rtw_stapriv_asoc_list_lock(struct sta_priv *stapriv);
+void rtw_stapriv_asoc_list_unlock(struct sta_priv *stapriv);
+void rtw_stapriv_asoc_list_add(struct sta_priv *stapriv, struct sta_info *sta);
+void rtw_stapriv_asoc_list_del(struct sta_priv *stapriv, struct sta_info *sta);
 #endif
 
 #if CONFIG_RTW_MACADDR_ACL

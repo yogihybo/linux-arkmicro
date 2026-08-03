@@ -107,7 +107,7 @@ u16 phydm_find_intrvl(void *dm_void, u16 val, u16 *threshold, u16 th_len)
 void phydm_seq_sorting(void *dm_void, u32 *value, u32 *rank_idx, u32 *idx_out,
 		       u8 seq_length)
 {
-	u8 i = 0, j = 0;
+	u8 i = 0, j = 0, max_j = 0;
 	u32 tmp_a, tmp_b;
 	u32 tmp_idx_a, tmp_idx_b;
 
@@ -115,7 +115,8 @@ void phydm_seq_sorting(void *dm_void, u32 *value, u32 *rank_idx, u32 *idx_out,
 		rank_idx[i] = i;
 
 	for (i = 0; i < (seq_length - 1); i++) {
-		for (j = 0; j < (seq_length - 1 - i); j++) {
+		max_j = seq_length - 1 - i;
+		for (j = 0; j < max_j; j++) {
 			tmp_a = value[j];
 			tmp_b = value[j + 1];
 
@@ -159,27 +160,32 @@ u32 odm_convert_to_db(u64 value)
 			break;
 	}
 
+	/*special cases*/
 	if (j == 0 && i == 0)
 		goto end;
 
+	if (i == 3 && j == 0) {
+		if (db_invert_table[3][0] - value >
+		    value - (db_invert_table[2][7] >> FRAC_BITS)) {
+			i = 2;
+			j = 7;
+		}
+		goto end;
+	}
+
+	if (i < 3)
+		value = value << FRAC_BITS; /*@elements of row 0~2 shift left*/
+
+	/*compare difference to get precise dB*/
 	if (j == 0) {
-		if (i != 3) {
-			if (db_invert_table[i][0] - value >
-			    value - db_invert_table[i - 1][7]) {
-				i = i - 1;
-				j = 7;
-			}
-		} else {
-			if (db_invert_table[3][0] - value >
-			    value - db_invert_table[2][7]) {
-				i = 2;
-				j = 7;
-			}
+		if (db_invert_table[i][j] - value >
+		    value - db_invert_table[i - 1][7]) {
+			i = i - 1;
+			j = 7;
 		}
 	} else {
 		if (db_invert_table[i][j] - value >
 		    value - db_invert_table[i][j - 1]) {
-			i = i;
 			j = j - 1;
 		}
 	}

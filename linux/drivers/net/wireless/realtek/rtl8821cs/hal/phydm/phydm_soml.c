@@ -312,6 +312,9 @@ void phydm_soml_debug(void *dm_void, char input[][16], u32 *_used,
 	u32 dm_value[10] = {0};
 	u8 i = 0, input_idx = 0;
 
+	if (!(dm->support_ability & ODM_BB_ADAPTIVE_SOML))
+		return;
+
 	for (i = 0; i < 5; i++) {
 		if (input[i + 1]) {
 			PHYDM_SSCANF(input[i + 1], DCMD_DECIMAL, &dm_value[i]);
@@ -560,10 +563,6 @@ void phydm_adsl_init_state(void *dm_void)
 	}
 
 	soml_tab->is_soml_method_enable = 1;
-	#if (DM_ODM_SUPPORT_TYPE == ODM_AP)
-	odm_set_mac_reg(dm, R_0x608, BIT(8), 1);
-	/*RCR accepts CRC32-Error packets*/
-	#endif
 	soml_tab->get_stats = false;
 	soml_tab->soml_state_cnt++;
 	next_on_off = (soml_tab->soml_on_off == SOML_ON) ? SOML_ON : SOML_OFF;
@@ -679,10 +678,6 @@ void phydm_adsl_decision_state(void *dm_void)
 		pr_debug("%s: mismatch IC type %x\n", __func__,
 			 dm->support_ic_type);
 	soml_tab->get_stats = false;
-	#if (DM_ODM_SUPPORT_TYPE == ODM_AP)
-	odm_set_mac_reg(dm, R_0x608, BIT(8), 0);
-	/* NOT Accept CRC32 Error packets. */
-	#endif
 	PHYDM_DBG(dm, DBG_ADPTV_SOML, "[Decisoin state ]\n");
 	phydm_soml_statistics(dm, soml_tab->soml_on_off);
 	if (*dm->channel <= 14) {
@@ -1082,7 +1077,7 @@ void phydm_adsl_decision_state(void *dm_void)
 	PHYDM_DBG(dm, DBG_ADPTV_SOML,
 		  "[  rate_per_pkt_on = %d ; rate_per_pkt_off = %d ]\n",
 		  rate_per_pkt_on, rate_per_pkt_off);
-	#if (DM_ODM_SUPPORT_TYPE == ODM_AP)
+	#if 0 // (DM_ODM_SUPPORT_TYPE == ODM_AP)
 	if (max_idx_on == max_idx_off && max_idx_on != 0) {
 		PHYDM_DBG(dm, DBG_ADPTV_SOML,
 			  "[ max_idx_on == max_idx_off ]\n");
@@ -1149,6 +1144,9 @@ void phydm_set_adsl_val(void *dm_void, u32 *val_buf, u8 val_len)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 
+	if (!(dm->support_ability & ODM_BB_ADAPTIVE_SOML))
+		return;
+
 	if (val_len != 1) {
 		PHYDM_DBG(dm, ODM_COMP_API, "[Error][ADSL]Need val_len=1\n");
 		return;
@@ -1162,6 +1160,9 @@ void phydm_soml_crc_acq(void *dm_void, u8 rate_id, boolean crc32, u32 length)
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 	struct adaptive_soml *soml_tab = &dm->dm_soml_table;
 	u8 offset = 0;
+
+	if (!(dm->support_ability & ODM_BB_ADAPTIVE_SOML))
+		return;
 
 	if (!soml_tab->get_stats)
 		return;
@@ -1207,6 +1208,8 @@ void phydm_soml_bytes_acq(void *dm_void, u8 rate_id, u32 length)
 	struct adaptive_soml *soml_tab = &dm->dm_soml_table;
 	u8 offset = 0;
 
+	if (!(dm->support_ability & ODM_BB_ADAPTIVE_SOML))
+		return;
 
 	if (rate_id >= ODM_RATEMCS0 && rate_id <= ODM_RATEMCS31) {
 		offset = rate_id - ODM_RATEMCS0;
@@ -1225,9 +1228,9 @@ void phydm_soml_bytes_acq(void *dm_void, u8 rate_id, u32 length)
 }
 
 #if defined(CONFIG_RTL_TRIBAND_SUPPORT) && defined(CONFIG_USB_HCI)
-static void pre_phydm_adaptive_soml_callback(struct timer_list *t)
+static void pre_phydm_adaptive_soml_callback(unsigned long task_dm)
 {
-	struct dm_struct *dm = from_timer(dm, t, dm_soml_table.phydm_adaptive_soml_timer);
+	struct dm_struct *dm = (struct dm_struct *)task_dm;
 	struct rtl8192cd_priv *priv = dm->priv;
 	struct priv_shared_info *pshare = priv->pshare;
 
@@ -1251,10 +1254,9 @@ void phydm_adaptive_soml_timers_usb(void *dm_void, u8 state)
 	struct rtl8192cd_priv *priv = dm->priv;
 
 	if (state == INIT_SOML_TIMMER) {
-		/* init_timer(&soml_tab->phydm_adaptive_soml_timer);
+		init_timer(&soml_tab->phydm_adaptive_soml_timer);
 		soml_tab->phydm_adaptive_soml_timer.data = (unsigned long)dm;
-		soml_tab->phydm_adaptive_soml_timer.function = pre_phydm_adaptive_soml_callback; */
-		timer_setup(&soml_tab->phydm_adaptive_soml_timer, pre_phydm_adaptive_soml_callback, 0);
+		soml_tab->phydm_adaptive_soml_timer.function = pre_phydm_adaptive_soml_callback;
 		INIT_TIMER_EVENT_ENTRY(&priv->pshare->adaptive_soml_event,
 				       phydm_adaptive_soml_callback,
 				       (unsigned long)dm);
@@ -1270,6 +1272,9 @@ void phydm_adaptive_soml_timers(void *dm_void, u8 state)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 	struct adaptive_soml *soml_tab = &dm->dm_soml_table;
+
+	if (!(dm->support_ic_type & PHYDM_ADAPTIVE_SOML_IC))
+		return;
 
 #if defined(CONFIG_RTL_TRIBAND_SUPPORT) && defined(CONFIG_USB_HCI)
 	struct rtl8192cd_priv *priv = dm->priv;
@@ -1302,6 +1307,10 @@ void phydm_adaptive_soml_init(void *dm_void)
 		return;
 	}
 #endif
+
+	if (!(dm->support_ic_type & PHYDM_ADAPTIVE_SOML_IC))
+		return;
+
 	PHYDM_DBG(dm, DBG_ADPTV_SOML, "%s\n", __func__);
 
 	soml_tab->soml_state_cnt = 0;

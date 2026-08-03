@@ -57,6 +57,12 @@ typedef enum _BTCOEX_SUSPEND_STATE {
 	BTCOEX_SUSPEND_STATE_MAX
 } BTCOEX_SUSPEND_STATE, *PBTCOEX_SUSPEND_STATE;
 
+typedef enum _BTCOEX_POLICY_CONTROL {
+	BTCOEX_POLICY_CONTROL_AUTO,
+	BTCOEX_POLICY_CONTROL_FORCE_FREERUN,
+	BTCOEX_POLICY_CONTROL_FORCE_TDMA
+} BTCOEX_POLICY_CONTROL, *PBTCOEX_POLICY_CONTROL;
+
 #define SET_BT_MP_OPER_RET(OpCode, StatusCode)						((OpCode << 8) | StatusCode)
 #define GET_OP_CODE_FROM_BT_MP_OPER_RET(RetCode)					((RetCode & 0xF0) >> 8)
 #define GET_STATUS_CODE_FROM_BT_MP_OPER_RET(RetCode)				(RetCode & 0x0F)
@@ -376,13 +382,14 @@ void rtw_btcoex_ScanNotify(PADAPTER, u8 type);
 void rtw_btcoex_MediaStatusNotify(PADAPTER, u8 mediaStatus);
 void rtw_btcoex_SpecialPacketNotify(PADAPTER, u8 pktType);
 void rtw_btcoex_IQKNotify(PADAPTER padapter, u8 state);
+void rtw_btcoex_WLRFKNotify(PADAPTER padapter, u8 path, u8 type, u8 state);
 void rtw_btcoex_BtInfoNotify(PADAPTER, u8 length, u8 *tmpBuf);
+void rtw_btcoex_le_audio_info_notify(PADAPTER padapter, u8 length, u8 *tmpBuf);
 void rtw_btcoex_BtMpRptNotify(PADAPTER, u8 length, u8 *tmpBuf);
 void rtw_btcoex_SuspendNotify(PADAPTER, u8 state);
 void rtw_btcoex_HaltNotify(PADAPTER);
 void rtw_btcoex_switchband_notify(u8 under_scan, u8 band_type);
 void rtw_btcoex_WlFwDbgInfoNotify(PADAPTER padapter, u8* tmpBuf, u8 length);
-void rtw_btcoex_rx_rate_change_notify(PADAPTER padapter, u8 is_data_frame, u8 rate_id);
 void rtw_btcoex_SwitchBtTRxMask(PADAPTER);
 void rtw_btcoex_Switch(PADAPTER, u8 enable);
 u8 rtw_btcoex_IsBtDisabled(PADAPTER);
@@ -391,6 +398,7 @@ s32 rtw_btcoex_IsBTCoexRejectAMPDU(PADAPTER padapter);
 s32 rtw_btcoex_IsBTCoexCtrlAMPDUSize(PADAPTER);
 u32 rtw_btcoex_GetAMPDUSize(PADAPTER);
 void rtw_btcoex_SetManualControl(PADAPTER, u8 bmanual);
+void rtw_btcoex_set_policy_control(PADAPTER, u8 btc_policy);
 u8 rtw_btcoex_1Ant(PADAPTER);
 u8 rtw_btcoex_IsBtControlLps(PADAPTER);
 u8 rtw_btcoex_IsLpsOn(PADAPTER);

@@ -81,6 +81,8 @@ enum bt_info_src_8821c_1ant {
 	BT_8821C_1ANT_INFO_SRC_WIFI_FW		= 0x0,
 	BT_8821C_1ANT_INFO_SRC_BT_RSP		= 0x1,
 	BT_8821C_1ANT_INFO_SRC_BT_ACT		= 0x2,
+	BT_8821C_1ANT_INFO_SRC_BT_SLOT1		= 0x7,
+	BT_8821C_1ANT_INFO_SRC_BT_SLOT2		= 0x8,
 	BT_8821C_1ANT_INFO_SRC_MAX
 };
 
@@ -163,7 +165,7 @@ enum bt_8821c_1ant_scoreboard {
 	BT_8821C_1ANT_SCBD_ONOFF	= BIT(1),
 	BT_8821C_1ANT_SCBD_SCAN		= BIT(2),
 	BT_8821C_1ANT_SCBD_UNDERTEST	= BIT(3),
-	BT_8821C_1ANT_SCBD_WLBUSY	= BIT(6),
+	BT_8821C_1ANT_SCBD_WLBUSY	= BIT(7),
 	BT_8821C_1ANT_SCBD_TDMA		= BIT(9),
 	BT_8821C_1ANT_SCBD_BTCQDDR	= BIT(10),
 	BT_8821C_1ANT_SCBD_ALL		= 0xffff
@@ -215,6 +217,8 @@ struct coex_dm_8821c_1ant {
 	boolean		cur_bt_auto_report;
 	u8		cur_lps;
 	u8		cur_rpwm;
+	u32		bt_slot_length1[10];
+	u32		bt_slot_length2[10];
 
 	/* sw mechanism */
 	boolean		cur_low_penalty_ra;
@@ -243,15 +247,18 @@ struct coex_sta_8821c_1ant {
 	boolean	hid_exist;
 	boolean	pan_exist;
 	boolean	msft_mr_exist;
+	boolean bt_a2dp_active;
 	u8	num_of_profile;
 
 	boolean	under_lps;
+	boolean wl_in_lps_enter;
 	boolean	under_ips;
 	u32	specific_pkt_period_cnt;
 	u32	high_priority_tx;
 	u32	high_priority_rx;
 	u32	low_priority_tx;
 	u32	low_priority_rx;
+	boolean bt_ctr_ok;
 	boolean	is_hi_pri_rx_overhead;
 	s8	bt_rssi;
 	u8	pre_bt_rssi_state;
@@ -260,8 +267,12 @@ struct coex_sta_8821c_1ant {
 	u32	bt_info_c2h_cnt[BT_8821C_1ANT_INFO_SRC_MAX];
 	boolean	bt_whck_test;
 	boolean	c2h_bt_inquiry_page;
+	boolean bt_inq_page_pre;
+	boolean bt_inq_page_remain;
 	boolean	c2h_bt_remote_name_req;
 	boolean	c2h_bt_page;
+	boolean bt_a2dp_active_pre;
+	boolean bt_a2dp_active_remain;
 
 	boolean	wifi_high_pri_task1;
 	boolean	wifi_high_pri_task2;
@@ -314,10 +325,10 @@ struct coex_sta_8821c_1ant {
 	boolean	is_A2DP_3M;
 	boolean	voice_over_HOGP;
 	boolean	bt_418_hid_exist;
+	boolean bt_ble_hid_exist;
 	u8	forbidden_slot;
 	u8	hid_busy_num;
 	u8	hid_pair_cnt;
-	boolean	hid_418;
 
 	u32	cnt_remote_name_req;
 	u32	cnt_setup_link;
@@ -329,6 +340,8 @@ struct coex_sta_8821c_1ant {
 
 	u16	bt_reg_vendor_ac;
 	u16	bt_reg_vendor_ae;
+	u16	bt_reg_le_2e;
+	u16	bt_reg_le_52;
 
 	boolean	is_setup_link;
 	u8	wl_noisy_level;
@@ -336,6 +349,8 @@ struct coex_sta_8821c_1ant {
 
 	u8	bt_afh_map[10];
 	u8	bt_relink_downcount;
+	u8	bt_inq_page_downcount;
+	u8	bt_a2dp_active_downcount;
 	boolean	is_tdma_btautoslot;
 
 	u8	switch_band_notify_to;
@@ -358,6 +373,7 @@ struct coex_sta_8821c_1ant {
 	boolean	is_hid_rcu;
 	u8	bt_a2dp_vendor_id;
 	u32	bt_a2dp_device_name;
+	u32	bt_a2dp_flush_time;
 	boolean	is_ble_scan_en;
 
 	boolean	is_bt_opp_exist;
@@ -386,6 +402,7 @@ struct coex_sta_8821c_1ant {
 	u8	tdma_timer_base;
 	boolean wl_slot_toggle;
 	boolean wl_slot_toggle_change; /* if toggle to no-toggle */
+	u8	wl_iot_peer;
 };
 
 
