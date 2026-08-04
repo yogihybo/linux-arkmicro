@@ -171,14 +171,18 @@
  * Interface Related Config
  */
 #define CONFIG_TX_AGGREGATION
-#define CONFIG_XMIT_THREAD_MODE	/* necessary for SDIO */
-/*#define CONFIG_SDIO_TX_ENABLE_AVAL_INT => Related MAC reg must setting => HAL-MAC ?? */
-#define CONFIG_SDIO_RX_COPY
-
-#define CONFIG_RECV_THREAD_MODE
-#ifdef CONFIG_RECV_THREAD_MODE
-#define RTW_RECV_THREAD_HIGH_PRIORITY
-#endif/*CONFIG_RECV_THREAD_MODE*/
+/* CONFIG_XMIT_THREAD_MODE / CONFIG_SDIO_RX_COPY / CONFIG_RECV_THREAD_MODE: all
+ * SDIO-only per their own comments/usage (SDIO_RX_COPY is SDIO-named
+ * directly; XMIT_THREAD_MODE's own comment says "necessary for SDIO"; the
+ * original 2021 USB autoconf.h never defined any of these). Left undefined
+ * here (this is the USB build) -- defining CONFIG_RECV_THREAD_MODE pulled in
+ * a hal_intf.c check requiring hal_func.recv_hdl to be hooked, which only
+ * hal/rtl8821c/sdio/rtl8821cs_ops.c populates; the USB ops file
+ * (hal/rtl8821c/usb/rtl8821cu_ops.c, kept from the 2021 tree) never
+ * implements a recv_hdl at all -- USB receive is URB-completion-driven, not
+ * thread-polled -- so this produced a real boot-time
+ * "rtw_hal_ops_check - Error : Please hook hal_func.recv_hdl" on hardware.
+ */
 
 #ifdef CONFIG_RTW_NAPI
 #define CONFIG_RTW_NAPI_DYNAMIC
