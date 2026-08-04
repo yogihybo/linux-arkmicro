@@ -2093,6 +2093,20 @@ struct net_device *rtw_init_netdev(_adapter *old_padapter)
 
 	padapter = rtw_netdev_priv(pnetdev);
 	padapter->pnetdev = pnetdev;
+	/* Missing on the primary adapter's own init path -- rtw_drv_add_vir_if()
+	 * (this same file) sets this for virtual/secondary interfaces, but
+	 * nothing set it here for the primary adapter, leaving
+	 * adapter_link.adapter NULL. ALINK_GET_BAND/_CH/_BW/_OFFSET (drv_types.h)
+	 * all dereference alink->adapter first, so any DFS/regulatory code that
+	 * calls rtw_get_adapter_link_by_hwband() on the primary adapter (e.g.
+	 * rtw_dfs_rd_en_decision() during a disconnect event) NULL-derefs.
+	 * HW-confirmed crash on the rtl8811cu sibling driver (identical, byte-
+	 * for-byte copy of this file): "Unable to handle kernel NULL pointer
+	 * dereference at virtual address 00000fc8" in rtw_dfs_rd_en_decision,
+	 * from disconnect_hdl -> rtw_mlmeext_disconnect ->
+	 * rtw_dfs_rd_en_dec_on_mlme_act, during hostapd AP startup -- a genuine
+	 * upstream vendor SDK bug, applied here too since this file matches. */
+	padapter->adapter_link.adapter = padapter;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
 	SET_MODULE_OWNER(pnetdev);
