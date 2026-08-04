@@ -123,7 +123,7 @@
 	 * blind test, not a confirmed fix -- see
 	 * docs/DEVICE_TEST_CHECKLIST_2026-07-18.md. Revert if it doesn't
 	 * help. */ \
-	"nandargs=setenv bootargs console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait rootdelay=3 ro screen=0 ${mtdparts}\0" \
+	"nandargs=setenv bootargs console=ttyS0,115200n8 mem=180M earlyprintk=serial ubi.mtd=6 root=ubi0:rootfs rootfstype=ubifs rootwait rootdelay=3 ro screen=0 threadirqs ${mtdparts}\0" \
 	/* switchecc 2: this chip's actual on-flash OOB layout for the
 	 * kernel/rootfs/bootloader partitions is 1024-byte step / 13-byte /
 	 * 7-bit BCH strength / eccpos starting at OOB offset 3 — matches
@@ -262,7 +262,24 @@
 	"hybridubootfile=uboot_hybrid.bin\0" \
 	"stockubootfile=uboot_stock.bin\0" \
 	"machid=1068\0" \
-	"bootargs_common=console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8\0" \
+	/* threadirqs (also added to nandargs above): AA audio-stutter
+	 * investigation experiment, 2026-08-04 -- forces every hard-IRQ
+	 * handler that doesn't already request its own threading (confirmed
+	 * true of both ark-dma.c's DMA IRQ and musb_ark.c's USB/WiFi IRQ,
+	 * neither uses request_threaded_irq() with a real thread_fn) to run
+	 * in a preemptible kernel thread instead of hard-IRQ context. On
+	 * this single-core SoC, any hard-IRQ handler running blocks every
+	 * other interrupt (including audio DMA's) for its duration --
+	 * threadirqs lets the scheduler preempt/prioritize between them
+	 * instead. Checked against stock first: "threadirqs"/
+	 * "force_irqthreads" appear nowhere in stock's real dumped vmlinux
+	 * (same strings-based method that found the TCP reno/cubic
+	 * divergence) -- CONFIG_IRQ_FORCED_THREADING almost certainly isn't
+	 * even compiled into stock's kernel, so this is a genuine NEW
+	 * deviation, not a stock restoration (unlike the TCP reno fix) --
+	 * same class as the chrt -f 50/busy_poll mitigations already in
+	 * firmware_overlay/etc/rc.d/rcS. NOT YET HARDWARE-TESTED. */ \
+	"bootargs_common=console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8 threadirqs\0" \
 	NANDARGS
 
 /* Default (non-interrupted) autoboot, in priority order:

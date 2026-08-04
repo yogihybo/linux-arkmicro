@@ -441,7 +441,7 @@ static int boot_from_block_dev(const char *iface)
 	const char *usbroot = env_or_default("usbroot", "/dev/sda2");
 	const char *root = (strcmp(iface, "usb") == 0) ? usbroot : mmcroot;
 	const char *bootargs_common = env_or_default("bootargs_common",
-		"console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8");
+		"console=ttyS0,115200n8 mem=180M earlyprintk=serial rootfstype=ext4 rootwait rw screen=0 user_debug=8 threadirqs");
 	unsigned long machid = env_or_default_hex("machid", 0x1068);
 
 	/* 2026-08-01: moved here from right before the final bootz -- hardware
