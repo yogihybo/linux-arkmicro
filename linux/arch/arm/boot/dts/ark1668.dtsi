@@ -428,7 +428,24 @@
 			dma-channels = <8>;
 			dma-masters = <2>;
 			chan_allocation_order = <1>;
-			chan_priority = <1>;
+			/* 2026-08-05 AA audio-stutter investigation: was <1>
+			 * (CHAN_PRIORITY_DESCENDING, dwc->priority = channel
+			 * index). Combined with chan_allocation_order=1 handing
+			 * out channels highest-index-first, mmc1 (eMMC -- probes
+			 * before i2s_dac, confirmed via boot log timestamps) won
+			 * the highest channel index and therefore the highest
+			 * DMA bus-arbitration priority in the whole system --
+			 * ahead of audio. Stock's own 3.4 kernel had this same
+			 * config (verified against docs/logs/archived/dmesg live
+			 * device kernel 3.4 dmeg_260715.txt and this repo's first
+			 * commit) but never hit the contention because its audio
+			 * driver didn't use this cyclic-DMA/dmaengine_pcm path.
+			 * <0> (CHAN_PRIORITY_ASCENDING, dwc->priority =
+			 * nr_channels-i-1) inverts the mapping so eMMC's
+			 * high channel index maps to the *lowest* priority and
+			 * audio ends up above it -- see
+			 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md. */
+			chan_priority = <0>;
 			block_size = <0xfff>;
 			data-width = <4 4>;
 			/* multi-block = <1 1 1 1 1 1 1 1>; */
