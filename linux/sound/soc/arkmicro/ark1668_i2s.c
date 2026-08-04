@@ -14,6 +14,7 @@
 #include <linux/delay.h>
 #include <linux/ktime.h>
 #include <linux/timer.h>
+#include <linux/dma-mapping.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -26,6 +27,44 @@
 
 #define DRV_NAME	"ark1668-i2s"
 #define DMA_ENABLE
+
+/* 2026-08-05 AA audio-stutter investigation: bypasses the generic ASoC
+ * dmaengine_pcm framework (devm_snd_dmaengine_pcm_register()) entirely,
+ * replicating stock's own custom platform PCM driver -- ark_pcm_trigger
+ * (0x802f5408), ark_pcm_prepare_dma (0x802f552c), ark_pcm_prepare
+ * (0x802f55c8), ark_pcm_dma_period_done (0x802f5628), disassembled from
+ * firmware_dumps/Prado firmware dump/mtd5_kernel/extracted/vmlinux.elf --
+ * see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md. Stock never called .pointer()
+ * during normal playback the way the generic framework's own
+ * dmaengine_pcm_dma_complete() does; its period callback goes straight to
+ * snd_pcm_period_elapsed() with no independent hardware-position
+ * reconciliation. That's the actual mechanism that lets stock's audio
+ * tolerate the same DMA-controller-sharing/tasklet-priority conditions
+ * (confirmed pre-existing, unmodified since this repo's first commit)
+ * without ever hitting ALSA core's "Lost interrupts?" cross-check, which
+ * only the generic framework's own residue-polling path can trigger.
+ *
+ * ark-dma.c's dw_dma_cyclic_* API isn't in a shared header (private to
+ * drivers/dma/) -- struct dw_cyclic_desc below is a binary-compatible
+ * mirror of drivers/dma/ark-dma.h's definition, declared here the same
+ * way musb_host.c forward-declares musb_dma_channel_release() rather
+ * than pulling in a foreign driver's private header. */
+struct dw_cyclic_desc {
+	void			*desc;		/* opaque to us */
+	unsigned long		periods;	/* opaque to us */
+	size_t			period_len;	/* opaque to us */
+	void			(*period_callback)(void *param);
+	void			*period_callback_param;
+};
+
+extern struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+		dma_addr_t buf_addr, size_t buf_len, size_t period_len,
+		enum dma_transfer_direction direction);
+extern void dw_dma_cyclic_free(struct dma_chan *chan);
+extern int dw_dma_cyclic_start(struct dma_chan *chan);
+extern void dw_dma_cyclic_stop(struct dma_chan *chan);
+extern dma_addr_t dw_dma_get_src_addr(struct dma_chan *chan);
+extern dma_addr_t dw_dma_get_dst_addr(struct dma_chan *chan);
 
 #undef ARK_I2S_DEBUG
 #ifdef ARK_I2S_DEBUG
@@ -547,14 +586,220 @@ static struct snd_pcm_hardware ark1668_pcm_hardware = {
 	.periods_max 		= 64,
 };
 
-static const struct snd_dmaengine_pcm_config 
-ark1668_i2s_dmaengine_pcm_config = {
-	.prepare_slave_config	= snd_dmaengine_pcm_prepare_slave_config,
-	.pcm_hardware		= &ark1668_pcm_hardware,
+struct ark_pcm_rtd {
+	struct dma_chan		*chan;
+	struct dw_cyclic_desc	*cdesc;
+	bool			prepared;
+};
+
+/* Matches stock's ark_pcm_dma_period_done (0x802f5628) exactly: no
+ * residue read, no position reconciliation -- just forward the
+ * interrupt-driven notification. This is what avoids ever engaging
+ * ALSA core's independent hw_ptr cross-check ("Lost interrupts?"),
+ * unlike the generic dmaengine_pcm framework's own
+ * dmaengine_pcm_dma_complete(). */
+static void ark_pcm_dma_period_done(void *param)
+{
+	struct snd_pcm_substream *substream = param;
+
+	if (substream)
+		snd_pcm_period_elapsed(substream);
+}
+
+static int ark_pcm_open(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *dai = rtd->cpu_dai;
+	struct ark_pcm_rtd *prtd;
+	int ret;
+
+	prtd = kzalloc(sizeof(*prtd), GFP_KERNEL);
+	if (!prtd)
+		return -ENOMEM;
+
+	prtd->chan = dma_request_slave_channel(dai->dev,
+		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "tx" : "rx");
+	if (!prtd->chan) {
+		dev_err(dai->dev, "ark_pcm_open: failed to get DMA channel\n");
+		kfree(prtd);
+		return -ENODEV;
+	}
+
+	ret = snd_pcm_hw_constraint_integer(substream->runtime,
+					     SNDRV_PCM_HW_PARAM_PERIODS);
+	if (ret < 0) {
+		dma_release_channel(prtd->chan);
+		kfree(prtd);
+		return ret;
+	}
+
+	snd_soc_set_runtime_hwparams(substream, &ark1668_pcm_hardware);
+	substream->runtime->private_data = prtd;
+	return 0;
+}
+
+static int ark_pcm_close(struct snd_pcm_substream *substream)
+{
+	struct ark_pcm_rtd *prtd = substream->runtime->private_data;
+
+	dma_release_channel(prtd->chan);
+	kfree(prtd);
+	return 0;
+}
+
+static int ark_pcm_hw_params(struct snd_pcm_substream *substream,
+			      struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *dai = rtd->cpu_dai;
+	struct ark_i2s_dev *i2s = snd_soc_dai_get_drvdata(dai);
+	struct ark_pcm_rtd *prtd = substream->runtime->private_data;
+	struct snd_dmaengine_dai_dma_data *dma_data;
+	struct dma_slave_config slave_config;
+	int ret;
+
+	ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(params));
+	if (ret < 0)
+		return ret;
+
+	dma_data = substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+			&i2s->playback_dma_data : &i2s->capture_dma_data;
+
+	memset(&slave_config, 0, sizeof(slave_config));
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		slave_config.direction = DMA_MEM_TO_DEV;
+		slave_config.dst_addr = dma_data->addr;
+		slave_config.dst_addr_width = dma_data->addr_width;
+		slave_config.dst_maxburst = dma_data->maxburst;
+	} else {
+		slave_config.direction = DMA_DEV_TO_MEM;
+		slave_config.src_addr = dma_data->addr;
+		slave_config.src_addr_width = dma_data->addr_width;
+		slave_config.src_maxburst = dma_data->maxburst;
+	}
+
+	ret = dmaengine_slave_config(prtd->chan, &slave_config);
+	if (ret) {
+		dev_err(dai->dev, "ark_pcm_hw_params: slave_config failed: %d\n", ret);
+		snd_pcm_lib_free_pages(substream);
+		return ret;
+	}
+	return 0;
+}
+
+static int ark_pcm_hw_free(struct snd_pcm_substream *substream)
+{
+	struct ark_pcm_rtd *prtd = substream->runtime->private_data;
+
+	if (prtd->prepared) {
+		dw_dma_cyclic_free(prtd->chan);
+		prtd->prepared = false;
+	}
+	return snd_pcm_lib_free_pages(substream);
+}
+
+static int ark_pcm_prepare(struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct ark_pcm_rtd *prtd = runtime->private_data;
+	enum dma_transfer_direction direction;
+	unsigned long flags;
+
+	if (prtd->prepared)
+		return 0;
+
+	direction = substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+			DMA_MEM_TO_DEV : DMA_DEV_TO_MEM;
+
+	prtd->cdesc = dw_dma_cyclic_prep(prtd->chan, runtime->dma_addr,
+			frames_to_bytes(runtime, runtime->buffer_size),
+			frames_to_bytes(runtime, runtime->period_size),
+			direction);
+	if (IS_ERR(prtd->cdesc))
+		return PTR_ERR(prtd->cdesc);
+
+	prtd->cdesc->period_callback = ark_pcm_dma_period_done;
+	prtd->cdesc->period_callback_param = substream;
+
+	/* Tiny critical section marking "prepared", matching stock's own
+	 * cpsid-i-protected read-modify-write in ark_pcm_prepare_dma --
+	 * not a big lock, just keeps the flag update atomic against IRQs. */
+	local_irq_save(flags);
+	prtd->prepared = true;
+	local_irq_restore(flags);
+
+	return 0;
+}
+
+static int ark_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+{
+	struct ark_pcm_rtd *prtd = substream->runtime->private_data;
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		return dw_dma_cyclic_start(prtd->chan);
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		dw_dma_cyclic_stop(prtd->chan);
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
+/* Matches stock's ark_pcm_pointer (0x802f52b4): playback reads the
+ * *source* address (the memory side advances for MEM_TO_DEV; the FIFO
+ * destination is fixed), capture reads the *destination* address (the
+ * memory side advances for DEV_TO_MEM; the FIFO source is fixed). */
+static snd_pcm_uframes_t ark_pcm_pointer(struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct ark_pcm_rtd *prtd = runtime->private_data;
+	dma_addr_t pos;
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		pos = dw_dma_get_src_addr(prtd->chan);
+	else
+		pos = dw_dma_get_dst_addr(prtd->chan);
+
+	if (pos < runtime->dma_addr)
+		return 0;
+
+	return bytes_to_frames(runtime, pos - runtime->dma_addr) % runtime->buffer_size;
+}
+
+static int ark_pcm_new(struct snd_soc_pcm_runtime *rtd)
+{
+	struct snd_card *card = rtd->card->snd_card;
+	int ret;
+
+	ret = dma_coerce_mask_and_coherent(card->dev, DMA_BIT_MASK(32));
+	if (ret)
+		return ret;
+
+	return snd_pcm_lib_preallocate_pages_for_all(rtd->pcm,
+			SNDRV_DMA_TYPE_DEV, card->dev,
+			ark1668_pcm_hardware.buffer_bytes_max,
+			ark1668_pcm_hardware.buffer_bytes_max);
+}
+
+static const struct snd_pcm_ops ark_pcm_ops = {
+	.open		= ark_pcm_open,
+	.close		= ark_pcm_close,
+	.hw_params	= ark_pcm_hw_params,
+	.hw_free	= ark_pcm_hw_free,
+	.prepare	= ark_pcm_prepare,
+	.trigger	= ark_pcm_trigger,
+	.pointer	= ark_pcm_pointer,
 };
 
 static const struct snd_soc_component_driver ark1668_i2s_component = {
 	.name		= DRV_NAME,
+	.ops		= &ark_pcm_ops,
+	.pcm_new	= ark_pcm_new,
 };
 
 static void ark_i2s_clk_disable(void *data)
@@ -682,14 +927,11 @@ static int ark1668_i2s_drv_probe(struct platform_device *pdev)
 	}
 	i2s_poweron(i2s);
 
-	ret = devm_snd_dmaengine_pcm_register(&pdev->dev,
-						&ark1668_i2s_dmaengine_pcm_config,
-						0);
-	if (ret) {
-		dev_err(&pdev->dev, "Could not register PCM\n");
-		return ret;
-	}
-	
+	/* PCM ops are now registered directly via ark1668_i2s_component's
+	 * .ops/.pcm_new (custom platform driver bypassing the generic
+	 * dmaengine_pcm framework, see the top-of-file comment) -- no
+	 * separate devm_snd_dmaengine_pcm_register() call needed. */
+
 	dev_dbg(&pdev->dev, "probe end\n");
 	return 0;
 }
