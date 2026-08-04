@@ -90,11 +90,7 @@ static void musb_h_tx_flush_fifo(struct musb_hw_ep *ep)
 	struct musb	*musb = ep->musb;
 	void __iomem	*epio = ep->regs;
 	u16		csr;
-#if NICHOLAS_ADD
-	int		retries = 1;
-#else
 	int		retries = 1000;
-#endif
 
 	csr = musb_readw(epio, MUSB_TXCSR);
 	while (csr & MUSB_TXCSR_FIFONOTEMPTY) {
