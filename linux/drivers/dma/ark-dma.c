@@ -612,6 +612,17 @@ static void dwc_handle_cyclic(struct dw_dma *dw, struct dw_dma_chan *dwc,
 
 	/* Re-enable interrupts */
 	channel_set_bit(dw, MASK.BLOCK, dwc->mask);
+	/* 2026-08-05: was dev_info() during the AA audio-stutter
+	 * investigation (see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md) --
+	 * fires once per real audio period (~21ms) during any playback,
+	 * so left at dev_info it floods dmesg/the UART console forever
+	 * during normal use once the underlying bug was found and fixed.
+	 * Downgraded to dev_dbg -- still available via dynamic_debug if
+	 * this needs revisiting, silent by default otherwise. */
+	dev_dbg(chan2dev(&dwc->chan),
+		"cyclic BLOCK re-armed chan%d at %lluns (was_pending=%d)\n",
+		dwc->chan.chan_id, ktime_get_ns(),
+		(status_block & dwc->mask) ? 1 : 0);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -685,7 +696,15 @@ static irqreturn_t dw_dma_interrupt(int irq, void *dev_id)
 		channel_clear_bit(dw, MASK.ERROR, (1 << 8) - 1);
 	}
 
-	tasklet_schedule(&dw->tasklet);
+	/* 2026-08-05 AA audio-stutter investigation: HI priority so this
+	 * runs ahead of NET_TX_SOFTIRQ/NET_RX_SOFTIRQ in __do_softirq()'s
+	 * fixed processing order -- plain tasklet_schedule() (TASKLET_SOFTIRQ)
+	 * was getting starved behind WiFi RX/TX softirq load on this
+	 * single-core SoC, long enough for dwc_handle_cyclic()'s single-bit
+	 * RAW.BLOCK check to silently coalesce multiple missed cyclic-DMA
+	 * period completions into one callback call (see
+	 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md). */
+	tasklet_hi_schedule(&dw->tasklet);
 
 	return IRQ_HANDLED;
 }
@@ -1857,7 +1876,18 @@ static struct dma_chan *dw_dma_of_xlate(struct of_phandle_args *dma_spec,
 	dma_cap_set(DMA_SLAVE, cap);
 
 	/* TODO: there should be a simpler way to do this */
-	return dma_request_channel(cap, dw_dma_filter, &slave);
+	{
+		struct dma_chan *chan = dma_request_channel(cap, dw_dma_filter, &slave);
+
+		if (chan) {
+			struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+
+			dev_info(dw->dma.dev,
+				"of_xlate: src_id/dst_id=%d -> chan%d (nollp=%d)\n",
+				slave.src_id, dwc->chan.chan_id, dwc->nollp);
+		}
+		return chan;
+	}
 }
 
 #ifdef CONFIG_OF
