@@ -2,7 +2,7 @@
 
 This folder preserves the one GPU driver combination that has actually gotten
 furthest on real hardware, so it doesn't get lost/overwritten again by later
-struct-RE work in `../gpu-vivante-6.2.4/`.
+struct-RE work in `../vivante-6.2.4/`.
 
 ## What's here
 
@@ -17,12 +17,12 @@ struct-RE work in `../gpu-vivante-6.2.4/`.
   version-string match (`gcvVERSION_STRING "6.2.4.p1.150331"` in both the
   binaries' `strings` output and this tag's `gc_hal_version.h`). Plain files,
   no `.git` — re-clone the tag if history is ever needed, same reasoning as
-  the `gpu-vivante-6.2.4/` import earlier this session (avoids nested-repo
+  the `gpu/vivante-6.2.4/` import earlier this session (avoids nested-repo
   confusion).
 
 Both `galcore.ko` and `libGAL.so` are a self-consistent pair (same version,
 mismatched against stock's real driver, but matched to *each other*) — do not
-mix either file with the struct-RE'd `gpu-vivante-6.2.4/` build or with
+mix either file with the struct-RE'd `../vivante-6.2.4/` build or with
 stock's original `libGAL.so`.
 
 ## Hardware test status
@@ -44,16 +44,16 @@ stock's original `libGAL.so`.
 
 ## Why this matters
 
-The struct-RE'd `gpu-vivante-6.2.4/` + stock's original `libGAL.so` (today's
+The struct-RE'd `../vivante-6.2.4/` + stock's original `libGAL.so` (today's
 default state) is byte-exact-correct on paper, but has never been verified to
 actually run `EffectWatch`'s GPU-accelerated compose path — it's been blocked
 by the separate `fbdev.so` crash every time. This pairing is the fallback to
 restore for testing anything GPU/EffectWatch-related when that's blocking:
 
 ```
-cp gpu-known-good-pairing/galcore.ko compiled_modules/lib/modules/4.19.192/galcore.ko
-cp gpu-known-good-pairing/libGAL.so /media/sf_GitHub/prado-firmware-reconstruction/firmware_source/prado_reconstructed/mtd6_rootfs/rootfs/usr/lib/libGAL.so
-cp gpu-known-good-pairing/libGAL.so /media/sf_GitHub/prado-firmware-reconstruction/firmware_overlay/prado/usr/lib/libGAL.so
+cp gpu/known-good-pairing-6.2.4.p1.8/galcore.ko compiled_modules/lib/modules/4.19.192/galcore.ko
+cp gpu/known-good-pairing-6.2.4.p1.8/libGAL.so /media/sf_GitHub/prado-firmware-reconstruction/firmware_source/prado_reconstructed/mtd6_rootfs/rootfs/usr/lib/libGAL.so
+cp gpu/known-good-pairing-6.2.4.p1.8/libGAL.so /media/sf_GitHub/prado-firmware-reconstruction/firmware_overlay/prado/usr/lib/libGAL.so
 ```
 
 (This is exactly what's staged as of 2026-07-20, uncommitted, in the main repo.)
@@ -91,8 +91,8 @@ independent of it. Rebuilt via:
 
 ```
 source env.source
-cd gpu-known-good-pairing/nxp-source-6.2.4.p1.8/kernel-module-imx-gpu-viv-src
-make -C ../../../linux M=$(pwd) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- AQROOT=$(pwd) CONFIG_MXC_GPU_VIV=m modules
+cd gpu/known-good-pairing-6.2.4.p1.8/nxp-source-6.2.4.p1.8/kernel-module-imx-gpu-viv-src
+make -C ../../../../linux M=$(pwd) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- AQROOT=$(pwd) CONFIG_MXC_GPU_VIV=m modules
 ```
 
 (`AQROOT` must be passed explicitly — the Kbuild's own default assumes
