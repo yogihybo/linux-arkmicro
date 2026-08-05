@@ -434,7 +434,7 @@ static int ark1680_ts_probe(struct platform_device *pdev)
 		return error;
 	}
 
-	dev_info(ts->dev, "ARK1680 resistive touchscreen registered, irq=%d, debug=%d (echo 1 > /sys/module/ark1680_ts/parameters/debug to trace samples)\n",
+	dev_info(ts->dev, "ARK1680 resistive touchscreen registered, irq=%d, debug=%d\n",
 		 ts->irq, ark1680_ts_debug);
 	return 0;
 }
@@ -448,7 +448,7 @@ MODULE_DEVICE_TABLE(of, ark1680_ts_match);
 static struct platform_driver ark1680_ts_driver = {
 	.probe = ark1680_ts_probe,
 	.driver = {
-		.name = "ark1680_ts",
+		.name = "ark1680-ts",
 		.of_match_table = ark1680_ts_match,
 	},
 };
