@@ -41,10 +41,15 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
 		enum dma_transfer_direction direction);
 void dw_dma_cyclic_free(struct dma_chan *chan);
 
-/* Matches stock's own driver name ("ark_dw_dmac.0: Arkmicro DMA Controller,
- * 8 channels" in the real 3.4 kernel dmesg) -- purely cosmetic, DT probing
- * matches on the "arkmicro,ark-dma" compatible string below, not this name. */
-#define DRV_NAME	"ark_dw_dmac"
+/* 2026-08-05: switched from "ark_dw_dmac" (which matched stock's own
+ * driver name, "ark_dw_dmac.0: Arkmicro DMA Controller, 8 channels" in
+ * the real 3.4 kernel dmesg -- useful while actively diffing against
+ * stock logs) to this hyphenated form, matching the naming convention
+ * every other Arkmicro driver in this tree uses (ark1668-i2s,
+ * ark1668-vin, ark-carback, ark-jpeg, etc.). Purely cosmetic either
+ * way -- DT probing matches on the "arkmicro,ark-dma" compatible
+ * string below, not this name. */
+#define DRV_NAME	"ark-dw-dmac"
 
 /*
  * This supports the Synopsys "DesignWare AHB Central DMA Controller",

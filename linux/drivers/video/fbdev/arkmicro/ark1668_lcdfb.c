@@ -4,7 +4,7 @@
  * Licensed under GPLv2 or later.
  */
 
-#define pr_fmt(fmt) "ark1668_lcdfb: " fmt
+#define pr_fmt(fmt) "ark1668-lcdfb: " fmt
 
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
@@ -1576,7 +1576,7 @@ static struct platform_driver ark1668_lcdfb_driver = {
 	.suspend	= ark1668_lcdfb_suspend,
 	.resume		= ark1668_lcdfb_resume,
 	.driver		= {
-		.name	= "ark1668_lcdfb",
+		.name	= "ark1668-lcdfb",
 		.of_match_table	= of_match_ptr(ark1668_lcdfb_dt_ids),
 	},
 };
