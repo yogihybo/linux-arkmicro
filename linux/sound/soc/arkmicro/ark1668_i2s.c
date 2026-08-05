@@ -540,6 +540,7 @@ static const struct snd_soc_dai_ops ark_i2s_dai_ops = {
 
 static struct snd_soc_dai_driver ark_i2s_dai = {
 	.probe = ark_i2s_probe,
+	.remove = ark_i2s_remove,
 	.playback = {
 		.channels_min 	= 1,
 		.channels_max 	= 2,
