@@ -158,8 +158,8 @@ void ark_audio_mute(int mute)
 	if (!dac)
 		return;
 
-	printk(KERN_INFO "ark1668-sddac: ark_audio_mute mute=%d at %lluns\n",
-	       mute, ktime_to_ns(ktime_get()));
+	pr_debug("ark1668-sddac: ark_audio_mute mute=%d at %lluns\n",
+		 mute, ktime_to_ns(ktime_get()));
 
 	if (mute)
 		writel(0, dac->base + I2S_DACR0);
@@ -184,8 +184,8 @@ static int ark_sddac_mute(struct snd_soc_dai *dai, int mute)
 	 * mute was being driven by ASoC's own trigger/DAPM timing instead
 	 * of by DMA readiness, with no settle delay at all. See
 	 * docs/AUDIO_SUBSYSTEM_INVESTIGATION.md. */
-	printk(KERN_INFO "ark1668-sddac: digital_mute (ASoC-driven, no-op, matches stock) mute=%d at %lluns\n",
-	       mute, ktime_to_ns(ktime_get()));
+	pr_debug("ark1668-sddac: digital_mute (ASoC-driven, no-op, matches stock) mute=%d at %lluns\n",
+		 mute, ktime_to_ns(ktime_get()));
 	return 0;
 }
 
