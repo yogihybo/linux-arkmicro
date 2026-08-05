@@ -3,6 +3,9 @@
  *
  * Licensed under GPLv2 or later.
  */
+
+#define pr_fmt(fmt) "ark-carback: " fmt
+
 #include <linux/err.h>
 #include <linux/init.h>
 #include <linux/gpio/consumer.h>
@@ -103,7 +106,7 @@ static struct ark_carback *g_carback = NULL;
 void carback_first_enter(void)
 {
         if(!g_carback){
-                printk("%s g_carback null error\n",__FUNCTION__);
+                pr_warn("%s g_carback null error\n", __FUNCTION__);
                 return;
         }
 
@@ -131,7 +134,7 @@ static ssize_t ark_carback_read(struct file *filp, char __user *user, size_t siz
         // if backcar changed ,will enter ark_backcar_intr_handler, set carback_changed
         wait_event_interruptible(carback->context.carback_waiq, carback->context.carback_changed);
         if (copy_to_user(user, &carback->context.carback_status, 1)) {
-                printk("%s %d: copy_to_user error\n",__FUNCTION__, __LINE__);
+                pr_err("%s %d: copy_to_user error\n", __FUNCTION__, __LINE__);
                 return -EFAULT;
         }
         spin_lock_irqsave(&carback->context.spin_lock, flags);
@@ -218,7 +221,7 @@ static long ark_carback_ioctl(struct file *filp,unsigned int cmd, unsigned long 
         	{
         		int status = context->carback_status;
                         if (copy_to_user((void*)arg, &status, sizeof(status))) {
-                                printk("%s %d: copy_to_user error\n", __FUNCTION__, __LINE__);
+                                pr_err("%s %d: copy_to_user error\n", __FUNCTION__, __LINE__);
                                 error = -EFAULT;
                         }
         	}
@@ -227,13 +230,13 @@ static long ark_carback_ioctl(struct file *filp,unsigned int cmd, unsigned long 
         	{
         		int signal = dvr_detect_carback_signal();
         		if (copy_to_user((void*)arg, &signal, sizeof(signal))) {
-                                printk("%s %d: copy_to_user error\n",__FUNCTION__, __LINE__);
+                                pr_err("%s %d: copy_to_user error\n", __FUNCTION__, __LINE__);
                                 error = -EFAULT;
         		}			
         	}
         	break;
         default:
-                printk("%s %d: undefined cmd (0x%2X)\n", __FUNCTION__, __LINE__, cmd);
+                pr_warn("%s %d: undefined cmd (0x%2X)\n", __FUNCTION__, __LINE__, cmd);
                 error = -EINVAL;
         }
 
@@ -278,7 +281,7 @@ void carback_int_work(struct work_struct *work)
         wake_up_interruptible(&context->carback_waiq);//poll 
 
         if(context->async_queue_cb != NULL) {
-                printk(KERN_DEBUG "kill_fasync carback.\n");
+                pr_debug("kill_fasync carback.\n");
                 kill_fasync(&context->async_queue_cb, SIGIO, POLL_IN);//async
         }   
 
@@ -286,7 +289,7 @@ void carback_int_work(struct work_struct *work)
                 if (context->app_ready) {
                         ret = wait_event_interruptible_timeout(context->app_enter_waiq, context->app_enter_done, msecs_to_jiffies(500));
                         if (ret == 0) {
-                                printk(KERN_ALERT "wait for app enter carback timeout. close fb0 by kernel.\n");
+                                pr_warn("wait for app enter carback timeout. close fb0 by kernel.\n");
                                 ark_disp_set_layer_en(0, 0);
                         }
                         context->app_enter_done = 0;
@@ -297,7 +300,7 @@ void carback_int_work(struct work_struct *work)
                 if (context->app_ready) {
                         ret = wait_event_interruptible_timeout(context->app_exit_waiq, context->app_exit_done, msecs_to_jiffies(500));
                         if (ret == 0) {
-                                printk(KERN_ALERT "wait for app exit carback timeout.\n");
+                                pr_warn("wait for app exit carback timeout.\n");
                                 ark_disp_set_layer_en(0, 1);
                         }
                         context->app_exit_done = 0;
@@ -312,7 +315,7 @@ static irqreturn_t carback_interrupt(int irq, void *dev_id)
 {
         struct ark_carback *carback = (struct ark_carback *)dev_id;
 
-        printk(KERN_DEBUG "carback_interrupt %d.\n", gpiod_get_value(carback->detect));
+        pr_debug("carback_interrupt %d.\n", gpiod_get_value(carback->detect));
 
         queue_work(carback->carback_queue, &carback->carback_work);
 
@@ -351,7 +354,7 @@ static int ark_carback_probe(struct platform_device *pdev)
 
         carback->carback_queue = create_singlethread_workqueue("carback_queue");
         if(!carback->carback_queue) {
-                printk(KERN_ERR "%s %d: , create_singlethread_workqueue fail.\n",__FUNCTION__, __LINE__);	
+                pr_err("%s %d: create_singlethread_workqueue fail.\n", __FUNCTION__, __LINE__);
                 return -1;
         }
 
@@ -378,7 +381,7 @@ static int ark_carback_probe(struct platform_device *pdev)
         }
 
         if (err < 0) {
-                printk(KERN_ERR "%s %d: register driver error\n", __FUNCTION__, __LINE__);
+                pr_err("%s %d: register driver error\n", __FUNCTION__, __LINE__);
                 goto err_driver_register;
         }
 
@@ -388,20 +391,20 @@ static int ark_carback_probe(struct platform_device *pdev)
         carback->cdev.ops      = &ark_carback_fops;
         err = cdev_add(&carback->cdev, dev, carback->num);
         if (err) {
-                printk(KERN_ERR "%s %d: cdev add error\n", __FUNCTION__, __LINE__);
+                pr_err("%s %d: cdev add error\n", __FUNCTION__, __LINE__);
                 goto err_cdev_add;
         }
 
         carback->carback_class = class_create(THIS_MODULE, "carback_class");
         if(IS_ERR(carback->carback_class)) {
-        	printk(KERN_ERR "Err: failed in creating ark carback class.\n");
+        	pr_err("failed in creating ark carback class\n");
         	carback->carback_class = NULL;
                 goto err_carback_class;
         }
 	
         carback->carback_device = device_create(carback->carback_class, NULL, dev, NULL, "carback");
         if (IS_ERR(carback->carback_device)) {
-        	printk(KERN_ERR "Err: failed in creating ark carback device.\n");
+        	pr_err("failed in creating ark carback device\n");
         	carback->carback_device = NULL;
                 goto err_carback_class;
         }	
@@ -416,7 +419,7 @@ static int ark_carback_probe(struct platform_device *pdev)
     
         err = devm_request_irq(&pdev->dev, carback->irq, carback_interrupt,0, "ark-carback", carback);
         if (err){
-                printk(KERN_ERR "%s %d: can't get assigned carback irq %d, error %d\n",
+                pr_err("%s %d: can't get assigned carback irq %d, error %d\n",
                             __FUNCTION__, __LINE__, carback->irq, err);
                 return err;
         }
