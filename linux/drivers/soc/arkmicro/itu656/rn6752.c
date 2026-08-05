@@ -1205,7 +1205,25 @@ static void __exit dvr_rn6752_exit(void)
 }
 
 
-module_init(dvr_rn6752_init);
+/* 2026-08-05: was module_init() (device_initcall level, same as most
+ * drivers -- actual probe position within that level is purely link
+ * order). Compared against stock's real 3.4 kernel dmesg
+ * (docs/logs/archived/dmesg live device kernel 3.4 dmeg_260715.txt):
+ * dvr_rn6752_probe is the literal first line in stock's whole captured
+ * boot, well before DMA/USB/ALSA -- ours was probing ~218ms after our
+ * i2c-gpio-0 bus itself became ready (0.650s vs the bus's own 0.432s),
+ * a purely self-inflicted link-order gap, not a real dependency. Since
+ * an i2c client can never be matched/probed before its bus adapter's
+ * own probe creates the client device (i2c-gpio's probe does that),
+ * the earliest this can possibly run is right when i2c-gpio-0 itself
+ * finishes probing -- bumping to subsys_initcall (runs entirely before
+ * all device_initcall entries, and after i2c core's own
+ * postcore_initcall registration) gets rn6752 registered and waiting
+ * as early as the driver model allows, closing that gap. Does NOT
+ * fully match stock's 0.230s -- that's bounded by how early our
+ * bit-banged i2c-gpio-0 bus itself becomes available, a separate,
+ * bigger question not addressed here. */
+subsys_initcall(dvr_rn6752_init);
 module_exit(dvr_rn6752_exit);
 
 MODULE_AUTHOR("Arkmicro");
