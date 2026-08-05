@@ -1,3 +1,5 @@
+#define pr_fmt(fmt) "ark1668-itu656: " fmt
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -540,7 +542,7 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 	
 	if(deinterlace_field != DEINTERLACE_FIELD_ODD
 		&&	deinterlace_field != DEINTERLACE_FIELD_EVEN){
-		printk("invalid deinterlace field (%d)\r\n", deinterlace_field);
+		pr_warn("invalid deinterlace field (%d)\n", deinterlace_field);
 		return DEINTERLACE_PARA_ERROR;				
 	}
 	field = deinterlace_field;
@@ -550,7 +552,7 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 	}else if(deinterlace_size == DEINTERLACE_LINE_SIZE_720H){
 		pixel_per_line = 90 * (1 + data_mode);
 	}else{
-		printk("invalid deinterlace size (%d)\r\n", deinterlace_size);
+		pr_warn("invalid deinterlace size (%d)\n", deinterlace_size);
 		return DEINTERLACE_PARA_ERROR;
 	}
 	
@@ -560,14 +562,14 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 		only_wr_1_field = 1;
 	}else if(data_mode == DEINTERLACE_DATA_MODE_422){
 		if(dst_y_addr == 0){
-			printk("illegal deinterlace dst Y address\r\n");
+			pr_warn("illegal deinterlace dst Y address\n");
 			return DEINTERLACE_PARA_ERROR;
 		}
 		denoise_bypass = 1;
 		stride = 0;
 		only_wr_1_field = 0;
 	}else{
-		printk("invalid deinterlace data mode (%d)\r\n", data_mode);
+		pr_warn("invalid deinterlace data mode (%d)\n", data_mode);
 		return DEINTERLACE_PARA_ERROR;
 	}
 	
@@ -580,7 +582,7 @@ static int deinterlace_process (unsigned int deinterlace_size,  unsigned int dat
 		total_line = 240;
 		vary_level_th = 0x8;
 	}else{
-		printk("invalid deinterlace type (%d)\r\n", deinterlace_type);
+		pr_warn("invalid deinterlace type (%d)\n", deinterlace_type);
 		return DEINTERLACE_PARA_ERROR;		
 	}		
 
@@ -857,7 +859,7 @@ static void dither_timeout_timer(struct timer_list *t)
 	else
 		pixel = (itu656_readl(ARK1668_ITU656_PIX_NUM_PER_LINE) & 0xFFE) >> 1;	
 
-	itu656_printk(KERN_ALERT "[ITU] line = %d, pixel=%d\r\n", line, pixel);
+	itu656_printk("[ITU] line = %d, pixel=%d\r\n", line, pixel);
 
 	dvr_dev->src_width = activePix = pixel;
 	dvr_dev->src_height = activeLine = line;
@@ -970,7 +972,7 @@ static irqreturn_t ark_deinterlace_int_handler(int irq, void *dev_id)
 	}else if(raw_int & (1 << 1)){
 		itu656_writel_dein(ARK1668_DEINTERLACE_INT_CLEAR, 0x2);   //error
 		deinterlace_reset();
-		printk("deinterlace axi error\n");
+		pr_err("deinterlace axi error\n");
 	}
 	
 	if(last_mirror_type != dvr_dev->mirror_type && dvr_dev->interlace){
@@ -981,7 +983,7 @@ static irqreturn_t ark_deinterlace_int_handler(int irq, void *dev_id)
 				dvr_dev->buf_status[i] = 0;
 			itu656_writel_lcd(ARK1668_LCDC_VIDEO2_CTL,  itu656_readl_lcd(ARK1668_LCDC_VIDEO2_CTL)& ~(0x03<<17));
 			last_mirror_type = MIRROR_TYPE_NONE;
-			printk("mirror_type=0, reset.\n");
+			pr_debug("mirror_type=0, reset.\n");
 			goto end;
 		}
 	}
@@ -1175,7 +1177,7 @@ int dvr_enter_carback(void)
 		ark_itu656_reg_uninit();
 		g_dvr_dev->carback_break = 1;
 	} else g_dvr_dev->carback_break = 0;
-	printk("%s carback_break=%d.\n", __FUNCTION__, g_dvr_dev->carback_break);
+	pr_debug("%s carback_break=%d.\n", __FUNCTION__, g_dvr_dev->carback_break);
 	if(g_dvr_dev->priv_data.get_progressive)
 		para.progressive = g_dvr_dev->priv_data.get_progressive();
 	dvr_init(g_dvr_dev, &para);	
@@ -1209,7 +1211,7 @@ int dvr_exit_carback(void)
 			g_dvr_dev->priv_data.select_channel(g_dvr_dev->channel);	
 	msleep(100);
 	ark_itu656_reg_uninit();
-	printk("%s carback_break=%d.\n", __FUNCTION__, g_dvr_dev->carback_break);
+	pr_debug("%s carback_break=%d.\n", __FUNCTION__, g_dvr_dev->carback_break);
 	if (g_dvr_dev->start_carback_exit) {
 		dvr_start(g_dvr_dev);
 		g_dvr_dev->start_carback_exit = 0;
@@ -1250,7 +1252,7 @@ int dvr_detect_carback_signal(void)
 	
 	spin_lock(&g_dvr_dev->spin_lock);
 	if (g_dvr_dev->channel != ARK7116_AV0) {
-		printk("now is not in carback.\n");
+		pr_debug("now is not in carback.\n");
 	} else {
 		if(g_dvr_dev->priv_data.detect_signal)
 			signal = g_dvr_dev->priv_data.detect_signal();
@@ -1423,7 +1425,7 @@ void ark_itu656_display_int_handler(void)
 	if (dvr_dev->show_video) {
 		if(dvr_dev->priv_data.detect_signal && dvr_dev->priv_data.detect_signal())
 		{
-			printk(KERN_ALERT "ark_itu656_display_int_handler-->show_video\n");
+			pr_debug("ark_itu656_display_int_handler-->show_video\n");
 			ark_disp_set_layer_en(DISPLAY_LAYER, 1);
 			if (dvr_dev->itu656in.tvout)
 				ark_disp_set_layer_en(TVOUT_LAYER, 1);
@@ -1433,7 +1435,7 @@ void ark_itu656_display_int_handler(void)
 		else
 		{
 			dvr_dev->carback_signal = 0;
-			printk(" No signal detect.\n");
+			pr_debug("No signal detect.\n");
 		}
 		
 	}
@@ -1524,7 +1526,7 @@ static ssize_t dvr_set(struct device *dev,
 			if(dvr_dev->priv_data.select_channel)
 			{
 				if(dvr_dev->priv_data.select_channel(dvr_dev->channel) < 0){
-					printk("set channel fail: channel(1 ~ 3):%d\n", channel);
+					pr_warn("set channel fail: channel(1 ~ 3):%d\n", channel);
 				}
 			}
 		}
@@ -1553,7 +1555,7 @@ static ssize_t dvr_set(struct device *dev,
 			if(dvr_dev->priv_data.select_channel)
 			{
 				if(dvr_dev->priv_data.select_channel(dvr_dev->channel) < 0){
-					printk("set channel fail: channel(1 ~ 3):%d\n", dvr_dev->channel);
+					pr_warn("set channel fail: channel(1 ~ 3):%d\n", dvr_dev->channel);
 				}
 			}
 		}
@@ -1584,17 +1586,17 @@ static long dvr_ioctl(struct file *filp,
 	unsigned long flags;
 
 	if(!dvr_dev){
-		printk(KERN_ERR"%s error null device", __func__);
+		pr_err("%s error null device\n", __func__);
 		return -ENXIO;
 	}
 
-	printk(KERN_ALERT "[DIAG_ITU656_IOCTL] cmd=0x%08x g_dvr_dev=%px filp->private_data=%px (%s) "
+	pr_debug("[DIAG_ITU656_IOCTL] cmd=0x%08x g_dvr_dev=%px filp->private_data=%px (%s) "
 	       "start=%px (want %px, %s) stop=%px (want %px, %s)\n",
 	       cmd, dvr_dev, filp->private_data,
 	       (dvr_dev == filp->private_data) ? "MATCH" : "*** MISMATCH ***",
 	       dvr_dev->start, dvr_start, (dvr_dev->start == dvr_start) ? "OK" : "*** CORRUPT ***",
 	       dvr_dev->stop, dvr_stop, (dvr_dev->stop == dvr_stop) ? "OK" : "*** CORRUPT ***");
-	printk(KERN_ALERT "[DIAG_ITU656_IOCTL] &priv_data=%px select_channel=%px detect_signal=%px "
+	pr_debug("[DIAG_ITU656_IOCTL] &priv_data=%px select_channel=%px detect_signal=%px "
 	       "get_progressive=%px display_effect=%px%s dvr_start_cb=%px dvr_stop_cb=%px\n",
 	       &dvr_dev->priv_data,
 	       dvr_dev->priv_data.select_channel, dvr_dev->priv_data.detect_signal,
@@ -1612,22 +1614,22 @@ static long dvr_ioctl(struct file *filp,
 		switch (cmd)
 		{
 			case ARK_DVR_START:	
-				printk("ARK_DVR_START when carback.\n");
+				pr_debug("ARK_DVR_START when carback.\n");
 				dvr_dev->start_carback_exit = 1;
 				break;
 			case ARK_DVR_STOP:	
-				printk("ARK_DVR_STOP when carback.\n");
+				pr_debug("ARK_DVR_STOP when carback.\n");
 				dvr_dev->start_carback_exit = 0;
 				break;				
 			case ARK_DVR_INIT:
 				if(copy_from_user(&dvr_dev->itu656in_back, (void  *)arg, sizeof(struct itu656in_para))){
-					printk("%s: copy from user para error\n", __func__);
+					pr_err("%s: copy from user para error\n", __func__);
 					error = -EFAULT;
 				}		
 				break;
 			case ARK_DVR_SWITCH_CHANNEL:
 				if(copy_from_user(&dvr_dev->itu656in_back.source, (void  *)arg, sizeof(int))){
-					printk("%s: copy from user frame error\n", __func__);
+					pr_err("%s: copy from user frame error\n", __func__);
 					error = -EFAULT;			
 				}
 				break;			
@@ -1635,7 +1637,7 @@ static long dvr_ioctl(struct file *filp,
 			{
 				unsigned int signal = 0;
 				if(copy_to_user((void  *)arg, &signal, sizeof(signal))){
-					printk("%s: copy to signal error\n", __func__);
+					pr_err("%s: copy to signal error\n", __func__);
 					error = -EFAULT;			
 				}
 				break;
@@ -1644,13 +1646,13 @@ static long dvr_ioctl(struct file *filp,
 			{
 				unsigned int type = 0;
 				if(copy_from_user(&type, (void  *)arg, sizeof(int))){
-					printk("%s: copy from user frame error\n", __func__);
+					pr_err("%s: copy from user frame error\n", __func__);
 					error = -EFAULT;			
 				}
 				
 				if(dvr_dev->interlace && type >= MIRROR_TYPE_NONE && type < MIRROR_TYPE_END){
 					dvr_dev->mirror_type = type;
-					printk(KERN_ALERT "%s: mirror_type=%d\n", __func__,type);
+					pr_debug("%s: mirror_type=%d\n", __func__, type);
 				}
 
 				break;
@@ -1692,7 +1694,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			struct itu656in_para para = {0};
 			if(copy_from_user(&para, (void  *)arg, sizeof(struct itu656in_para))){
-				printk("%s: copy from user para error\n", __func__);
+				pr_err("%s: copy from user para error\n", __func__);
 				error = -EFAULT;
 				goto end;
 			}
@@ -1710,7 +1712,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			int source = 0;
 			if(copy_from_user(&source, (void  *)arg, sizeof(source))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}
@@ -1723,7 +1725,7 @@ static long dvr_ioctl(struct file *filp,
 			if(dvr_dev->priv_data.select_channel)
 			{
 				if(dvr_dev->priv_data.select_channel(dvr_dev->channel) < 0){
-					printk("set channel fail: channel(1 ~ 3):%d\n", dvr_dev->channel);
+					pr_warn("set channel fail: channel(1 ~ 3):%d\n", dvr_dev->channel);
 				}
 			}
 			break;
@@ -1732,7 +1734,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			unsigned int channel = dvr_dev->channel;
 			if(copy_to_user((void  *)arg, &channel, sizeof(channel))){
-				printk("%s: copy to user channel error\n", __func__);
+				pr_err("%s: copy to user channel error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}
@@ -1742,7 +1744,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			int tvout = 0;
 			if(copy_from_user(&tvout, (void  *)arg, sizeof(tvout))){
-				printk("%s: copy from user tvout error\n", __func__);
+				pr_err("%s: copy from user tvout error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}	
@@ -1766,7 +1768,7 @@ static long dvr_ioctl(struct file *filp,
 			if(dvr_dev->priv_data.detect_signal)
 				signal = dvr_dev->priv_data.detect_signal();
 			if(copy_to_user((void  *)arg, &signal, sizeof(signal))){
-				printk("%s: copy to signal error\n", __func__);
+				pr_err("%s: copy to signal error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}	
@@ -1777,7 +1779,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			int indirect;
 			if(copy_from_user(&indirect, (void  *)arg, sizeof(int))){
-				printk("%s: copy from user indirect error\n", __func__);
+				pr_err("%s: copy from user indirect error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}
@@ -1799,7 +1801,7 @@ static long dvr_ioctl(struct file *filp,
 			frame_info.frame_max = ITU656_FRAME_NUM;
 			memcpy(&frame_info.framebuf_phyaddr,&dvr_dev->framebuf_phyaddr,sizeof(dvr_dev->framebuf_phyaddr));			
 			if(copy_to_user((void  *)arg, &frame_info, sizeof(struct ark_frame_info))){
-				printk("%s: copy to signal error\n", __func__);
+				pr_err("%s: copy to signal error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}	
@@ -1809,7 +1811,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			int framebuf = 0;
 			if(copy_from_user(&framebuf, (void  *)arg, sizeof(char))){
-				printk("%s: copy from user ARK_DVR_SET_FRAME_COMPLETE error\n", __func__);
+				pr_err("%s: copy from user ARK_DVR_SET_FRAME_COMPLETE error\n", __func__);
 				error = -EFAULT;
 				goto end;
 			}			
@@ -1826,7 +1828,7 @@ static long dvr_ioctl(struct file *filp,
 		{
 			unsigned int addr = 0;
 			if(copy_from_user(&addr, (void  *)arg, sizeof(unsigned int))){
-				printk("%s: copy from user ARK_DVR_SET_FRAME_SHOW error\n", __func__);
+				pr_err("%s: copy from user ARK_DVR_SET_FRAME_SHOW error\n", __func__);
 				error = -EFAULT;
 				goto end;
 			}	
@@ -1855,19 +1857,19 @@ static long dvr_ioctl(struct file *filp,
 		{
 			unsigned int type = 0;
 			if(copy_from_user(&type, (void  *)arg, sizeof(int))){
-				printk("%s: copy from user frame error\n", __func__);
+				pr_err("%s: copy from user frame error\n", __func__);
 				error = -EFAULT;			
 			}
 			if(dvr_dev->interlace && type >= MIRROR_TYPE_NONE && type < MIRROR_TYPE_END){
 				dvr_dev->mirror_type = type;
-				printk(KERN_ALERT "%s: mirror_type=%d\n", __func__,type);
+				pr_debug("%s: mirror_type=%d\n", __func__, type);
 			}
 			break;
 		}
 		case ARK_DVR_GET_CVBS_TYPE:
 		{
 			if(copy_to_user((void  *)arg, &dvr_dev->system, sizeof(int))){
-				printk("%s: copy to cvbs error\n", __func__);
+				pr_err("%s: copy to cvbs error\n", __func__);
 				error = -EFAULT;
 				goto end;				
 			}	
@@ -1893,7 +1895,7 @@ static long dvr_ioctl(struct file *filp,
 		}
 		
 		default:
-			printk("%s: error cmd 0x%x\n", __func__, cmd);
+			pr_err("%s: error cmd 0x%x\n", __func__, cmd);
 			error = -EFAULT;
 			goto end;
     }
@@ -1912,9 +1914,9 @@ static int dvr_open(struct inode *inode, struct file *filp)
 	if(dvr_dev)
 		filp->private_data = dvr_dev;
   	else
-		printk(KERN_ERR"err %s, null cdev \n", __func__);
+		pr_err("err %s, null cdev\n", __func__);
 
-	printk(KERN_ALERT "[DIAG_ITU656_OPEN] container_of-dvr_dev=%px g_dvr_dev=%px (%s) "
+	pr_debug("[DIAG_ITU656_OPEN] container_of-dvr_dev=%px g_dvr_dev=%px (%s) "
 	       "start=%px (want %px) stop=%px (want %px)\n",
 	       dvr_dev, g_dvr_dev, (dvr_dev == g_dvr_dev) ? "MATCH" : "*** MISMATCH ***",
 	       dvr_dev ? dvr_dev->start : NULL, dvr_start,
@@ -1970,7 +1972,7 @@ static ssize_t dvr_read(struct file *filp, char __user *user, size_t size,loff_t
 		
 		if(copy_to_user(user, dvr_dev->frame_finish, count))
 		{
-			printk("%s: copy from user para error\n", __func__);
+			pr_err("%s: copy from user para error\n", __func__);
 		}
 		dvr_dev->frame_finish_count -= count;
 	}
@@ -2028,10 +2030,10 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	{
 		static int diag_probe_count = 0;
 		diag_probe_count++;
-		printk(KERN_ALERT "[DIAG_ITU656_PROBE] call #%d: dvr_dev=%px sizeof(struct dvr_dev)=%zu\n",
+		pr_info("[DIAG_ITU656_PROBE] call #%d: dvr_dev=%px sizeof(struct dvr_dev)=%zu\n",
 		       diag_probe_count, dvr_dev, sizeof(struct dvr_dev));
 		if (diag_probe_count > 1)
-			printk(KERN_ALERT "[DIAG_ITU656_PROBE] *** probe() called more than once -- "
+			pr_info("[DIAG_ITU656_PROBE] *** probe() called more than once -- "
 			       "g_dvr_dev will be overwritten, any fd opened against an earlier "
 			       "instance's cdev will resolve to a STALE dvr_dev via container_of "
 			       "in dvr_open() while dvr_ioctl() uses the latest g_dvr_dev ***\n");
@@ -2046,7 +2048,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	dvr_dev->deinter_status = 0;
 	dvr_dev->start = dvr_start;
 	dvr_dev->stop = dvr_stop;
-	printk(KERN_ALERT "[DIAG_ITU656_PROBE] dvr_dev=%px &start=%px start=%px (want dvr_start=%px) "
+	pr_info("[DIAG_ITU656_PROBE] dvr_dev=%px &start=%px start=%px (want dvr_start=%px) "
 	       "&stop=%px stop=%px (want dvr_stop=%px)\n",
 	       dvr_dev, &dvr_dev->start, dvr_dev->start, dvr_start,
 	       &dvr_dev->stop, dvr_dev->stop, dvr_stop);
@@ -2058,7 +2060,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	dvr_dev->display_buffer = 0;
 	dvr_dev->carback_signal = 0;
 	memcpy(&dvr_dev->priv_data, pdata, sizeof(struct ark_private_data));
-	printk(KERN_ALERT "[DIAG_ITU656_PROBE] priv_data after memcpy: &priv_data=%px "
+	pr_info("[DIAG_ITU656_PROBE] priv_data after memcpy: &priv_data=%px "
 	       "select_channel=%px (want %px) detect_signal=%px (want %px) "
 	       "get_progressive=%px (want %px) display_effect=%px (want %px)\n",
 	       &dvr_dev->priv_data,
@@ -2066,7 +2068,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	       dvr_dev->priv_data.detect_signal, pdata->detect_signal,
 	       dvr_dev->priv_data.get_progressive, pdata->get_progressive,
 	       dvr_dev->priv_data.display_effect, pdata->display_effect);
-	printk(KERN_ALERT "[DIAG_ITU656_PROBE] priv_data after memcpy (cont): "
+	pr_info("[DIAG_ITU656_PROBE] priv_data after memcpy (cont): "
 	       "dvr_start_cb=%px (want %px) dvr_stop_cb=%px (want %px) "
 	       "enter_carback_cb=%px (want %px) exit_carback_cb=%px (want %px) "
 	       "dvr_config=%px (want %px)\n",
@@ -2090,19 +2092,19 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	
 	dev = MKDEV(dvr_dev->dev_major, dvr_dev->dev_minor);
 	if ((ret= register_chrdev_region(dev, 1, "dvr")) != 0) {
-		printk(KERN_ERR "unable to get major %d\n", DVR_MAJOR);
+		pr_err("unable to get major %d\n", DVR_MAJOR);
 		goto err_regchr;
 	}
 
 	cdev_init(&dvr_dev->cdev, &dvr_fops);
 	if ((ret= cdev_add(&dvr_dev->cdev, dev, 1)) != 0) {
-		printk(KERN_ERR "dvr_dev: unable register character device\n");
+		pr_err("dvr_dev: unable register character device\n");
 		goto err_cdev_add;
 	}
 
 	ret = sysfs_create_group(&client->dev.kobj, &dvr_sysfs);
 	if (ret){
-		printk(KERN_ERR "error dvr sysfs_create\n");
+		pr_err("error dvr sysfs_create\n");
 		goto err_sysfs_create_group;
 	}
     
@@ -2218,7 +2220,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 
         dvr_dev->buffer_virtaddr = (void *)__get_free_pages(GFP_KERNEL, get_order(dvr_dev->buffer_size));
         if (!dvr_dev->buffer_virtaddr) {
-                printk("%s get. buffer fail\n", __func__);
+                pr_err("%s get buffer fail\n", __func__);
                 ret = -ENOMEM;
                 goto err_get_buffer;
         }
@@ -2229,7 +2231,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	//for mirror
 	dvr_dev->mirror_queue = create_singlethread_workqueue("mirror_queue");
 	if(!dvr_dev->mirror_queue) {
-    	printk(KERN_ERR "%s %d: , create_singlethread_workqueue fail.\n",__FUNCTION__, __LINE__);	
+    	pr_err("%s %d: create_singlethread_workqueue fail.\n", __FUNCTION__, __LINE__);
 		return -1;
 	}
 	
@@ -2245,7 +2247,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 
 	dvr_dev->mirror_type = MIRROR_TYPE_NONE;
         if(!of_property_read_u32(pdev->dev.of_node, "mirror", &value)) {
-                printk("get mirror type=%d\n", value);
+                pr_debug("get mirror type=%d\n", value);
                 if(value >= MIRROR_TYPE_NONE && value < MIRROR_TYPE_END)
                         dvr_dev->mirror_type = value;
 
@@ -2253,7 +2255,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
     
         carback_first_enter();
 
-	printk(KERN_ALERT "[DIAG_ITU656_PROBE_END] dvr_dev=%px start=%px (want %px) stop=%px (want %px)\n",
+	pr_info("[DIAG_ITU656_PROBE_END] dvr_dev=%px start=%px (want %px) stop=%px (want %px)\n",
 	       dvr_dev, dvr_dev->start, dvr_start, dvr_dev->stop, dvr_stop);
 
         return 0;
@@ -2283,7 +2285,7 @@ err_sysfs_create_group:
 err_cdev_add:
         unregister_chrdev_region(dev, 1);
 err_regchr:
-        printk(KERN_ALERT "ark668 itu656 probe failed\n");
+        pr_err("ark668 itu656 probe failed\n");
 
         return ret;	
 }

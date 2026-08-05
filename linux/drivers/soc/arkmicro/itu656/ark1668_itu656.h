@@ -271,12 +271,15 @@ struct dvr_dev{
     
 };
 
-#define DEBUG
-#ifdef DEBUG
-#define itu656_printk(...) printk(__VA_ARGS__)
-#else
-#define itu656_printk(...) 
-#endif
+/* 2026-08-05: was printk() unconditionally (the #ifdef DEBUG toggle
+ * below it was permanently forced on by the #define DEBUG right above
+ * it, so it never actually compiled out) -- switched to pr_debug(),
+ * which is silent by default but re-enabled on demand via
+ * CONFIG_DYNAMIC_DEBUG without a rebuild, same convention used
+ * elsewhere in this tree (see ark1668_i2s.c). Callers must not embed
+ * their own KERN_* level in the format string anymore -- pr_debug()
+ * supplies its own. */
+#define itu656_printk(...) pr_debug(__VA_ARGS__)
 
 /* IOCTL CMD */
 #define ARK_DVR_IOC_MAGIC			'n'
