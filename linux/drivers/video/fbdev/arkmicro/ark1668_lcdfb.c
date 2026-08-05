@@ -4,6 +4,8 @@
  * Licensed under GPLv2 or later.
  */
 
+#define pr_fmt(fmt) "ark1668_lcdfb: " fmt
+
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
@@ -797,7 +799,7 @@ static void ark1668_lcdfb_task(struct work_struct *work)
 
 		__ns = ktime_to_ns(ktime_sub(ktime_get(), __start));
 		if (__ns > 1000000 && __ratelimit(&itu656_task_rs))
-			printk(KERN_WARNING "ark1668_lcdfb: itu656 display task took %lldns\n", __ns);
+			pr_warn("itu656 display task took %lldns\n", __ns);
 	}
 #endif
 }
@@ -1240,7 +1242,7 @@ static void ark1668_lcdfb_reclaim_pinctrl(struct work_struct *work)
 
 	base = ioremap(ARK1668_LCDFB_PINCTRL_BASE, 0x200);
 	if (!base) {
-		pr_err("ark1668_lcdfb: pinctrl reclaim: ioremap failed\n");
+		pr_err("pinctrl reclaim: ioremap failed\n");
 		return;
 	}
 
@@ -1248,7 +1250,7 @@ static void ark1668_lcdfb_reclaim_pinctrl(struct work_struct *work)
 	val = 0x11111111U;
 	writel(val, base + ARK1668_LCDFB_PINCTRL_R_REG);
 
-	pr_info("ark1668_lcdfb: LCD RGB888 r0-r7 pinmux reclaimed from any i2c-gpio pin theft (now 0x%08x)\n",
+	pr_info("LCD RGB888 r0-r7 pinmux reclaimed from any i2c-gpio pin theft (now 0x%08x)\n",
 		readl(base + ARK1668_LCDFB_PINCTRL_R_REG));
 
 	iounmap(base);

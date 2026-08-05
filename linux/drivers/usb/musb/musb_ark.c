@@ -125,7 +125,7 @@ static void ark_musb_disable(struct musb *musb)
 	musb_writeb(musb->mregs, MUSB_DEVCTL, 0);
 
 	if (is_dma_capable() && !dma_off)
-		WARNING("dma still active\n");
+		dev_warn(musb->controller, "%s: dma still active\n", __func__);
 }
 
 static void ark_musb_otg_timer(struct timer_list *t)
@@ -474,7 +474,7 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 			regval = musb_readb(musb->mregs, MUSB_INTRUSBE); 
 			musb_writeb(musb->mregs, MUSB_INTRUSBE, regval | MUSB_INTR_SUSPEND);
 			if (musb->is_runtime_suspended) {
-				printk("%s:%d suspend save\n", __func__, __LINE__);
+				dev_dbg(musb->controller, "%s:%d suspend save\n", __func__, __LINE__);
 				musb->context.power = musb_readb(musb->mregs, MUSB_POWER);
 				musb->context.intrusbe = musb_readb(musb->mregs, MUSB_INTRUSBE);
 				musb->context.devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
@@ -536,7 +536,7 @@ static int ark_musb_set_mode(struct musb *musb, u8 mode)
 			}
 
 			if (musb->is_runtime_suspended) {
-				printk("%s:%d suspend save\n", __func__, __LINE__);
+				dev_dbg(musb->controller, "%s:%d suspend save\n", __func__, __LINE__);
 				musb->context.power = musb_readb(musb->mregs, MUSB_POWER);
 				musb->context.intrusbe = musb_readb(musb->mregs, MUSB_INTRUSBE);
 				musb->context.devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
@@ -868,7 +868,7 @@ static int musb_ark_probe(struct platform_device *pdev)
 		goto err;
 	}
 	
-	printk("musb_ark_probe succss\n");
+	dev_info(&pdev->dev, "probe succeeded\n");
 
 	return 0;
 
