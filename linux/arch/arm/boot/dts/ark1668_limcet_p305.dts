@@ -51,8 +51,12 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		compatible = "i2c-gpio";
-		gpios = <&gpio0 3 0		/* SDA (GPIO 3) */
-			 &gpio0 2 0		/* SCL (GPIO 2) */
+		/* GPIO_OPEN_DRAIN silences boot-time "enforced open drain
+		 * please flag it properly in DT" -- the GPIO core already
+		 * forces open-drain mode here (correct, required for a
+		 * shared I2C bus), just wasn't declared in DT. */
+		gpios = <&gpio0 3 GPIO_OPEN_DRAIN	/* SDA (GPIO 3) */
+			 &gpio0 2 GPIO_OPEN_DRAIN	/* SCL (GPIO 2) */
 		>;
 		// delay-us=6 (~83KHz) -> 2 (~250KHz, clk freq = 500/delay KHz --
 		// matches arkn141-dongle.dts/ark1668e_fpga.dts, the value most
@@ -108,8 +112,9 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		compatible = "i2c-gpio";
-		gpios = <&gpio0 9 0		/* SDA (GPIO 9) */
-			 &gpio3 25 0		/* SCL (GPIO 121) */
+		/* GPIO_OPEN_DRAIN, same reasoning as i2c-gpio-0 above. */
+		gpios = <&gpio0 9 GPIO_OPEN_DRAIN	/* SDA (GPIO 9) */
+			 &gpio3 25 GPIO_OPEN_DRAIN	/* SCL (GPIO 121) */
 		>;
 		// delay-us=6 -> 2, same reasoning as i2c-gpio-0 above. This
 		// bus's SDA (GPIO 9) is the same physical pad as LCD r7 --
