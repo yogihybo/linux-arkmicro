@@ -1277,18 +1277,6 @@ static irqreturn_t ark_itu656_int_handler(int irq, void *dev_id)
 	itu656_writel(ARK1668_ITU656_ICR, 0xFF);
 	field = (intr_stat >> 8) & 0x1;
 
-	/*
-	 * Unconditional -- fires on this hard-IRQ (non-threaded, IRQF_SHARED)
-	 * every time regardless of dvr_dev->work_status (reverse-camera
-	 * active or not). Checking whether/how often this fires during
-	 * normal driving (no reverse gear) is the direct test for whether
-	 * the ITU656 sensor free-runs and this IRQ contends with audio's
-	 * DMA IRQ on this single-core system independent of AA video
-	 * content -- correlate against pcm_dmaengine/digital_mute logging.
-	 */
-	trace_printk("itu656 hw irq: intr_stat=0x%x work_status=%d\n",
-		     intr_stat, dvr_dev->work_status);
-
 	spin_lock_irqsave(&dvr_dev->spin_lock, flags);
 
 	if (!dvr_dev->interlace)

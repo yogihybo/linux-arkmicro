@@ -764,13 +764,6 @@ static irqreturn_t ark1668_lcdfb_interrupt(int irq, void *dev_id)
 
 		sinfo->vsync_flag = 1;
 		wake_up_interruptible(&sinfo->vsync_waitq);
-		/*
-		 * ftrace-only, every frame (panel refresh rate, content-
-		 * independent) -- lets a captured trace line this hard-IRQ
-		 * up directly against the pcm_dmaengine period-jitter
-		 * trace_printk lines to check for correlation/contention.
-		 */
-		trace_printk("lcdfb vsync irq: scheduling itu656 task\n");
 		schedule_work(&sinfo->task);
 	}
 
@@ -803,7 +796,6 @@ static void ark1668_lcdfb_task(struct work_struct *work)
 		ark_itu656_display_int_handler();
 
 		__ns = ktime_to_ns(ktime_sub(ktime_get(), __start));
-		trace_printk("itu656 display task: runtime_ns=%lld\n", __ns);
 		if (__ns > 1000000 && __ratelimit(&itu656_task_rs))
 			printk(KERN_WARNING "ark1668_lcdfb: itu656 display task took %lldns\n", __ns);
 	}

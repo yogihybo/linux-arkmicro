@@ -162,23 +162,18 @@ static void dmaengine_pcm_dma_complete(void *arg)
 	if (prtd->pos >= snd_pcm_lib_buffer_bytes(substream))
 		prtd->pos = 0;
 
-	/* 2026-07-28 AA audio-stutter investigation: see the struct comment
-	 * above. Compare the actual gap since the previous period completion
-	 * against the period's expected duration (derived from rate/
-	 * period_size, valid once the stream is running). trace_printk goes
-	 * to the ftrace ring buffer (cat /sys/kernel/debug/tracing/trace),
-	 * not dmesg -- safe to leave firing on every period, no console/
-	 * printk overhead. The rate-limited printk is the one line that
-	 * actually reaches dmesg, and only when a period is genuinely late.
+	/* 2026-07-28 AA audio-stutter investigation (resolved 2026-08-05,
+	 * see docs/AUDIO_SUBSYSTEM_INVESTIGATION.md): compare the actual gap
+	 * since the previous period completion against the period's expected
+	 * duration (derived from rate/period_size, valid once the stream is
+	 * running). Rate-limited so it only reaches dmesg when a period is
+	 * genuinely late, not on every period.
 	 */
 	if (substream->runtime && substream->runtime->rate) {
 		s64 actual_ns = prtd->have_last_period_time ?
 			ktime_to_ns(ktime_sub(now, prtd->last_period_time)) : 0;
 		s64 expected_ns = div_u64((u64)substream->runtime->period_size *
 					   NSEC_PER_SEC, substream->runtime->rate);
-
-		trace_printk("pcm period: stream=%d actual_ns=%lld expected_ns=%lld\n",
-			     substream->stream, actual_ns, expected_ns);
 
 		if (prtd->have_last_period_time && expected_ns > 0 &&
 		    (actual_ns > expected_ns + expected_ns / 4 ||
