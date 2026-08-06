@@ -39,6 +39,12 @@
 
 #define BALCK_BACKCOLOR		0x108080
 
+/* Must match U-Boot's BOOTLOGO_SD_ADDR (board/arkmicro/ark1668_limcet_p305/
+ * ark1668_display_cfg.c) -- the physical address U-Boot draws the real
+ * splash image into, deliberately NOT the same address as this driver's
+ * own smem_start (see the probe()-time copy that uses this). */
+#define ARK1668_BOOTLOGO_PHYS_ADDR	0x0b400000
+
 struct ark1668_lcdfb_power_ctrl_gpio {
 	int gpio;
 	int active_low;
@@ -1370,33 +1376,58 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
 		}
 
 		/*
-		 * Don't clear the first screen's worth -- someone may have
-		 * set up a splash image there (U-Boot draws to the start of
-		 * this same reserved region before Linux boots).
+		 * CORRECTED 2026-08-06: the previous version of this comment
+		 * claimed U-Boot draws the bootlogo "to the start of this
+		 * same reserved region" and skipped zeroing the first screen
+		 * on that basis. That's wrong -- this resource is
+		 * 0xf000000 (see ark1668.dtsi's lcd@e0500000 second `reg`
+		 * entry), but U-Boot's real bootlogo buffer is a completely
+		 * different physical address, BOOTLOGO_SD_ADDR = 0x0b400000
+		 * (board/arkmicro/ark1668_limcet_p305/ark1668_display_cfg.c).
+		 * They were never the same buffer, so "don't clear the first
+		 * screen" was leaving genuinely uninitialized DRAM visible
+		 * the moment set_par() below points OSD1 at it -- the likely
+		 * cause of garbage/white flashes seen between kernel boot
+		 * and MsnCoreApp's first real frame.
 		 *
-		 * But this resource is the FULL reserved carve-out
-		 * (info->fix.smem_len, 16MB on this board -- see
-		 * ark1668_limcet_p305.dts's lcd@e0500000 second `reg`
-		 * entry), while check_var() below sets up triple-buffering
-		 * (yres_virtual = yres*3) using ark1668_lcdfb_pan_display's
-		 * yoffset to select between 3 stacked pages within it. Only
-		 * the first page (this screen's worth) was ever being
-		 * zeroed here -- pages 2 and 3, plus everything beyond the
-		 * triple-buffer area up to the full 16MB (used by
-		 * OSD2/OSD3/VIDEO1/VIDEO2, set via raw addresses from
-		 * userspace ioctls with no kernel-side allocation tracking),
-		 * were left as genuine uninitialized DRAM content. Confirmed
-		 * on real hardware: a DirectFB red/black screen bug traced
-		 * to a memory dump at exactly one-screen-size past this
-		 * region's base showing non-zero, non-deterministic content
-		 * (docs/DEVICE_TEST_CHECKLIST_2026-07-18.md section 17) --
-		 * panning to a page before anything has ever rendered real
-		 * content into it exposes whatever was in DRAM at boot.
-		 * Zero everything past the first screen to close that gap.
+		 * U-Boot can't be changed to draw directly into this
+		 * region instead: it already tried addresses up here once
+		 * (0xfc00000) and hit real memory corruption, because
+		 * U-Boot's own allocator/relocation only trusts up to its
+		 * declared 64MB DRAM (CONFIG_SYS_SDRAM_SIZE) -- see
+		 * BOOTLOGO_SD_ADDR's own comment. The kernel has no such
+		 * restriction, so instead we reach out and copy the real
+		 * bootlogo pixels from U-Boot's buffer into this one before
+		 * OSD1 ever gets pointed here -- same visible image, no
+		 * flash, and no dependence on it happening to already be
+		 * "left over" in DRAM.
+		 *
+		 * This resource is the FULL reserved carve-out
+		 * (info->fix.smem_len, 16MB on this board), while check_var()
+		 * below sets up triple-buffering (yres_virtual = yres*3)
+		 * using ark1668_lcdfb_pan_display's yoffset to select between
+		 * 3 stacked pages within it. Everything past the first
+		 * screen (pages 2/3, plus OSD2/OSD3/VIDEO1/VIDEO2 space) is
+		 * still zeroed -- see docs/DEVICE_TEST_CHECKLIST_2026-07-18.md
+		 * section 17 for why that part still matters.
 		 */
-		memset(info->screen_base, 0, info->var.xres * info->var.yres * 4);
-		memset(info->screen_base + info->var.xres * info->var.yres * 4, 0,
-		       info->fix.smem_len - info->var.xres * info->var.yres * 4);
+		{
+			size_t screen_bytes = info->var.xres * info->var.yres * 4;
+			void __iomem *uboot_logo = ioremap_wc(ARK1668_BOOTLOGO_PHYS_ADDR,
+							       screen_bytes);
+
+			if (uboot_logo) {
+				memcpy_fromio(info->screen_base, uboot_logo, screen_bytes);
+				iounmap(uboot_logo);
+			} else {
+				dev_warn(dev, "couldn't map U-Boot bootlogo buffer at 0x%x, "
+					 "first frame will be black instead of the splash\n",
+					 ARK1668_BOOTLOGO_PHYS_ADDR);
+				memset(info->screen_base, 0, screen_bytes);
+			}
+			memset(info->screen_base + screen_bytes, 0,
+			       info->fix.smem_len - screen_bytes);
+		}
 	} else {
 		if(map && !map->start) {
 			sinfo->smem_len = resource_size(map);
