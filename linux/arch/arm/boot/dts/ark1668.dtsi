@@ -683,8 +683,23 @@
 
 		lcdc: lcd@e0500000 {
 			compatible = "arkmicro,ark1668-lcdc";
+			/* Second reg entry is the OSD1 framebuffer carve-out.
+			 * 2026-08-06: moved to 0x0b400000 (10MB) to match
+			 * U-Boot's own bootlogo buffer (BOOTLOGO_SD_ADDR,
+			 * board/arkmicro/ark1668_limcet_p305/
+			 * ark1668_display_cfg.c) exactly -- U-Boot's splash
+			 * buffer IS this driver's real framebuffer now, no
+			 * copy/redraw needed for continuity into kernel boot.
+			 * Was 0xf000000 (240MB), an address nothing else
+			 * actually used -- see docs/DISPLAY_SUBSYSTEM.md's
+			 * documented memory map: OSD1 carveout is
+			 * 0x0B400000-0x0BE00000 (10MB), OSD2's own carveout
+			 * (rLCD_OSD2_ADDR, always live from U-Boot onward)
+			 * starts immediately after at 0x0BE00000 -- 0xa00000
+			 * (10MB) is the largest size that doesn't reach it.
+			 */
 			reg = <0xe0500000 0x1000
-					0xf000000 0x1000000>;
+					0x0b400000 0xa00000>;
 			interrupt-parent = <&vicl>;
 			interrupts = <9>;
 			clocks = <&lcdclk>;
