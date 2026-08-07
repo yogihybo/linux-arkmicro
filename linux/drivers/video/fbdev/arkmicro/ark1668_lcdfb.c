@@ -520,38 +520,7 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 
 	/* Initialize control register */
 	if(!set_par){
-		/* Preserve OSD1/OSD2 enable bits (7/8) from whatever U-Boot
-		 * already left them at, instead of the flat overwrite this
-		 * used to be. U-Boot's own boot sequence leaves OSD1
-		 * (bootlogo) AND OSD2 (always enabled unconditionally every
-		 * boot, see rLCD_OSD2_ADDR in board/arkmicro/
-		 * ark1668_limcet_p305/ark1668_display_cfg.c and
-		 * docs/DISPLAY_SUBSYSTEM.md) both live at kernel handoff.
-		 * This driver only actively manages OSD1 (re-enabled a few
-		 * lines below) -- so a flat, non-RMW write here was
-		 * clobbering OSD1/OSD2's enable state as a side effect on
-		 * every first probe, silently switching off whatever U-Boot
-		 * had already turned on. Real hardware-visible flicker, not
-		 * cosmetic: 2026-08-07, confirmed as the "colour overlays
-		 * flip on and off" / "random lines" flash seen during kernel
-		 * boot, right after the bootlogo continuity fix (fdb7660f7)
-		 * made OSD1 itself stable.
-		 *
-		 * CORRECTED same day: the first version of this fix also
-		 * preserved bit 9 (OSD3). That was wrong -- nothing in
-		 * ark1668_display_cfg.c's actual boot sequence ever calls
-		 * ark_osd_en_layer(OSD3_LAYER, ...) or configures OSD3 at
-		 * all (grepped the whole board dir to confirm), so OSD3's
-		 * enable bit at kernel handoff is just leftover/reset-state
-		 * noise, not something U-Boot deliberately turns on. The
-		 * first fix accidentally started preserving that noise
-		 * instead of correctly clearing it -- likely the source of a
-		 * stray overlay/white-area flash reported after that fix
-		 * landed. Only OSD1/OSD2 are confirmed deliberately managed
-		 * by U-Boot; bit 9 is excluded again. */
-		value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL) &
-			((1 << ARK1668_LCDC_OSD1_EN_OFFSET) | (1 << 8));
-		value |= (6 << 23) | (1 << 0);
+		value = (6 << 23) | (1 << 0);
 		/* set interrupt at the start of the front porch when vfp is not zero */
 		if (info->var.lower_margin)
 			value |= (3 << 21);
@@ -587,33 +556,23 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	value |= (1 << 12) | (41 << 0);
 	lcdc_writel(sinfo, ARK1668_LCDC_Y2R_COEF7, value);
 
-	/* timing. 2026-08-07: skip each write if the computed value already
-	 * matches what's live -- same "seamless takeover" reasoning as the
-	 * pixel-clock guard above. U-Boot's arkdata.ini-driven timing setup
-	 * already programmed these same three registers to (in principle)
-	 * the same porch/sync values this DT declares; rewriting them
-	 * unconditionally while the panel is actively synced to the old
-	 * values is a second candidate for the reported resync flash +
-	 * slight position shift. */
+	/* timing */
 	value = (info->var.hsync_len - 1) << ARK1668_LCDC_HPW_OFFSET;
 	value |= (info->var.left_margin - 1) << ARK1668_LCDC_HBP_OFFSET;
 	value |= (info->var.right_margin - 1);
-	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING0) != value)
-		lcdc_writel(sinfo, ARK1668_LCDC_TIMING0, value);
+	lcdc_writel(sinfo, ARK1668_LCDC_TIMING0, value);
 
 	value = info->var.lower_margin << ARK1668_LCDC_VFP_OFFSET;
 	value |= (info->var.vsync_len - 1) << ARK1668_LCDC_VPW_OFFSET;
 	value |= (info->var.xres - 1);
-	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING1) != value)
-		lcdc_writel(sinfo, ARK1668_LCDC_TIMING1, value);
+	lcdc_writel(sinfo, ARK1668_LCDC_TIMING1, value);
 
 	value = pdata->de_active_high << ARK1668_LCDC_IOE_OFFSET;
 	value |= !!(info->var.sync & FB_SYNC_HOR_HIGH_ACT) << ARK1668_LCDC_IHS_OFFSET;
 	value |= !!(info->var.sync & FB_SYNC_VERT_HIGH_ACT) << ARK1668_LCDC_IVS_OFFSET;
 	value |= (info->var.yres - 1) << ARK1668_LCDC_LPS_OFFSET;
 	value |= info->var.upper_margin;
-	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING2) != value)
-		lcdc_writel(sinfo, ARK1668_LCDC_TIMING2, value);
+	lcdc_writel(sinfo, ARK1668_LCDC_TIMING2, value);
 
 	/* Initialize specific screen type */
 	if (pdata->interface_type == ARK1668_LCDC_INTERFACE_LVDS) {
@@ -625,28 +584,6 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	}
 
         lcdc_writel(sinfo, ARK1668_LCDC_DITHERING, pdata->dithering_con);
-
-	/* Disable OSD1 before reconfiguring its address/size/pos/format/
-	 * colorkey below. 2026-08-07: now that OSD1's enable bit is
-	 * correctly PRESERVED (not clobbered) coming out of U-Boot, this
-	 * driver's very first set_par() call reaches this point with OSD1
-	 * still live/scanning-out (U-Boot's bootlogo). Writing 6 separate,
-	 * non-atomic registers here while the LCDC is actively reading
-	 * from them produces exactly the same class of bug U-Boot's own
-	 * display_bootlogo_file() already found and fixed for itself
-	 * (0b336e63f, "fix bootlogo swap tearing by disabling OSD1 during
-	 * the buffer overwrite") -- momentary wrong-colour rendering of
-	 * the SAME image content, not a blank/black flash, matching what
-	 * was reported after the enable-bit-preserve fix (7ea2892f7)
-	 * landed: "colour change on the actual image pixels, not the
-	 * background". Mirrors U-Boot's own proven pattern exactly; the
-	 * existing unconditional re-enable a few lines below (see its own
-	 * comment) already runs on every set_par() call, so this is safe
-	 * on the first call (probe, coming from U-Boot's live bootlogo)
-	 * and on any later call too. */
-	value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL);
-	value &= ~(1 << ARK1668_LCDC_OSD1_EN_OFFSET);
-	lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
 
 	/* Display osd layer1(fb0) size,pos,format,addr... */
 	ark1668_lcdfb_pan_display(&info->var, info);
@@ -1368,28 +1305,8 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
 			struct fb_modelist, list);
 	fb_videomode_to_var(&info->var, &modelist->mode);
 
-	/* Set pixel clock. 2026-08-07: skip the actual reprogram if the
-	 * clock is already running at the target rate -- U-Boot's own
-	 * arkdata.ini-driven timing setup (clk_freq/clk_div1/clk_div2)
-	 * already brought this same clock to this same DT-declared rate
-	 * before the kernel ever runs, and the clk core doesn't know that
-	 * (its own enable/rate refcounting starts from zero at probe, with
-	 * no visibility into U-Boot's prior register writes). Calling
-	 * clk_set_rate() unconditionally reprograms the PLL/divider chain
-	 * from scratch regardless of whether the target matches what's
-	 * already live, which can visibly desync an actively-scanning-out
-	 * panel for one or more frames while it relocks -- a candidate for
-	 * the "screen flashes off and on, logo position shifts slightly"
-	 * report on 2026-08-07, right after OSD1 was fixed to stay enabled
-	 * through this exact moment (7ea2892f7) instead of being blanked.
-	 * Testing this theory directly: only touch the clock if it isn't
-	 * already at the requested rate. */
-	{
-		unsigned long target_rate = PICOS2KHZ(info->var.pixclock) * 1000;
-
-		if (clk_get_rate(sinfo->lcdc_clk) != target_rate)
-			clk_set_rate(sinfo->lcdc_clk, target_rate);
-	}
+	/* Set pixel clock */
+	clk_set_rate(sinfo->lcdc_clk, PICOS2KHZ(info->var.pixclock) * 1000);
 	info->var.pixclock = KHZ2PICOS(clk_get_rate(sinfo->lcdc_clk) / 1000);
 
 	ark1668_lcdfb_check_var(&info->var, info);
