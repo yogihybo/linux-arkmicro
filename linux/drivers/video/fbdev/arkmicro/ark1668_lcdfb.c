@@ -616,6 +616,28 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 
         lcdc_writel(sinfo, ARK1668_LCDC_DITHERING, pdata->dithering_con);
 
+	/* Disable OSD1 before reconfiguring its address/size/pos/format/
+	 * colorkey below. 2026-08-07: now that OSD1's enable bit is
+	 * correctly PRESERVED (not clobbered) coming out of U-Boot, this
+	 * driver's very first set_par() call reaches this point with OSD1
+	 * still live/scanning-out (U-Boot's bootlogo). Writing 6 separate,
+	 * non-atomic registers here while the LCDC is actively reading
+	 * from them produces exactly the same class of bug U-Boot's own
+	 * display_bootlogo_file() already found and fixed for itself
+	 * (0b336e63f, "fix bootlogo swap tearing by disabling OSD1 during
+	 * the buffer overwrite") -- momentary wrong-colour rendering of
+	 * the SAME image content, not a blank/black flash, matching what
+	 * was reported after the enable-bit-preserve fix (7ea2892f7)
+	 * landed: "colour change on the actual image pixels, not the
+	 * background". Mirrors U-Boot's own proven pattern exactly; the
+	 * existing unconditional re-enable a few lines below (see its own
+	 * comment) already runs on every set_par() call, so this is safe
+	 * on the first call (probe, coming from U-Boot's live bootlogo)
+	 * and on any later call too. */
+	value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL);
+	value &= ~(1 << ARK1668_LCDC_OSD1_EN_OFFSET);
+	lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
+
 	/* Display osd layer1(fb0) size,pos,format,addr... */
 	ark1668_lcdfb_pan_display(&info->var, info);
 	value = (info->var.yres << ARK1668_LCDC_HEIGHT_OFFSET) | info->var.xres;
