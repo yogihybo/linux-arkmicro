@@ -520,27 +520,37 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 
 	/* Initialize control register */
 	if(!set_par){
-		/* Preserve OSD1/OSD2/OSD3 enable bits (7/8/9) from whatever
-		 * U-Boot already left them at, instead of the flat overwrite
-		 * this used to be. U-Boot's own boot sequence leaves OSD1
+		/* Preserve OSD1/OSD2 enable bits (7/8) from whatever U-Boot
+		 * already left them at, instead of the flat overwrite this
+		 * used to be. U-Boot's own boot sequence leaves OSD1
 		 * (bootlogo) AND OSD2 (always enabled unconditionally every
 		 * boot, see rLCD_OSD2_ADDR in board/arkmicro/
 		 * ark1668_limcet_p305/ark1668_display_cfg.c and
 		 * docs/DISPLAY_SUBSYSTEM.md) both live at kernel handoff.
-		 * This driver only actively manages OSD1 -- OSD2/OSD3 belong
-		 * to the itu656/carback drivers and userspace ioctls -- so a
-		 * flat, non-RMW write here was clobbering their enable state
-		 * as a side effect on every first probe, silently switching
-		 * off whatever U-Boot had already turned on. Since this is
-		 * literally the moment the kernel first touches this
-		 * register (only reached once, on this driver's very first
-		 * set_par() call), this is real hardware-visible flicker,
-		 * not cosmetic: 2026-08-07, hardware-confirmed as the
-		 * "colour overlays flip on and off" / "random lines" flash
-		 * seen during kernel boot, right after the bootlogo
-		 * continuity fix (fdb7660f7) made OSD1 itself stable. */
+		 * This driver only actively manages OSD1 (re-enabled a few
+		 * lines below) -- so a flat, non-RMW write here was
+		 * clobbering OSD1/OSD2's enable state as a side effect on
+		 * every first probe, silently switching off whatever U-Boot
+		 * had already turned on. Real hardware-visible flicker, not
+		 * cosmetic: 2026-08-07, confirmed as the "colour overlays
+		 * flip on and off" / "random lines" flash seen during kernel
+		 * boot, right after the bootlogo continuity fix (fdb7660f7)
+		 * made OSD1 itself stable.
+		 *
+		 * CORRECTED same day: the first version of this fix also
+		 * preserved bit 9 (OSD3). That was wrong -- nothing in
+		 * ark1668_display_cfg.c's actual boot sequence ever calls
+		 * ark_osd_en_layer(OSD3_LAYER, ...) or configures OSD3 at
+		 * all (grepped the whole board dir to confirm), so OSD3's
+		 * enable bit at kernel handoff is just leftover/reset-state
+		 * noise, not something U-Boot deliberately turns on. The
+		 * first fix accidentally started preserving that noise
+		 * instead of correctly clearing it -- likely the source of a
+		 * stray overlay/white-area flash reported after that fix
+		 * landed. Only OSD1/OSD2 are confirmed deliberately managed
+		 * by U-Boot; bit 9 is excluded again. */
 		value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL) &
-			((1 << ARK1668_LCDC_OSD1_EN_OFFSET) | (1 << 8) | (1 << 9));
+			((1 << ARK1668_LCDC_OSD1_EN_OFFSET) | (1 << 8));
 		value |= (6 << 23) | (1 << 0);
 		/* set interrupt at the start of the front porch when vfp is not zero */
 		if (info->var.lower_margin)
