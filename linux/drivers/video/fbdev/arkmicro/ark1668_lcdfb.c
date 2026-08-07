@@ -587,23 +587,33 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	value |= (1 << 12) | (41 << 0);
 	lcdc_writel(sinfo, ARK1668_LCDC_Y2R_COEF7, value);
 
-	/* timing */
+	/* timing. 2026-08-07: skip each write if the computed value already
+	 * matches what's live -- same "seamless takeover" reasoning as the
+	 * pixel-clock guard above. U-Boot's arkdata.ini-driven timing setup
+	 * already programmed these same three registers to (in principle)
+	 * the same porch/sync values this DT declares; rewriting them
+	 * unconditionally while the panel is actively synced to the old
+	 * values is a second candidate for the reported resync flash +
+	 * slight position shift. */
 	value = (info->var.hsync_len - 1) << ARK1668_LCDC_HPW_OFFSET;
 	value |= (info->var.left_margin - 1) << ARK1668_LCDC_HBP_OFFSET;
 	value |= (info->var.right_margin - 1);
-	lcdc_writel(sinfo, ARK1668_LCDC_TIMING0, value);
+	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING0) != value)
+		lcdc_writel(sinfo, ARK1668_LCDC_TIMING0, value);
 
 	value = info->var.lower_margin << ARK1668_LCDC_VFP_OFFSET;
 	value |= (info->var.vsync_len - 1) << ARK1668_LCDC_VPW_OFFSET;
 	value |= (info->var.xres - 1);
-	lcdc_writel(sinfo, ARK1668_LCDC_TIMING1, value);
+	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING1) != value)
+		lcdc_writel(sinfo, ARK1668_LCDC_TIMING1, value);
 
 	value = pdata->de_active_high << ARK1668_LCDC_IOE_OFFSET;
 	value |= !!(info->var.sync & FB_SYNC_HOR_HIGH_ACT) << ARK1668_LCDC_IHS_OFFSET;
 	value |= !!(info->var.sync & FB_SYNC_VERT_HIGH_ACT) << ARK1668_LCDC_IVS_OFFSET;
 	value |= (info->var.yres - 1) << ARK1668_LCDC_LPS_OFFSET;
 	value |= info->var.upper_margin;
-	lcdc_writel(sinfo, ARK1668_LCDC_TIMING2, value);
+	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING2) != value)
+		lcdc_writel(sinfo, ARK1668_LCDC_TIMING2, value);
 
 	/* Initialize specific screen type */
 	if (pdata->interface_type == ARK1668_LCDC_INTERFACE_LVDS) {
@@ -1358,8 +1368,28 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
 			struct fb_modelist, list);
 	fb_videomode_to_var(&info->var, &modelist->mode);
 
-	/* Set pixel clock */
-	clk_set_rate(sinfo->lcdc_clk, PICOS2KHZ(info->var.pixclock) * 1000);
+	/* Set pixel clock. 2026-08-07: skip the actual reprogram if the
+	 * clock is already running at the target rate -- U-Boot's own
+	 * arkdata.ini-driven timing setup (clk_freq/clk_div1/clk_div2)
+	 * already brought this same clock to this same DT-declared rate
+	 * before the kernel ever runs, and the clk core doesn't know that
+	 * (its own enable/rate refcounting starts from zero at probe, with
+	 * no visibility into U-Boot's prior register writes). Calling
+	 * clk_set_rate() unconditionally reprograms the PLL/divider chain
+	 * from scratch regardless of whether the target matches what's
+	 * already live, which can visibly desync an actively-scanning-out
+	 * panel for one or more frames while it relocks -- a candidate for
+	 * the "screen flashes off and on, logo position shifts slightly"
+	 * report on 2026-08-07, right after OSD1 was fixed to stay enabled
+	 * through this exact moment (7ea2892f7) instead of being blanked.
+	 * Testing this theory directly: only touch the clock if it isn't
+	 * already at the requested rate. */
+	{
+		unsigned long target_rate = PICOS2KHZ(info->var.pixclock) * 1000;
+
+		if (clk_get_rate(sinfo->lcdc_clk) != target_rate)
+			clk_set_rate(sinfo->lcdc_clk, target_rate);
+	}
 	info->var.pixclock = KHZ2PICOS(clk_get_rate(sinfo->lcdc_clk) / 1000);
 
 	ark1668_lcdfb_check_var(&info->var, info);
