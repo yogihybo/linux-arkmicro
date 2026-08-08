@@ -268,7 +268,36 @@
 				index-value = <1>;
 				div-offset = <19>;
 				div-mask = <0xf>;
-				div-value = <1>;
+				/* 2026-08-08: div-value deliberately NOT set (was <1>).
+				 * ark_sys_clk_init() (drivers/clk/arkmicro/clk-sys.c,
+				 * CLK_OF_DECLARE, runs during time_init() -- long before
+				 * any platform driver, including this LCD clock's own
+				 * consumer, ever probes) force-writes div-value into
+				 * this exact register (SYS_BASE+0x54, the same one
+				 * U-Boot's own rSYS_LCD_CLK_CFG writes) whenever it's
+				 * present, unconditionally overwriting whatever's
+				 * already there. U-Boot configures the real divider
+				 * here to 11 (board/arkmicro/ark1668_limcet_p305/
+				 * ark1668_display_cfg.c's SCREEN_QUN700 panel entry,
+				 * clk_div1=11) to get the correct ~30MHz pixel clock
+				 * for this 800x480 panel -- div-value=<1> stomped that
+				 * down to 1 (~330MHz, straight off syspll, no
+				 * division) during Linux's own very early boot, WHILE
+				 * OSD1 was still actively displaying U-Boot's bootlogo
+				 * (fdb7660f7) -- a real, hardware-confirmed cause of
+				 * on-screen corruption/resync during kernel boot,
+				 * happening well before ark1668_lcdfb.c's own
+				 * clk_set_rate() call (which corrects the divider back
+				 * to 11) ever gets a chance to run. Omitting div-value
+				 * makes ark_sys_clk_init() take its read-back branch
+				 * instead (clk-sys.c: reads the live register into its
+				 * software model rather than writing a hardcoded
+				 * value), leaving U-Boot's already-correct divider
+				 * completely untouched -- matches stock's real kernel,
+				 * confirmed via disassembly to never reprogram this
+				 * clock at all and just trust U-Boot. index-value=<1>
+				 * is left as-is: it matches U-Boot's own clk_source
+				 * (SCREEN_CLKSEL_SYSPLL=1), so forcing it is harmless. */
 				clk-can-change;
 				enable-reg = <0x44 0x4c 0x50>;
 				enable-offset = <8 1 4>;
