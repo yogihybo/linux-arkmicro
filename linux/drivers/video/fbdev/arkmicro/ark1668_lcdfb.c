@@ -585,6 +585,31 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 
         lcdc_writel(sinfo, ARK1668_LCDC_DITHERING, pdata->dithering_con);
 
+	/* Disable OSD1 before reconfiguring its address/size/pos/format/
+	 * colorkey below. OSD1 stays continuously enabled/live coming out
+	 * of U-Boot's bootlogo (fdb7660f7), so without this, the 6 register
+	 * writes in this block happen while the LCDC is actively scanning
+	 * out the buffer they're rewriting -- same class of bug U-Boot's
+	 * own display_bootlogo_file() already found and fixed for itself
+	 * (0b336e63f, "fix bootlogo swap tearing by disabling OSD1 during
+	 * the buffer overwrite"). Tried once before (93bafa33d, 2026-08-07)
+	 * without success and reverted (fe924c160) -- but at the time, a
+	 * separate, much larger bug (lcdclk's early-boot divider stomp,
+	 * fixed in 3842111b0) was still corrupting the picture with an
+	 * ~11x-too-fast pixel clock, likely masking whether this fix helped
+	 * at all. Retrying now that the clock bug is fixed: 2026-08-08
+	 * reported a narrower remaining symptom -- a brief blueish colour
+	 * shift on the actual bootlogo pixels (never on black background,
+	 * consistent with a momentary wrong colour-format/rgb_order
+	 * interpretation of the same buffer, not a blank/uninitialized-data
+	 * flash) -- a good match for exactly this live-rewrite tearing
+	 * class of bug on the OSD1_CTL write below. Unlike the clock fix,
+	 * this doesn't touch clock/timing at all, so it doesn't carry the
+	 * same black-screen risk that caused the earlier revert. */
+	value = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL);
+	value &= ~(1 << ARK1668_LCDC_OSD1_EN_OFFSET);
+	lcdc_writel(sinfo, ARK1668_LCDC_CONTROL, value);
+
 	/* Display osd layer1(fb0) size,pos,format,addr... */
 	ark1668_lcdfb_pan_display(&info->var, info);
 	value = (info->var.yres << ARK1668_LCDC_HEIGHT_OFFSET) | info->var.xres;
