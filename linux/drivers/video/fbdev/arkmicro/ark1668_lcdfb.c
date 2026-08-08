@@ -556,23 +556,41 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	value |= (1 << 12) | (41 << 0);
 	lcdc_writel(sinfo, ARK1668_LCDC_Y2R_COEF7, value);
 
-	/* timing */
+	/* timing. 2026-08-08: skip each write if the computed value already
+	 * matches what's live in hardware, instead of writing unconditionally.
+	 * Disassembled stock's real ark_disp_fb_set_par() (vmlinux.elf @
+	 * 0x802e2a40) and confirmed its actual mechanism: it reads back the
+	 * CURRENTLY-programmed hardware layer config, compares it field-by-
+	 * field against the target, and does zero register writes at all if
+	 * everything already matches -- see the matching comment on the OSD1
+	 * block below for the full trace. Stock's kernel driver additionally
+	 * never touches TIMING/clock config in its normal boot path at all
+	 * (see the pixel-clock comment above), so this compare-and-skip is
+	 * this driver's own, slightly more defensive equivalent: still
+	 * capable of correcting a genuinely wrong value (unlike stock, which
+	 * has no such path), but avoids rewriting registers that are already
+	 * correct on a panel that's actively synced to them -- the same
+	 * class of live-reconfiguration glitch stock avoids entirely by
+	 * simply never having a reason to touch them again after U-Boot. */
 	value = (info->var.hsync_len - 1) << ARK1668_LCDC_HPW_OFFSET;
 	value |= (info->var.left_margin - 1) << ARK1668_LCDC_HBP_OFFSET;
 	value |= (info->var.right_margin - 1);
-	lcdc_writel(sinfo, ARK1668_LCDC_TIMING0, value);
+	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING0) != value)
+		lcdc_writel(sinfo, ARK1668_LCDC_TIMING0, value);
 
 	value = info->var.lower_margin << ARK1668_LCDC_VFP_OFFSET;
 	value |= (info->var.vsync_len - 1) << ARK1668_LCDC_VPW_OFFSET;
 	value |= (info->var.xres - 1);
-	lcdc_writel(sinfo, ARK1668_LCDC_TIMING1, value);
+	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING1) != value)
+		lcdc_writel(sinfo, ARK1668_LCDC_TIMING1, value);
 
 	value = pdata->de_active_high << ARK1668_LCDC_IOE_OFFSET;
 	value |= !!(info->var.sync & FB_SYNC_HOR_HIGH_ACT) << ARK1668_LCDC_IHS_OFFSET;
 	value |= !!(info->var.sync & FB_SYNC_VERT_HIGH_ACT) << ARK1668_LCDC_IVS_OFFSET;
 	value |= (info->var.yres - 1) << ARK1668_LCDC_LPS_OFFSET;
 	value |= info->var.upper_margin;
-	lcdc_writel(sinfo, ARK1668_LCDC_TIMING2, value);
+	if (lcdc_readl(sinfo, ARK1668_LCDC_TIMING2) != value)
+		lcdc_writel(sinfo, ARK1668_LCDC_TIMING2, value);
 
 	/* Initialize specific screen type */
 	if (pdata->interface_type == ARK1668_LCDC_INTERFACE_LVDS) {
@@ -587,6 +605,48 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 
 	/* Display osd layer1(fb0) size,pos,format,addr... */
 	ark1668_lcdfb_pan_display(&info->var, info);
+
+	/* 2026-08-08: only touch SIZE/SOURCE_SIZE/POS/WIN_POINT/CTL/colorkey
+	 * below if the computed target actually differs from what's already
+	 * live, mirroring stock's real ark_disp_fb_set_par() (disassembled
+	 * from vmlinux.elf @ 0x802e2a40): it reads back the CURRENTLY-
+	 * programmed OSD1 layer config via its own ark_disp_get_layer_cfg()
+	 * equivalent, compares format/colorkey-enable/xres/yres against the
+	 * target, and returns immediately with ZERO register writes if they
+	 * already match (buffer address is handled separately, by
+	 * ark_disp_fb_pan_display() above, matching our own pan_display call
+	 * -- stock's compare deliberately excludes it too). On this driver's
+	 * very first call, at kernel probe, U-Boot's bootlogo setup has
+	 * already put every one of these registers at exactly the values
+	 * this function would otherwise redundantly rewrite (rgb_order=0,
+	 * FORMAT_RGBA888, the same colorkey -- see the comments below, all
+	 * hardcoded specifically to match U-Boot's own bootlogo byte-for-
+	 * byte). Rewriting them anyway, while OSD1 is still actively
+	 * scanning out that exact same picture, is what stock's driver
+	 * structurally never does -- reported 2026-08-07 as colour changes
+	 * on the actual bootlogo pixels, a white-area flash, and a slight
+	 * position shift during kernel boot, all after a previous fix
+	 * (fdb7660f7) made OSD1 stay continuously enabled/live through this
+	 * exact function instead of being blanked first. */
+	{
+		u32 target_size = (info->var.yres << ARK1668_LCDC_HEIGHT_OFFSET) | info->var.xres;
+		u32 cur_ctl = lcdc_readl(sinfo, ARK1668_LCDC_OSD1_CTL);
+		u32 target_ctl = (cur_ctl & ~(0x7ff << 12)) |
+				 (1 << 17) | (ARK1668_LCDC_FORMAT_RGBA888 << 12) | 0xff;
+		u32 target_colorkey = (1 << 24) | (0x10 << 16) | (0x80 << 8) | 0x80;
+		bool osd1_en = lcdc_readl(sinfo, ARK1668_LCDC_CONTROL) &
+				(1 << ARK1668_LCDC_OSD1_EN_OFFSET);
+
+		if (osd1_en &&
+		    lcdc_readl(sinfo, ARK1668_LCDC_OSD1_SIZE) == target_size &&
+		    lcdc_readl(sinfo, ARK1668_LCDC_OSD1_SOURCE_SIZE) == target_size &&
+		    lcdc_readl(sinfo, ARK1668_LCDC_OSD1_POS) == 0 &&
+		    lcdc_readl(sinfo, ARK1668_LCDC_OSD1_WIN_POINT) == 0 &&
+		    cur_ctl == target_ctl &&
+		    lcdc_readl(sinfo, ARK1668_LCDC_COLOR_KEY_MASK_VALUE_OSD1) == target_colorkey)
+			goto osd1_already_configured;
+	}
+
 	value = (info->var.yres << ARK1668_LCDC_HEIGHT_OFFSET) | info->var.xres;
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_SIZE, value);
 	lcdc_writel(sinfo, ARK1668_LCDC_OSD1_SOURCE_SIZE, value);
@@ -659,6 +719,7 @@ static int ark1668_lcdfb_set_par(struct fb_info *info)
 	lcdc_writel(sinfo, ARK1668_LCDC_COLOR_KEY_MASK_VALUE_OSD1,
 		    (1 << 24) | (0x10 << 16) | (0x80 << 8) | 0x80);
 
+osd1_already_configured:
 	/* Open OSD1 layer. Deliberately unconditional (not gated by set_par
 	 * like the wiring-mode block above): this is a read-modify-write of
 	 * a single bit, so re-running it on every fb_set_par call is
@@ -1305,8 +1366,19 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
 			struct fb_modelist, list);
 	fb_videomode_to_var(&info->var, &modelist->mode);
 
-	/* Set pixel clock */
-	clk_set_rate(sinfo->lcdc_clk, PICOS2KHZ(info->var.pixclock) * 1000);
+	/* 2026-08-08: NOT calling clk_set_rate() here anymore. Disassembled
+	 * stock's real kernel driver (vmlinux.elf, traced from
+	 * ark_disp_probe() through ark_disp_dev_init()/ark_disp_fb_init())
+	 * and confirmed it NEVER reprograms the pixel clock anywhere in its
+	 * normal boot path -- the only code that can touch the LCD clock
+	 * config register is ark_disp_set_lcd_panel_type() (0x802e0a78),
+	 * and its one and only caller is the /proc debug-write interface
+	 * (ark_disp_write_proc() -> ark_disp_set_lcd_cfg() ->
+	 * ark_disp_set_lcd_panel_type()), never anything in probe/init.
+	 * U-Boot configures the clock once and stock's kernel simply trusts
+	 * it forever after. info->var.pixclock is still populated (from the
+	 * already-running clock's real rate) purely for informational
+	 * userspace queries (fbset etc.) -- nothing here writes to hardware. */
 	info->var.pixclock = KHZ2PICOS(clk_get_rate(sinfo->lcdc_clk) / 1000);
 
 	ark1668_lcdfb_check_var(&info->var, info);
