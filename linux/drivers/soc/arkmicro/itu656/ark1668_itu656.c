@@ -2030,10 +2030,10 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	{
 		static int diag_probe_count = 0;
 		diag_probe_count++;
-		pr_info("[DIAG_ITU656_PROBE] call #%d: dvr_dev=%px sizeof(struct dvr_dev)=%zu\n",
+		pr_debug("[DIAG_ITU656_PROBE] call #%d: dvr_dev=%px sizeof(struct dvr_dev)=%zu\n",
 		       diag_probe_count, dvr_dev, sizeof(struct dvr_dev));
 		if (diag_probe_count > 1)
-			pr_info("[DIAG_ITU656_PROBE] *** probe() called more than once -- "
+			pr_debug("[DIAG_ITU656_PROBE] *** probe() called more than once -- "
 			       "g_dvr_dev will be overwritten, any fd opened against an earlier "
 			       "instance's cdev will resolve to a STALE dvr_dev via container_of "
 			       "in dvr_open() while dvr_ioctl() uses the latest g_dvr_dev ***\n");
@@ -2048,7 +2048,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	dvr_dev->deinter_status = 0;
 	dvr_dev->start = dvr_start;
 	dvr_dev->stop = dvr_stop;
-	pr_info("[DIAG_ITU656_PROBE] dvr_dev=%px &start=%px start=%px (want dvr_start=%px) "
+	pr_debug("[DIAG_ITU656_PROBE] dvr_dev=%px &start=%px start=%px (want dvr_start=%px) "
 	       "&stop=%px stop=%px (want dvr_stop=%px)\n",
 	       dvr_dev, &dvr_dev->start, dvr_dev->start, dvr_start,
 	       &dvr_dev->stop, dvr_dev->stop, dvr_stop);
@@ -2060,7 +2060,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	dvr_dev->display_buffer = 0;
 	dvr_dev->carback_signal = 0;
 	memcpy(&dvr_dev->priv_data, pdata, sizeof(struct ark_private_data));
-	pr_info("[DIAG_ITU656_PROBE] priv_data after memcpy: &priv_data=%px "
+	pr_debug("[DIAG_ITU656_PROBE] priv_data after memcpy: &priv_data=%px "
 	       "select_channel=%px (want %px) detect_signal=%px (want %px) "
 	       "get_progressive=%px (want %px) display_effect=%px (want %px)\n",
 	       &dvr_dev->priv_data,
@@ -2068,7 +2068,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
 	       dvr_dev->priv_data.detect_signal, pdata->detect_signal,
 	       dvr_dev->priv_data.get_progressive, pdata->get_progressive,
 	       dvr_dev->priv_data.display_effect, pdata->display_effect);
-	pr_info("[DIAG_ITU656_PROBE] priv_data after memcpy (cont): "
+	pr_debug("[DIAG_ITU656_PROBE] priv_data after memcpy (cont): "
 	       "dvr_start_cb=%px (want %px) dvr_stop_cb=%px (want %px) "
 	       "enter_carback_cb=%px (want %px) exit_carback_cb=%px (want %px) "
 	       "dvr_config=%px (want %px)\n",
@@ -2255,7 +2255,7 @@ static int ark1668_itu656_probe(struct platform_device *pdev)//(struct i2c_clien
     
         carback_first_enter();
 
-	pr_info("[DIAG_ITU656_PROBE_END] dvr_dev=%px start=%px (want %px) stop=%px (want %px)\n",
+	pr_debug("[DIAG_ITU656_PROBE_END] dvr_dev=%px start=%px (want %px) stop=%px (want %px)\n",
 	       dvr_dev, dvr_dev->start, dvr_start, dvr_dev->stop, dvr_stop);
 
         return 0;
