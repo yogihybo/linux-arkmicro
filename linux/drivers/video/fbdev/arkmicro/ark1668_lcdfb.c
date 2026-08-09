@@ -1506,8 +1506,21 @@ static int ark1668_lcdfb_probe(struct platform_device *pdev)
 }
 #endif
 
+	/* 2026-08-09: shortened from 3000ms. i2c-gpio-0/i2c-gpio-1 (the
+	 * actual pin thieves this reclaim exists to fix, see the big
+	 * comment above) steal r0/r1/r7 the moment THEY probe, not
+	 * continuously -- and every captured boot log shows both finish
+	 * probing well under 0.5s into boot (i2c-gpio-0/1's own "using
+	 * lines..." printks land at ~0.44-0.46s). 3000ms after THIS
+	 * driver's own probe (~0.37-0.39s) left the pins stuck in stolen
+	 * GPIO mode -- and OSD1 actively displaying U-Boot's bootlogo
+	 * through that whole window, ever since fdb7660f7 made it stay
+	 * enabled/live instead of blanking -- for nearly 3 real seconds on
+	 * every boot, visible as a red-channel-loss (blueish) colour shift
+	 * on the actual picture (reported 2026-08-09). 1000ms still leaves
+	 * ~550ms of margin past every observed i2c-gpio probe time. */
 	INIT_DELAYED_WORK(&g_ark1668_lcdfb_reclaim_work, ark1668_lcdfb_reclaim_pinctrl);
-	schedule_delayed_work(&g_ark1668_lcdfb_reclaim_work, msecs_to_jiffies(3000));
+	schedule_delayed_work(&g_ark1668_lcdfb_reclaim_work, msecs_to_jiffies(1000));
 
 	return 0;
 
