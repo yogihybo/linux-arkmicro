@@ -1720,6 +1720,7 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                  * ark_lcdc_common.h.
                  */
                 struct ark_fb_set_video_addr vaddr;
+                struct ark_disp_addr queued;
 
                 if(layer <= OSD_LAYER3){
                         printk("%s: ARKFB_SET_FB_ADDR on non-video layer\n", __func__);
@@ -1733,15 +1734,35 @@ int ark1668_lcdfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long ar
                         goto end;
                 }
 
-                /* ark1668 fix (2026-07-28): downgraded from
-                 * spin_lock_irqsave -- see the identical comment on
-                 * ARKFB_SET_VIDEO_ADDR_RAW above. This is the specific
-                 * ioctl `sink` actually calls ~30x/sec for AA video, so
-                 * this was the single highest-frequency IRQ-disable window
-                 * in the whole driver.
+                /* 2026-08-18 fix: this used to call
+                 * ark1668_lcdc_set_video_addr() directly, right here,
+                 * synchronously with the ioctl -- writing the hardware
+                 * address register immediately, with no vsync gating at
+                 * all. That's a real, confirmed-on-hardware tearing/
+                 * corruption bug: a write landing mid-scanout corrupts
+                 * whatever portion of the frame the LCDC hasn't scanned
+                 * out yet, worse under bursts of rapid address updates
+                 * (interaction-driven UI redraws). ARKFB_SET_WINDOW_ADDR
+                 * (the OSD/legacy path, case above) already does this
+                 * correctly: it queues into sinfo->render_addr[layer] and
+                 * lets ark1668_lcdfb_interrupt() (the real vsync IRQ
+                 * handler) apply it exactly once per frame, synchronized
+                 * to the panel's own refresh. This ioctl (the one AA video
+                 * actually uses, confirmed via decompile of the real
+                 * vendor userspace) never got the same treatment when it
+                 * was added -- an oversight in this reconstruction, not
+                 * something inherited from a real vendor kernel we have no
+                 * source for. Fixed to match: queue the address the same
+                 * way ARKFB_SET_WINDOW_ADDR does, instead of writing the
+                 * register directly.
                  */
+                queued.yaddr = vaddr.y_addr;
+                queued.cbaddr = vaddr.cb_addr;
+                queued.craddr = vaddr.cr_addr;
+                queued.wait_vsync = vaddr.param5;
+
                 spin_lock(&sinfo->lock);
-                ark1668_lcdc_set_video_addr(layer - OSD_LAYER_MAX, vaddr.y_addr, vaddr.cb_addr, vaddr.cr_addr);
+                memcpy(&sinfo->render_addr[layer], &queued, sizeof(queued));
                 spin_unlock(&sinfo->lock);
         }
         break;
