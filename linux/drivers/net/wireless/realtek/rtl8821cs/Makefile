@@ -1,4 +1,12 @@
 EXTRA_CFLAGS += $(USER_EXTRA_CFLAGS)
+
+# See rtl8811cu/Makefile's identical fix, same session -- this board is
+# unconditionally little-endian; without this define rtw_byteorder.h's
+# #error "Must be LITTLE/BIG Endian Host" fails the build outright.
+# (rtl8821cs itself isn't the WiFi driver actually used on this board --
+# that's rtl8811cu -- but it's enabled in .config and was blocking the
+# whole kernel build either way.)
+EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -O1
 #EXTRA_CFLAGS += -O3
 #EXTRA_CFLAGS += -Wall

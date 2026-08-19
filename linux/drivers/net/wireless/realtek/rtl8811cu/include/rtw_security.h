@@ -89,8 +89,14 @@ union pn48	{
 
 	u64	val;
 
-#ifdef CONFIG_LITTLE_ENDIAN
-
+/* Was `#ifdef CONFIG_LITTLE_ENDIAN` / `#elif defined(CONFIG_BIG_ENDIAN)` --
+ * neither is a real Kconfig symbol (this Makefile's own EXTRA_CFLAGS -D
+ * flags for it aren't honored by this kbuild), so _byte_ never got
+ * declared at all and every reference to it failed to build. This board
+ * (ark1668, ARM, no CONFIG_CPU_BIG_ENDIAN) is unconditionally
+ * little-endian -- confirmed throughout this project -- so just always
+ * declare the little-endian layout instead of depending on a macro that
+ * was never actually being defined. */
 struct {
 	u8 TSC0;
 	u8 TSC1;
@@ -101,21 +107,6 @@ struct {
 	u8 TSC6;
 	u8 TSC7;
 } _byte_;
-
-#elif defined(CONFIG_BIG_ENDIAN)
-
-struct {
-	u8 TSC7;
-	u8 TSC6;
-	u8 TSC5;
-	u8 TSC4;
-	u8 TSC3;
-	u8 TSC2;
-	u8 TSC1;
-	u8 TSC0;
-} _byte_;
-
-#endif
 
 };
 

@@ -1,4 +1,18 @@
 EXTRA_CFLAGS += $(USER_EXTRA_CFLAGS)
+
+# ark1668/ARM, this board is unconditionally little-endian, and none of
+# this Makefile's own CONFIG_PLATFORM_*/CONFIG_ARCH_ARKMICRO branches
+# below match this .config (CONFIG_ARCH_ARKMICRO is a real Kconfig
+# symbol -- arch/arm/mach-arkmicro/Kconfig -- but this board boots via
+# generic devicetree, not that legacy mach-arkmicro platform code, so
+# it's correctly left unset; flipping it just for this #define would be
+# a much bigger, unverified change than this driver actually needs).
+# CONFIG_LITTLE_ENDIAN is this driver's own private -D macro, not a
+# kernel Kconfig symbol -- without it, rtw_byteorder.h's own #error
+# "Must be LITTLE/BIG Endian Host" fails the build outright, and (found
+# the same session) rtw_security.h/rtw_io.h/hal_dm.c were silently
+# taking wrong-endian code paths instead of failing to build.
+EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
 EXTRA_CFLAGS += -O1
 #EXTRA_CFLAGS += -O3
 #EXTRA_CFLAGS += -Wall

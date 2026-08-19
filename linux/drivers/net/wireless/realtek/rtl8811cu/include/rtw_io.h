@@ -147,9 +147,14 @@ struct	intf_hdl {
 	struct _io_ops	io_ops;
 };
 
+/* Was #ifdef CONFIG_LITTLE_ENDIAN / #else -- CONFIG_LITTLE_ENDIAN is a
+ * driver-private -D macro (see this driver's own Makefile), never
+ * actually reaching the compiler on this kbuild, so this was silently
+ * taking the #else (big-endian-ordered) bitfield layout on this
+ * unconditionally little-endian ARM board. Fixed the same way as
+ * rtw_security.h's union pn48 in the same session -- always use the
+ * little-endian layout directly. */
 struct reg_protocol_rd {
-
-#ifdef CONFIG_LITTLE_ENDIAN
 
 	/* DW1 */
 	u32		NumOfTrans:4;
@@ -169,46 +174,12 @@ struct reg_protocol_rd {
 	u32		BusAddress;
 	/* DW4 */
 	/* u32		Value; */
-#else
-
-
-	/* DW1 */
-	u32 Reserved1:4;
-	u32 NumOfTrans:4;
-
-	u32 Reserved2:24;
-
-	/* DW2 */
-	u32 WriteEnable:1;
-	u32 ByteCount:7;
-
-
-	u32 Reserved3:3;
-	u32 Byte4Access:1;
-
-	u32 Byte2Access:1;
-	u32 Byte1Access:1;
-	u32 BurstMode:1;
-	u32 FixOrContinuous:1;
-
-	u32 Reserved4:16;
-
-	/* DW3 */
-	u32		BusAddress;
-
-	/* DW4 */
-	/* u32		Value; */
-
-#endif
 
 };
 
 
 struct reg_protocol_wt {
 
-
-#ifdef CONFIG_LITTLE_ENDIAN
-
 	/* DW1 */
 	u32		NumOfTrans:4;
 	u32		Reserved1:4;
@@ -227,35 +198,6 @@ struct reg_protocol_wt {
 	u32		BusAddress;
 	/* DW4 */
 	u32		Value;
-
-#else
-	/* DW1 */
-	u32 Reserved1:4;
-	u32 NumOfTrans:4;
-
-	u32 Reserved2:24;
-
-	/* DW2 */
-	u32 WriteEnable:1;
-	u32 ByteCount:7;
-
-	u32 Reserved3:3;
-	u32 Byte4Access:1;
-
-	u32 Byte2Access:1;
-	u32 Byte1Access:1;
-	u32 BurstMode:1;
-	u32 FixOrContinuous:1;
-
-	u32 Reserved4:16;
-
-	/* DW3 */
-	u32		BusAddress;
-
-	/* DW4 */
-	u32		Value;
-
-#endif
 
 };
 #ifdef CONFIG_PCI_HCI
