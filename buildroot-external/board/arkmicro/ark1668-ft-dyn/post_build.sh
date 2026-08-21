@@ -1,6 +1,6 @@
 #!/bin/bash
 # Forked from board/arkmicro/ark1668-ft/post_build.sh (untouched) for the
-# ark1668_ft_custom_ui_defconfig -- see merry-snacking-wirth.md's
+# ark1668_ft_dyn_defconfig -- see merry-snacking-wirth.md's
 # 2026-08-21 "target-finalize" fix note for the two real bugs in the
 # original this works around, rather than editing a script shared with
 # every other board defconfig in this tree:

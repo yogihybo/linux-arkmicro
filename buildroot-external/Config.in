@@ -18,7 +18,7 @@ source "$BR2_EXTERNAL_ARK_PATH/package/usbmuxd/Config.in"
 source "$BR2_EXTERNAL_ARK_PATH/package/libcheck/Config.in"
 source "$BR2_EXTERNAL_ARK_PATH/package/ark1668eapp/Config.in"
 
-# prado-firmware-reconstruction tools/ consolidation (custom_ui rootfs,
+# prado-firmware-reconstruction tools/ consolidation (the dyn rootfs,
 # see merry-snacking-wirth.md) -- prebuilt-binary packages reusing
 # already hardware-confirmed tools/ artifacts, same local-site pattern
 # as the packages above.
