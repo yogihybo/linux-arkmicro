@@ -3,16 +3,18 @@
 ArkMicro's vendor Linux/U-Boot/Buildroot SDK (`RD_Software/linux-arkmicro`),
 used by [`prado-firmware-reconstruction`](https://github.com/yogihybo/prado-firmware-reconstruction)
 to build a Linux 4.19.192 kernel and U-Boot 2018.07 for the Toyota Prado
-Limcet P305/P306 dashboard head unit (plain **ARK1668** SoC, Cortex-A5 —
-**not** "ARK1668E", a real, confirmed mislabeling that persists elsewhere
-in this project's own docs; ARK1668E is a genuinely different SoC
-sub-variant, Cortex-A7, used by unrelated boards like `ark1668e_devb`.
-Board target `ark1668_limcet_p305`). This README only covers building the
-kernel and U-Boot for that specific board — see that project's
-`docs/KERNEL_REFERENCE.md` and `docs/UBOOT_BUILD_GUIDE.md` for the full
-reverse-engineering context, board-specific config deltas, and known
-gotchas, and see "Filesystem(s)" below for the two rootfs build paths
-that consume this kernel/U-Boot output.
+Limcet P305/P306 dashboard head unit.
+
+**Board/SoC**: plain **ARK1668**, Cortex-A5, board target
+`ark1668_limcet_p305` (not "ARK1668E" — a different, Cortex-A7 SoC
+sub-variant used by unrelated boards like `ark1668e_devb`; the two
+names get mixed up elsewhere in this project's docs).
+
+This README covers building the kernel and U-Boot for that board, and
+the two rootfs images that boot on top of them. See
+`docs/KERNEL_REFERENCE.md` and `docs/UBOOT_BUILD_GUIDE.md` in
+`prado-firmware-reconstruction` for deeper reverse-engineering
+reference material.
 
 ## Quick start — automated build scripts
 
@@ -45,7 +47,7 @@ linux-arkmicro/
 
 ## Toolchain
 
-Linaro GCC `arm-linux-gnueabihf` 7.3.1 or 7.4.1, at
+Linaro GCC `arm-linux-gnueabihf` 7.3.1 (glibc 2.25) or 7.4.1, at
 `buildroot-external/toolchain/gcc-linaro-*/bin/`. Source the environment
 script before any build command — it picks whichever of the two toolchain
 versions is actually present and puts it on `$PATH`:
@@ -98,88 +100,48 @@ cat arch/arm/boot/zImage arch/arm/boot/dts/ark1668_limcet_p305.dtb > ../zImage.w
 repo is a sibling directory (or at `~/Downloads/linux-arkmicro`) — no
 manual copying needed after a build.
 
-### `.config` vs `ark1668_defconfig` — a recurring trap, read before changing kernel config
+### `.config` vs `ark1668_defconfig`
 
-`linux/.config` is gitignored and has **never** been committed, ever
-(`git log --all -- linux/.config` is empty) — `arch/arm/configs/
-ark1668_defconfig` is the *only* version-controlled source of truth
-for kernel config. But `build_kernel.sh` (and the `make ark1668_defconfig`
-step above) only actually **applies** that defconfig when `.config`
-doesn't already exist yet — it's skipped on every subsequent
-incremental build, by design, for speed.
+`linux/.config` is gitignored and is never committed —
+`arch/arm/configs/ark1668_defconfig` is the *only* version-controlled
+source of truth for kernel config. `build_kernel.sh` (and
+`make ark1668_defconfig` above) only applies that defconfig when
+`.config` doesn't already exist; it's skipped on every subsequent
+incremental build.
 
-That combination is a trap: if you change config interactively
-(`make menuconfig`, `./scripts/config --enable X`) and it works, `.config`
-now has your change — but `ark1668_defconfig` doesn't. Nothing warns
-you. Every build keeps working, silently relying on a `.config` that
-no longer matches the checked-in defconfig, for as long as that exact
-`.config` file happens to survive on that exact machine. The moment
-someone re-applies the defconfig from a clean state (a fresh checkout,
-`build_kernel.sh --defconfig`, a new dev machine, CI) your change is
-gone, with no diff, no error, no log — the kernel just quietly builds
-without whatever that setting did, and you find out only when
-something that used to work mysteriously breaks.
+This means an interactive config change (`make menuconfig`,
+`./scripts/config --enable X`) that isn't also captured back into
+`ark1668_defconfig` will silently disappear the next time the
+defconfig gets re-applied (fresh checkout, `build_kernel.sh
+--defconfig`, a new dev machine, CI) — no warning, no diff, no log.
 
-**This has happened for real, multiple times**, each one costing a
-full debugging cycle to figure out what silently vanished:
+**Workflow for any kernel config change:**
 
-- `CONFIG_RTC_CLASS`/`CONFIG_RTC_DRV_ARK` — properly fixed and
-  committed early (`2ec1c5855`), so a good example of doing this right.
-- `CONFIG_INET`/`CONFIG_IPV6`/`CONFIG_WIRELESS`/`CONFIG_WLAN` + all 4
-  RTL8xxx WiFi driver configs — silently missing for who knows how
-  long, only discovered 2026-07-19 when enabling `ARK1668_ITU656`
-  required a defconfig re-apply for the first time in a long time and
-  it took DHCP/hostapd down with it. Recovered in `5f9fde926` by
-  cross-referencing stale `.ko` build artifacts still sitting in the
-  tree (proof of what modules a past, lost `.config` had actually
-  built) plus boot-log evidence of what was confirmed working.
-- `CONFIG_USB_MUSB_HDRC`/`CONFIG_USB_MUSB_ARKMICRO` — same defconfig
-  re-apply also silently reverted these from a live-patched `=y` back
-  to the checked-in (wrong, since the very first commit of this file)
-  `=m`, which hung the `bootusb` boot path forever at "Waiting for
-  root device" (no initramfs, so a module can never load before root
-  needs mounting). Found by comparing early-boot dmesg timing across
-  logs — a built-in driver's init lines print synchronously before
-  root-mount; a module's can't. Fixed in `db0d63877`.
-
-**The correct workflow, every time you change kernel config:**
-
-1. Test the change against the live `.config` first —
+1. Test against the live `.config` first —
    `./scripts/config --enable/--module/--disable SYMBOL`, or
    `make menuconfig`, then `make ARCH=arm olddefconfig` to resolve
    dependent options.
-2. Build and get it actually confirmed working (ideally on real
-   hardware, not just "compiles clean" — a config change can compile
-   fine and still be functionally wrong, same as any other bug).
-3. **Capture it into `arch/arm/configs/ark1668_defconfig` itself,
-   immediately, before moving on to anything else.** For 1-4 line
-   changes, add the specific `CONFIG_X=y`/`=m` line directly near
-   related existing entries, with a comment explaining *why* (see the
-   RTC/WiFi/MUSB blocks in that file for the expected format — future
-   readers need to know why a setting is there, not just that it is).
-   Do **not** blindly copy `make savedefconfig`'s output over the
-   whole file — it reorders everything and silently drops every
-   hand-written explanatory comment already there (including this
-   note's own examples), producing a technically-equivalent but much
-   less maintainable file.
-4. **Validate the merge actually captured everything**, every time:
+2. Confirm it actually works, ideally on real hardware — a config
+   change can compile clean and still be functionally wrong.
+3. Capture it into `arch/arm/configs/ark1668_defconfig` immediately.
+   For small changes, add the specific `CONFIG_X=y`/`=m` line near
+   related existing entries, with a comment explaining why (see the
+   RTC/WiFi/MUSB blocks in that file for the expected format). Don't
+   run `make savedefconfig` over the whole file — it reorders
+   everything and drops hand-written comments.
+4. Validate the merge captured everything:
    ```bash
    cp .config /tmp/known_good_config.txt
    make ARCH=arm ark1668_defconfig
    diff /tmp/known_good_config.txt .config
    ```
-   Should show *only* `CONFIG_LOCALVERSION`/build-timestamp/
-   `CONFIG_GCC_VERSION`-style metadata differences. Any real config
-   line in the diff means the defconfig edit didn't fully capture the
-   live `.config` state — go back to step 3. This is the exact
-   technique used to validate both fixes above.
-5. Before ever force-reapplying defconfig on a `.config` you haven't
-   just personally hand-edited (i.e. one that might be carrying
-   someone else's — or your own past-session's — undocumented live
-   patches), back it up first: `cp .config /tmp/config_backup.txt`.
-   A diff against that backup is a five-second check; reconstructing
-   lost settings after the fact from stale `.ko` timestamps and boot
-   log timing analysis (as both fixes above had to) is not.
+   Should show only `CONFIG_LOCALVERSION`/timestamp/`CONFIG_GCC_VERSION`
+   metadata differences — any real config line in the diff means the
+   defconfig edit is incomplete.
+5. Before force-reapplying defconfig on a `.config` you haven't
+   personally just edited, back it up first (`cp .config
+   /tmp/config_backup.txt`) in case it's carrying undocumented local
+   changes.
 
 ## U-Boot
 
@@ -205,10 +167,10 @@ Outputs: `u-boot` (ELF, needed by the header-injection script below for
 entry point + BSS addresses), `u-boot.bin` (flat binary, ~370KB, no ARK
 header yet), `u-boot.map`.
 
-**The raw `u-boot.bin` isn't directly bootable on this hardware** — the
+**`u-boot.bin` is not directly bootable on this hardware** — the
 board's Stepldr expects an ARK-format header (magic, entry point, load
 address, checksum) at fixed offsets that a stock U-Boot build doesn't
-produce. `inject_ark_header.py` (at this repo's root — canonical copy is
+produce. `inject_ark_header.py` (this repo's root — canonical copy is
 `prado-firmware-reconstruction/build_tools/inject_ark_header.py`, keep
 both in sync) adds it, run from the `u-boot/` build directory:
 
@@ -216,104 +178,62 @@ both in sync) adds it, run from the `u-boot/` build directory:
 python3 ../inject_ark_header.py u-boot.bin UBOOT.BIN
 ```
 
-`build_bootable_sdcard.sh --new-uboot` does this automatically as part of
-populating an SD card image — see that project's README for the full SD
-boot workflow. Manual SD card population (header injection + copying
-`UBOOT.BIN`/DTB/`uEnv.txt` to the boot partition) is documented in
-`docs/UBOOT_BUILD_GUIDE.md` "Step 7" if you need to do it by hand.
+`build_bootable_sdcard.sh --new-uboot` does this automatically as part
+of populating an SD card image. Manual SD card population (header
+injection + copying `UBOOT.BIN`/DTB/`uEnv.txt` to the boot partition)
+is documented in `docs/UBOOT_BUILD_GUIDE.md` "Step 7".
 
-## U-Boot boot command topology
+## U-Boot boot commands
 
 `board/arkmicro/ark1668_limcet_p305/ark1668_boot_cmds.c` implements
-several independent boot paths, each a real U-Boot command you can run
-by hand at the serial console, or that the default `bootcmd` chains
-automatically:
+these boot paths, each runnable by hand at the serial console:
 
-- **`bootnand`** — 100% stock: kernel + rootfs both read from the
-  original NAND partitions, completely untouched by anything in this
-  repo or in `prado-firmware-reconstruction`.
-- **`bootmmc`** / **`bootusb`** — kernel + DTB read from SD/USB
-  partition 1, rootfs mounted from SD/USB partition 2. This is the
-  path `prado-firmware-reconstruction/build_bootable_sdcard.sh` (and
-  its `build_bootable_sdcard_custom_ui.sh` wrapper) populate.
-- **`bootstock`** / **`boothybrid`** — chainload the real, unmodified
-  stock U-Boot binary. Removed from the default automatic chain
-  (2026-07-29) since a bug inside that unmodifiable binary could hang
-  without ever falling through to `nandboot`; still available as
-  manual commands.
-- **`bootcheck`** — NAND-persisted boot-count fallback logic (part of
-  the watchdog/bootcount safety net, see `docs/UBOOT_BUILD_GUIDE.md`).
+| Command | Kernel/DTB from | Rootfs from | Notes |
+|---|---|---|---|
+| `bootnand` | NAND | NAND | 100% stock, untouched by this repo |
+| `bootusb` | USB p1 | USB p2 | default autoboot's first attempt |
+| `bootmmc` | SD p1 | SD p2 | not tried automatically — see below |
+| `bootstock` / `boothybrid` | — | — | chainloads the real stock U-Boot binary; manual only |
+| `bootcheck` | — | — | NAND-persisted boot-count fallback logic |
 
-**Default automatic `bootcmd` only tries `bootusb`, then falls back to
-`bootnand`** — it does **not** automatically attempt `bootmmc`. If
-you've written an SD-boot image (either build path below) onto an SD
-card rather than a USB drive, you need to interrupt autoboot at the
-serial console (`Hit space to stop autoboot:`, printed early in the
-boot banner — see "Board-code logging convention" below) and type
-`bootmmc` manually. Writing the same image to a USB flash drive
-instead boots automatically via the default chain.
+**Default autoboot only tries `bootusb`, then falls back to
+`bootnand`** — it does not try `bootmmc` automatically. To boot an
+SD-card image, interrupt autoboot at the serial console (`Hit space
+to stop autoboot:`, in the early boot banner) and run `bootmmc`
+manually, or write the same image to a USB drive instead so the
+default chain picks it up.
 
-## Filesystem(s)
+## Filesystem images
 
-Two independent rootfs build paths consume this repo's kernel/U-Boot
-output — same shared kernel either way (`zImage.w_dtb`,
-`compiled_modules/`), never rebuilt twice.
+Two rootfs images boot on top of this repo's shared kernel/U-Boot
+output (`zImage.w_dtb`, `compiled_modules/`) — the kernel is never
+built twice.
 
-### 1. Original, stock-derived rootfs
+**Why two rootfs images**: the stock-derived rootfs ships glibc 2.27,
+older than what this toolchain's cross-compiler targets, so
+`prado-firmware-reconstruction`'s own `custom_ui`/`androidauto-sidecar`
+binaries had to be statically linked to run on it. On this device
+(173MB RAM, no swap), static linking meant those binaries had no
+library pages shared with the rest of the system, which made them the
+main target of `kswapd0` page-cache thrashing under memory pressure —
+the root cause of a real crash (`ECONNRESET` killing live Android Auto
+sessions). The fix is dynamic linking, which requires a rootfs whose
+own glibc matches the build toolchain (2.25) — hence a second,
+purpose-built Buildroot rootfs rather than patching the stock one.
 
-`prado-firmware-reconstruction/build_bootable_sdcard.sh` +
-`firmware_overlay/` (see that directory's own `README.md`) — a real
-patched copy of the original vendor rootfs (`firmware_source/mtd6_rootfs/`),
-running the stock `MsnCoreApp`/`sink`/`blueware` stack alongside this
-project's own `custom_ui`/`androidauto-sidecar` additions. Every binary
-here is **statically linked**, deliberately: this rootfs's own glibc
-is 2.27, older than what a plain system cross-toolchain build produces,
-so static linking was the only way to avoid an ABI mismatch (see
-`tools/nss-stub/README.md` for the specific static-NSS-init crash class
-that choice also introduced, and how it was worked around).
+| | Stock rootfs | `custom_ui` rootfs |
+|---|---|---|
+| Purpose | Stock `MsnCoreApp`/`sink`/`blueware` stack + `custom_ui`/`androidauto-sidecar` | `custom_ui`/`androidauto-sidecar` only, dynamically linked |
+| glibc | 2.27 | 2.25 (matches this repo's own toolchain) |
+| Binaries | Statically linked (see `tools/nss-stub/README.md`) | Dynamic ELF; BlueZ/`rtk_hciattach`/select `tools/*` stay static, carried in via overlay |
+| Source | `firmware_source/mtd6_rootfs/` + `firmware_overlay/` | `buildroot-external/configs/ark1668_ft_custom_ui_defconfig` + `prado-firmware-reconstruction/firmware_overlay_custom_ui/` |
+| Build | `prado-firmware-reconstruction/build_bootable_sdcard.sh` | `cd buildroot && make BR2_EXTERNAL=../buildroot-external`, then `build_bootable_sdcard_custom_ui.sh` (wraps the stock script, never modifies it) |
+| Deploy | `dd` image to SD card or USB drive | `sudo ./build_bootable_sdcard_custom_ui.sh --non-interactive`, then `dd` to SD card or USB drive |
+| Boot | `bootusb` (default) or `bootmmc` | `bootusb` (default) or `bootmmc` |
 
-### 2. New, dynamically-linked `custom_ui` rootfs (this session)
-
-A **separate Buildroot rootfs**
-(`buildroot-external/configs/ark1668_ft_custom_ui_defconfig`, forked
-from `ark1668_ft_defconfig` — confirmed DTS-family match via both
-`ark1668_limcet_p305.dts` and `ark1668-ft.dts` `#include`-ing the same
-`ark1668.dtsi`+`ark1668-pinctrl.dtsi`) with its own overlay
-(`prado-firmware-reconstruction/firmware_overlay_custom_ui/`) and its
-own deploy script
-(`prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh`,
-a thin wrapper that never modifies the original
-`build_bootable_sdcard.sh`).
-
-**Why a second rootfs, not just a code fix**: this project root-caused
-a real hardware crash — on this device's 173MB RAM with no swap
-configured, static linking meant `custom_ui`/`androidauto-sidecar` had
-no shareable code pages with anything else on the system, making them
-uniquely vulnerable to `kswapd0` page-cache thrashing under memory
-pressure, ultimately surfacing as a TCP `ECONNRESET` that killed live
-Android Auto sessions after several minutes. The real fix is dynamic
-linking — but that requires a rootfs whose own glibc actually matches
-the build toolchain (2.25, the same Linaro 7.3.1-2018.05 toolchain
-this repo's own kernel/U-Boot already use — see "Toolchain" above),
-which the *stock* rootfs's glibc 2.27 doesn't. Hence a genuinely
-separate, modern, Buildroot-built rootfs rather than patching the
-stock one in place.
-
-Both `custom_ui` and `androidauto-sidecar` are now real, verified
-dynamic ELF binaries against this rootfs's own glibc 2.25 (confirmed
-via `readelf`/`objdump`, not assumed). BlueZ, `rtk_hciattach`, and a
-handful of other `tools/*` diagnostic binaries are deliberately
-*not* Buildroot packages — they're proven, already-working static
-binaries (glibc-version-agnostic by construction) reused verbatim via
-the overlay instead of being rebuilt from scratch; see each tool's own
-`tools/*/README.md` for its individual build recipe.
-
-Full session narrative, every real bug hit and how it was fixed, and
-current phase-by-phase status:
-`~/.claude/plans/merry-snacking-wirth.md` (this machine only — not
-committed to either repo). For the Bluetooth/BlueZ migration
-specifically, see
-`prado-firmware-reconstruction/custom_ui/docs/BLUEZ_MIGRATION_AND_BLUEWARE_DEPRECATION_HANDOFF.md`.
+Reference docs: `custom_ui/docs/BLUEZ_MIGRATION_AND_BLUEWARE_DEPRECATION_HANDOFF.md`
+for the Bluetooth/BlueZ stack specifically; `~/.claude/plans/merry-snacking-wirth.md`
+(this machine only) for the full build/design history behind this rootfs.
 
 ## Board-code logging convention
 
