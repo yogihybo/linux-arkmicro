@@ -62,8 +62,16 @@ BR2_PACKAGE_ARK1668FT=y
 # global patch dir mechanism so it survives dirclean/re-extract.
 BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_ARK_PATH)/patches"
 
-# ext4 rootfs target -- deployment is rsync onto an ext4 SD partition via
-# build_bootable_sdcard_custom_ui.sh, not NAND/UBI.
+# Rootfs target format: locked to ext4 (Phase 0 decision, 2026-08-21) --
+# deployment is dd/rsync onto an ext4 SD partition via
+# build_bootable_sdcard_custom_ui.sh, not NAND/UBI, and not a tar
+# extraction. This 2019.05-rc1 Buildroot tree has no standalone
+# BR2_TARGET_ROOTFS_EXT4 symbol -- ext4 is selected via
+# BR2_TARGET_ROOTFS_EXT2 + BR2_TARGET_ROOTFS_EXT2_4 (GEN=4), which
+# invokes real mkfs.ext4 and produces both rootfs.ext2 and a
+# rootfs.ext4 symlink to it (fs/ext2/ext2.mk) -- genuinely an ext4
+# filesystem image, not ext2 despite the Kconfig/output naming.
+# BR2_TARGET_ROOTFS_TAR is deliberately NOT set.
 BR2_TARGET_ROOTFS_EXT2=y
 BR2_TARGET_ROOTFS_EXT2_4=y
 BR2_TARGET_ROOTFS_EXT2_SIZE="256M"
