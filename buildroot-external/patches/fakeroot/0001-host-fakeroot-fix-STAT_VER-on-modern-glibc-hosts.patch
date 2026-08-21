@@ -1,0 +1,41 @@
+Description: define _STAT_VER fallback for modern host glibc
+
+fakeroot 1.20.2 (bundled by this 2019-era Buildroot tree) expects
+glibc's <bits/stat.h> to expose the _STAT_VER* macros. glibc >= ~2.32
+dropped them from public headers as part of unifying 32/64-bit stat
+internally (the ABI value didn't change, just the visibility). This
+only affects the HOST build machine's fakeroot binary (used during
+rootfs packaging), never anything that ships to the ARM target --
+confirmed hit on this dev machine's glibc 2.36 (Debian 12).
+
+Restores the historic per-arch glibc values as a fallback only when
+the macro isn't already defined by the host's own headers, so this
+is a no-op on older hosts that still provide it.
+
+--- a/libfakeroot.c
++++ b/libfakeroot.c
+@@ -59,6 +59,24 @@
+ #include "config.h"
+ #include "communicate.h"
+
++/* glibc >= 2.32-ish dropped the public _STAT_VER* macros from
++   <bits/stat.h> as part of unifying 32/64-bit stat internally; this
++   fakeroot release (1.20.2, bundled by this 2019-era Buildroot tree)
++   still expects them to exist on the host build machine. Restore the
++   historic glibc values (unchanged ABI-wise, just no longer exposed)
++   so this host tool still compiles on a modern host toolchain -- this
++   only affects the x86_64 build-machine binary, never anything that
++   ships to the ARM target. */
++#ifndef _STAT_VER
++#if defined(__x86_64__)
++#define _STAT_VER 1
++#elif defined(__aarch64__)
++#define _STAT_VER 0
++#else
++#define _STAT_VER 3
++#endif
++#endif
++
+ #ifdef __APPLE__
+ /* The *xattr functions are currently disabled on __APPLE__ since the prototypes
+    are all different from the Linux versions and there is, as of yet, no
