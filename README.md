@@ -3,18 +3,27 @@
 ArkMicro's vendor Linux/U-Boot/Buildroot SDK (`RD_Software/linux-arkmicro`),
 used by [`prado-firmware-reconstruction`](https://github.com/yogihybo/prado-firmware-reconstruction)
 to build a Linux 4.19.192 kernel and U-Boot 2018.07 for the Toyota Prado
-Limcet P305/P306 dashboard head unit.
+Limcet P305/P306 dashboard head unit — plain **ARK1668** SoC, Cortex-A5,
+board target `ark1668_limcet_p305` (not "ARK1668E", a different,
+Cortex-A7 SoC sub-variant used by unrelated boards like
+`ark1668e_devb`; the two names get mixed up elsewhere in this
+project's docs). See `docs/KERNEL_REFERENCE.md` and
+`docs/UBOOT_BUILD_GUIDE.md` in `prado-firmware-reconstruction` for
+deeper reverse-engineering reference material.
 
-**Board/SoC**: plain **ARK1668**, Cortex-A5, board target
-`ark1668_limcet_p305` (not "ARK1668E" — a different, Cortex-A7 SoC
-sub-variant used by unrelated boards like `ark1668e_devb`; the two
-names get mixed up elsewhere in this project's docs).
+## Overview
 
-This README covers building the kernel and U-Boot for that board, and
-the two rootfs images that boot on top of them. See
-`docs/KERNEL_REFERENCE.md` and `docs/UBOOT_BUILD_GUIDE.md` in
-`prado-firmware-reconstruction` for deeper reverse-engineering
-reference material.
+This repo builds one shared kernel and bootloader for the board; two
+separate, independently-bootable rootfs images then run on top of that
+same kernel/U-Boot output (see "Filesystem images" below for how and
+why there are two).
+
+Four real artifacts come out of this repo and the scripts around it:
+
+- **Kernel** (`zImage.w_dtb`) — Linux 4.19.192, built here, shared by both rootfs images.
+- **U-Boot** (`UBOOT.BIN`) — the bootloader, also built here, also shared.
+- **Stock rootfs** — the patched original vendor rootfs; built by `prado-firmware-reconstruction/build_bootable_sdcard.sh`.
+- **`custom_ui` rootfs** — a purpose-built, dynamically-linked Buildroot rootfs; built from this repo's `buildroot-external/` plus `prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh`.
 
 ## Quick start — automated build scripts
 
