@@ -20,9 +20,25 @@ BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
 # BR2_TARGET_ENABLE_ROOT_LOGIN is not set
 # BR2_TARGET_GENERIC_GETTY is not set
 # BR2_TARGET_GENERIC_REMOUNT_ROOTFS_RW is not set
-BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft/rootfs_overlay"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft/rootfs_overlay $(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft-custom_ui/busybox_overlay"
 BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft//post_build.sh"
-BR2_PACKAGE_BUSYBOX_CONFIG="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft//busybox.config"
+
+# Init/busybox: do NOT let Buildroot build its own bundled busybox for
+# this rootfs (user decision, 2026-08-21). This project already has a
+# hardware-confirmed static busybox 1.33.0 rebuild (390 applets incl.
+# /sbin/init, project memory: HARDWARE-CONFIRMED, build_busybox.sh) --
+# CONFIG_STATIC=y, no runtime libc dependency at all, so it's
+# ABI-agnostic re: this rootfs going dynamic, same reasoning as the
+# bluetoothd/rtk_hciattach reuse above. Carried in verbatim via the new
+# busybox_overlay/ dir (real binary + all 396 applet symlinks
+# materialized from firmware_overlay/busybox-applets.manifest) rather
+# than rebuilt as a Buildroot source package. BR2_INIT_NONE so
+# Buildroot doesn't select its own busybox+initscripts pair; this
+# rootfs's own /etc/inittab + rcS wiring is a Phase-3 task, not yet
+# written -- this build won't fully boot to a working init sequence
+# until then, only the busybox-package-swap itself is done here.
+BR2_INIT_NONE=y
+# BR2_PACKAGE_BUSYBOX is not set
 
 BR2_PACKAGE_ALSA_UTILS=y
 # BR2_PACKAGE_ALSA_UTILS_ALSACTL is not set
