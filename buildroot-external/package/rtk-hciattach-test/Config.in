@@ -1,0 +1,8 @@
+config BR2_PACKAGE_RTK_HCIATTACH_TEST
+	bool "rtk-hciattach-test"
+	help
+	  Hardware-confirmed rtk_hciattach (Run 6, 2026-08-19: hci0 UP
+	  RUNNING) + hci-updown + the real device Bluetooth firmware
+	  blobs, from prado-firmware-reconstruction's
+	  tools/rtk-hciattach-test/. Static ARM binaries, prebuilt-binary
+	  reuse -- same pattern as bluetoothd-test/libgal/libmali.

@@ -17,3 +17,6 @@ include $(BR2_EXTERNAL_ARK_PATH)/package/libimobiledevice/libimobiledevice.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/usbmuxd/usbmuxd.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/libcheck/libcheck.mk
 include $(BR2_EXTERNAL_ARK_PATH)/package/ark1668eapp/ark1668eapp.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/bluetoothd-test/bluetoothd-test.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/rtk-hciattach-test/rtk-hciattach-test.mk
+include $(BR2_EXTERNAL_ARK_PATH)/package/dmesg-tool/dmesg-tool.mk

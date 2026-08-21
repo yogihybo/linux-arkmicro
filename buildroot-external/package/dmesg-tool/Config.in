@@ -1,0 +1,9 @@
+config BR2_PACKAGE_DMESG_TOOL
+	bool "dmesg-tool"
+	help
+	  Real util-linux 2.40.2 dmesg (static), from
+	  prado-firmware-reconstruction's tools/dmesg/ -- richer than
+	  BusyBox's built-in applet (-T human timestamps, -x facility/
+	  level decode, --color). Named dmesg-tool (not "dmesg") to avoid
+	  any Kconfig-symbol collision with BusyBox's own dmesg applet
+	  option.

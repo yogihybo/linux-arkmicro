@@ -1,0 +1,14 @@
+config BR2_PACKAGE_BLUETOOTHD_TEST
+	bool "bluetoothd-test"
+	help
+	  Hardware-confirmed static BlueZ 5.66 bluetoothd (Run 5,
+	  2026-08-19) plus its dbus-policy config files, from
+	  prado-firmware-reconstruction's tools/bluetoothd-test/. Static
+	  and glibc-version-agnostic on purpose (see that tool's own
+	  README's "Why static" section) -- NOT rebuilt from source here,
+	  same prebuilt-binary reuse as this project's other
+	  Buildroot-external packages (libgal, libmali, etc).
+
+	  Not BR2_PACKAGE_BLUEZ5 -- see merry-snacking-wirth.md's Phase 1
+	  re-scope note for why BlueZ itself isn't a from-source Buildroot
+	  package in this rootfs.

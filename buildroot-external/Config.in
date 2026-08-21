@@ -17,3 +17,11 @@ source "$BR2_EXTERNAL_ARK_PATH/package/libimobiledevice/Config.in"
 source "$BR2_EXTERNAL_ARK_PATH/package/usbmuxd/Config.in"
 source "$BR2_EXTERNAL_ARK_PATH/package/libcheck/Config.in"
 source "$BR2_EXTERNAL_ARK_PATH/package/ark1668eapp/Config.in"
+
+# prado-firmware-reconstruction tools/ consolidation (custom_ui rootfs,
+# see merry-snacking-wirth.md) -- prebuilt-binary packages reusing
+# already hardware-confirmed tools/ artifacts, same local-site pattern
+# as the packages above.
+source "$BR2_EXTERNAL_ARK_PATH/package/bluetoothd-test/Config.in"
+source "$BR2_EXTERNAL_ARK_PATH/package/rtk-hciattach-test/Config.in"
+source "$BR2_EXTERNAL_ARK_PATH/package/dmesg-tool/Config.in"

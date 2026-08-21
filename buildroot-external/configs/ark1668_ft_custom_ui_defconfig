@@ -73,6 +73,22 @@ BR2_PACKAGE_WPA_SUPPLICANT=y
 BR2_PACKAGE_IW=y
 BR2_PACKAGE_WIRELESS_TOOLS=y
 
+# tools/ consolidation (2026-08-21) -- prebuilt-binary Buildroot
+# packages reusing already hardware-confirmed tools/ artifacts, so
+# they build automatically as part of `make` instead of requiring a
+# human to remember to build+copy each one by hand. Their files are
+# ALSO still present in firmware_overlay_custom_ui/ from the earlier
+# Phase 3 pass (byte-identical, harmless duplication for now, whichever
+# lands last wins) -- once these packages are build-verified, remove
+# the now-redundant copies from the overlay as a followup, not done
+# yet. See merry-snacking-wirth.md's tools/ consolidation section for
+# the full disposition list; more of these (nano/htop/tmux/less/
+# strace/gdbserver, the ~23 hand-invoked hardware bring-up tools) can
+# follow the exact same package pattern later.
+BR2_PACKAGE_BLUETOOTHD_TEST=y
+BR2_PACKAGE_RTK_HCIATTACH_TEST=y
+BR2_PACKAGE_DMESG_TOOL=y
+
 BR2_PACKAGE_ARK1668FT=y
 
 # host-fakeroot 1.20.2 doesn't compile against a modern host glibc
