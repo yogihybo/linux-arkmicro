@@ -13,17 +13,22 @@ deeper reverse-engineering reference material.
 
 ## Overview
 
-This repo builds one shared kernel and bootloader for the board; two
-separate, independently-bootable rootfs images then run on top of that
-same kernel/U-Boot output (see "Filesystem images" below for how and
-why there are two).
+This repo builds the shared kernel and bootloader for the board, plus
+one rootfs image: a purpose-built, dynamically-linked Buildroot rootfs
+for `custom_ui`/`androidauto-sidecar`. All three boot via the same
+U-Boot commands (see "Filesystem images" below).
 
-Four real artifacts come out of this repo and the scripts around it:
+Three real artifacts come out of this repo and the scripts around it:
 
-- **Kernel** (`zImage.w_dtb`) — Linux 4.19.192, built here, shared by both rootfs images.
-- **U-Boot** (`UBOOT.BIN`) — the bootloader, also built here, also shared.
-- **Stock rootfs** — the patched original vendor rootfs; built by `prado-firmware-reconstruction/build_bootable_sdcard.sh`.
-- **`custom_ui` rootfs** — a purpose-built, dynamically-linked Buildroot rootfs; built from this repo's `buildroot-external/` plus `prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh`.
+- **Kernel** (`zImage.w_dtb`) — Linux 4.19.192.
+- **U-Boot** (`UBOOT.BIN`) — the bootloader.
+- **`custom_ui` rootfs** — a Buildroot rootfs (`ark1668_ft_custom_ui_defconfig`), deployed via `prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh`.
+
+A separate "stock" rootfs also boots on this board, but it's built and
+owned entirely by the sibling `prado-firmware-reconstruction` repo
+(`build_bootable_sdcard.sh`/`firmware_overlay/`) — not by anything
+here. It's mentioned in "Filesystem images" only as context for why
+the `custom_ui` rootfs exists.
 
 ## Quick start — automated build scripts
 
@@ -214,31 +219,37 @@ default chain picks it up.
 
 ## Filesystem images
 
-Two rootfs images boot on top of this repo's shared kernel/U-Boot
-output (`zImage.w_dtb`, `compiled_modules/`) — the kernel is never
-built twice.
+This repo builds one rootfs: a purpose-built, dynamically-linked
+Buildroot rootfs for `custom_ui`/`androidauto-sidecar`, booting on top
+of the shared kernel/U-Boot output above (`zImage.w_dtb`,
+`compiled_modules/`).
 
-**Why two rootfs images**: the stock-derived rootfs ships glibc 2.27,
-older than what this toolchain's cross-compiler targets, so
-`prado-firmware-reconstruction`'s own `custom_ui`/`androidauto-sidecar`
-binaries had to be statically linked to run on it. On this device
-(173MB RAM, no swap), static linking meant those binaries had no
-library pages shared with the rest of the system, which made them the
-main target of `kswapd0` page-cache thrashing under memory pressure —
-the root cause of a real crash (`ECONNRESET` killing live Android Auto
-sessions). The fix is dynamic linking, which requires a rootfs whose
-own glibc matches the build toolchain (2.25) — hence a second,
-purpose-built Buildroot rootfs rather than patching the stock one.
+**Context (not built here)**: a separate "stock" rootfs — the patched
+original vendor rootfs, running `MsnCoreApp`/`sink`/`blueware` alongside
+`custom_ui`/`androidauto-sidecar` — also boots on this board, via the
+same `bootusb`/`bootmmc` commands. It's built and owned entirely by
+the sibling `prado-firmware-reconstruction` repo
+(`build_bootable_sdcard.sh`/`firmware_overlay/`), not by anything in
+this repo. It's relevant here only as the reason the `custom_ui`
+rootfs exists: that rootfs ships glibc 2.27, older than this repo's
+own cross-compiler targets, so `custom_ui`/`androidauto-sidecar` had
+to be statically linked to run on it — and on this device (173MB RAM,
+no swap), static linking left them with no library pages shared with
+the rest of the system, the root cause of a real `kswapd0`
+page-thrashing crash (`ECONNRESET` killing live Android Auto
+sessions). The fix is dynamic linking, which needs a rootfs whose own
+glibc matches the build toolchain (2.25) — hence this repo's own
+Buildroot rootfs.
 
-| | Stock rootfs | `custom_ui` rootfs |
-|---|---|---|
-| Purpose | Stock `MsnCoreApp`/`sink`/`blueware` stack + `custom_ui`/`androidauto-sidecar` | `custom_ui`/`androidauto-sidecar` only, dynamically linked |
-| glibc | 2.27 | 2.25 (matches this repo's own toolchain) |
-| Binaries | Statically linked (see `tools/nss-stub/README.md`) | Dynamic ELF; BlueZ/`rtk_hciattach`/select `tools/*` stay static, carried in via overlay |
-| Source | `firmware_source/mtd6_rootfs/` + `firmware_overlay/` | `buildroot-external/configs/ark1668_ft_custom_ui_defconfig` + `prado-firmware-reconstruction/firmware_overlay_custom_ui/` |
-| Build | `prado-firmware-reconstruction/build_bootable_sdcard.sh` | `cd buildroot && make BR2_EXTERNAL=../buildroot-external`, then `build_bootable_sdcard_custom_ui.sh` (wraps the stock script, never modifies it) |
-| Deploy | `dd` image to SD card or USB drive | `sudo ./build_bootable_sdcard_custom_ui.sh --non-interactive`, then `dd` to SD card or USB drive |
-| Boot | `bootusb` (default) or `bootmmc` | `bootusb` (default) or `bootmmc` |
+| | |
+|---|---|
+| Config | `buildroot-external/configs/ark1668_ft_custom_ui_defconfig` (forked from `ark1668_ft_defconfig`) |
+| Overlay | `prado-firmware-reconstruction/firmware_overlay_custom_ui/` |
+| glibc | 2.25 (matches this repo's own toolchain) |
+| Binaries | `custom_ui`/`androidauto-sidecar` are dynamic ELF; BlueZ/`rtk_hciattach`/select `tools/*` stay static, carried in via the overlay rather than rebuilt as Buildroot packages — see each tool's own `tools/*/README.md` |
+| Build | `cd buildroot && make BR2_EXTERNAL=../buildroot-external` |
+| Deploy | `sudo prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh --non-interactive` (thin wrapper around the stock repo's own `build_bootable_sdcard.sh`, which it never modifies), then `dd` the resulting image to an SD card or USB drive |
+| Boot | `bootusb` (default) or `bootmmc` |
 
 Reference docs: `custom_ui/docs/BLUEZ_MIGRATION_AND_BLUEWARE_DEPRECATION_HANDOFF.md`
 for the Bluetooth/BlueZ stack specifically; `~/.claude/plans/merry-snacking-wirth.md`
