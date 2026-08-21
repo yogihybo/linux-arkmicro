@@ -1,0 +1,51 @@
+c-stack: fix SIGSTKSZ preprocessor use on modern glibc hosts
+
+glibc >= 2.34 turned SIGSTKSZ into a sysconf()-based function call
+instead of a compile-time constant, which breaks the
+"#elif HAVE_LIBSIGSEGV && SIGSTKSZ < 16384" preprocessor arithmetic
+in this bundled gnulib c-stack.c -- a syntax error, not just a value
+change, since the macro no longer expands to an integer literal.
+
+Real error hit building host-m4 1.4.18 on this dev machine (glibc
+2.36, Debian 12):
+
+    c-stack.c:55:26: error: missing binary operator before token "("
+
+This only affects the HOST build (m4 is a host-side autotools/build
+dependency here, never shipped to the ARM target). The libsigsegv
+2.6-2.8 workaround the elif branch existed for is irrelevant for this
+use -- just force the same safe fixed stack size unconditionally.
+
+Same class of problem as this package's existing (upstream Buildroot)
+0001/0002-fflush-*.patch (glibc ABI-detail removal breaking old
+gnulib code on a newer host glibc than this 2019-era Buildroot tree
+was ever tested against). Kept as a global-patch-dir addition rather
+than editing the vendored buildroot/package/m4/ patches directly, so
+the vendored Buildroot tree stays untouched -- same convention as the
+fakeroot _STAT_VER patch.
+
+--- a/lib/c-stack.c
++++ b/lib/c-stack.c
+@@ -50,15 +50,13 @@
+ #if ! HAVE_STACK_T && ! defined stack_t
+ typedef struct sigaltstack stack_t;
+ #endif
+-#ifndef SIGSTKSZ
+-# define SIGSTKSZ 16384
+-#elif HAVE_LIBSIGSEGV && SIGSTKSZ < 16384
+-/* libsigsegv 2.6 through 2.8 have a bug where some architectures use
+-   more than the Linux default of an 8k alternate stack when deciding
+-   if a fault was caused by stack overflow.  */
+-# undef SIGSTKSZ
+-# define SIGSTKSZ 16384
+-#endif
++/* glibc >= 2.34 turned SIGSTKSZ into a sysconf()-based function call,
++   not a compile-time constant, which breaks the "#elif SIGSTKSZ < N"
++   preprocessor arithmetic below on a modern host. This host-only
++   build tool doesn't need the old libsigsegv 2.6-2.8 workaround the
++   elif branch existed for -- just force a safe fixed size. */
++#undef SIGSTKSZ
++#define SIGSTKSZ 16384
+
+ #include <stdlib.h>
+ #include <string.h>
