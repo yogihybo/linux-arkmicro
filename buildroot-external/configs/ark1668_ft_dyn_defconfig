@@ -98,6 +98,12 @@ BR2_PACKAGE_ARK1668FT=y
 # global patch dir mechanism so it survives dirclean/re-extract.
 BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_ARK_PATH)/patches"
 
+# Real version bumps (2026-08-22) for in-tree packages that were
+# behind on real fixes -- see buildroot-external/package-overrides.mk
+# and merry-snacking-wirth.md's version-currency-audit section for the
+# per-package assessment.
+BR2_PACKAGE_OVERRIDE_FILE="$(BR2_EXTERNAL_ARK_PATH)/package-overrides.mk"
+
 # Rootfs target format: locked to ext4 (Phase 0 decision, 2026-08-21) --
 # deployment is dd/rsync onto an ext4 SD partition via
 # build_bootable_sdcard_dyn.sh, not NAND/UBI, and not a tar
