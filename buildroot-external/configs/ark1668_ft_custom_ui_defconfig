@@ -21,7 +21,11 @@ BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
 # BR2_TARGET_GENERIC_GETTY is not set
 # BR2_TARGET_GENERIC_REMOUNT_ROOTFS_RW is not set
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft/rootfs_overlay $(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft-custom_ui/busybox_overlay"
-BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft//post_build.sh"
+# Forked post_build.sh, NOT the shared board's own -- see plan's
+# 2026-08-21 "target-finalize" fix note: the shared one's module-install
+# step references a kernel-output path that has never existed in this
+# project's real build flow, plus a second bug (TARGET_DIR unbound).
+BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_ARK_PATH)/board/arkmicro/ark1668-ft-custom_ui/post_build.sh"
 
 # Init/busybox: do NOT let Buildroot build its own bundled busybox for
 # this rootfs (user decision, 2026-08-21). This project already has a
