@@ -14,21 +14,23 @@ deeper reverse-engineering reference material.
 ## Overview
 
 This repo builds the shared kernel and bootloader for the board, plus
-one rootfs image: a purpose-built, dynamically-linked Buildroot rootfs
-for `custom_ui`/`androidauto-sidecar`. All three boot via the same
-U-Boot commands (see "Filesystem images" below).
+one rootfs image: a modern, dynamically-linked, general-purpose
+Buildroot rootfs for the device. `custom_ui`/`androidauto-sidecar` are
+its current primary workload, not its whole scope — it's not built
+narrowly around them. All three artifacts boot via the same U-Boot
+commands (see "Filesystem images" below).
 
 Three real artifacts come out of this repo and the scripts around it:
 
 - **Kernel** (`zImage.w_dtb`) — Linux 4.19.192.
 - **U-Boot** (`UBOOT.BIN`) — the bootloader.
-- **`custom_ui` rootfs** — a Buildroot rootfs (`ark1668_ft_custom_ui_defconfig`), deployed via `prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh`.
+- **Modern rootfs** (config name `ark1668_ft_custom_ui_defconfig`, dynamically linked, glibc 2.25) — deployed via `prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh`. Named after its first real workload; the rootfs itself is general-purpose.
 
 A separate "stock" rootfs also boots on this board, but it's built and
 owned entirely by the sibling `prado-firmware-reconstruction` repo
 (`build_bootable_sdcard.sh`/`firmware_overlay/`) — not by anything
 here. It's mentioned in "Filesystem images" only as context for why
-the `custom_ui` rootfs exists.
+the modern rootfs exists.
 
 ## Quick start — automated build scripts
 
@@ -219,10 +221,14 @@ default chain picks it up.
 
 ## Filesystem images
 
-This repo builds one rootfs: a purpose-built, dynamically-linked
-Buildroot rootfs for `custom_ui`/`androidauto-sidecar`, booting on top
-of the shared kernel/U-Boot output above (`zImage.w_dtb`,
-`compiled_modules/`).
+This repo builds one rootfs: a modern, dynamically-linked,
+general-purpose Buildroot rootfs for the device, booting on top of the
+shared kernel/U-Boot output above (`zImage.w_dtb`, `compiled_modules/`).
+`custom_ui`/`androidauto-sidecar` are its current primary workload —
+the config/overlay/script names below carry that name because that's
+what the rootfs was built to run first, not because the rootfs itself
+is scoped to just those two binaries. Nothing about it precludes
+running other things.
 
 **Context (not built here)**: a separate "stock" rootfs — the patched
 original vendor rootfs, running `MsnCoreApp`/`sink`/`blueware` alongside
@@ -230,23 +236,23 @@ original vendor rootfs, running `MsnCoreApp`/`sink`/`blueware` alongside
 same `bootusb`/`bootmmc` commands. It's built and owned entirely by
 the sibling `prado-firmware-reconstruction` repo
 (`build_bootable_sdcard.sh`/`firmware_overlay/`), not by anything in
-this repo. It's relevant here only as the reason the `custom_ui`
-rootfs exists: that rootfs ships glibc 2.27, older than this repo's
-own cross-compiler targets, so `custom_ui`/`androidauto-sidecar` had
-to be statically linked to run on it — and on this device (173MB RAM,
-no swap), static linking left them with no library pages shared with
-the rest of the system, the root cause of a real `kswapd0`
+this repo. It's relevant here only as the reason this repo's own
+rootfs exists: the stock rootfs ships glibc 2.27, older than this
+repo's own cross-compiler targets, so `custom_ui`/`androidauto-sidecar`
+had to be statically linked to run on it — and on this device (173MB
+RAM, no swap), static linking left them with no library pages shared
+with the rest of the system, the root cause of a real `kswapd0`
 page-thrashing crash (`ECONNRESET` killing live Android Auto
 sessions). The fix is dynamic linking, which needs a rootfs whose own
-glibc matches the build toolchain (2.25) — hence this repo's own
-Buildroot rootfs.
+glibc matches the build toolchain (2.25) — hence this repo's own,
+general-purpose Buildroot rootfs.
 
 | | |
 |---|---|
 | Config | `buildroot-external/configs/ark1668_ft_custom_ui_defconfig` (forked from `ark1668_ft_defconfig`) |
 | Overlay | `prado-firmware-reconstruction/firmware_overlay_custom_ui/` |
 | glibc | 2.25 (matches this repo's own toolchain) |
-| Binaries | `custom_ui`/`androidauto-sidecar` are dynamic ELF; BlueZ/`rtk_hciattach`/select `tools/*` stay static, carried in via the overlay rather than rebuilt as Buildroot packages — see each tool's own `tools/*/README.md` |
+| Binaries | Base rootfs is dynamically linked throughout. `custom_ui`/`androidauto-sidecar` (its current workload) are dynamic ELF; BlueZ/`rtk_hciattach`/select `tools/*` stay static, carried in via the overlay rather than rebuilt as Buildroot packages — see each tool's own `tools/*/README.md` |
 | Build | `cd buildroot && make BR2_EXTERNAL=../buildroot-external` |
 | Deploy | `sudo prado-firmware-reconstruction/build_bootable_sdcard_custom_ui.sh --non-interactive` (thin wrapper around the stock repo's own `build_bootable_sdcard.sh`, which it never modifies), then `dd` the resulting image to an SD card or USB drive |
 | Boot | `bootusb` (default) or `bootmmc` |
