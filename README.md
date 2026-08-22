@@ -63,14 +63,36 @@ linux-arkmicro/
 
 ## Toolchain
 
-Linaro GCC `arm-linux-gnueabihf` 7.3.1 (glibc 2.25) or 7.4.1, at
+This repo builds three things, and they deliberately use **two different
+toolchains** — not an inconsistency, see "Filesystem images" below for
+why:
+
+| | Toolchain | glibc | Selected via |
+|---|---|---|---|
+| Kernel + U-Boot | Linaro GCC `arm-linux-gnueabihf` 7.3.1-2018.05 (or 7.4.1) | N/A — freestanding, no libc linkage | `env.source` |
+| `dyn` rootfs (Buildroot) | Bootlin `armv7-eabihf--glibc--stable-2020.02-1`, GCC 8.4.0 | 2.30 | `ark1668_ft_dyn_defconfig`'s `BR2_TOOLCHAIN_EXTERNAL_PATH` |
+
+Kernel/U-Boot's Linaro toolchain lives at
 `buildroot-external/toolchain/gcc-linaro-*/bin/`. Source the environment
-script before any build command — it picks whichever of the two toolchain
-versions is actually present and puts it on `$PATH`:
+script before any kernel/U-Boot build command — it picks whichever of
+the two Linaro versions is actually present and puts it on `$PATH`:
 
 ```bash
 source env.source
 ```
+
+The `dyn` rootfs's Bootlin toolchain lives at
+`buildroot-external/toolchain/armv7-eabihf--glibc--stable-2020.02-1/`
+and is picked up automatically by Buildroot itself — no `env.source`
+involved, no manual `$PATH` step. It's a different toolchain from the
+kernel/U-Boot one because it has to be: Buildroot's own
+toolchain-relocatability gate rejects Debian-style non-relocatable
+toolchains outright, and this Buildroot version's own GCC-major-version
+gate tops out at GCC 8.x, which ruled out reusing a newer toolchain
+here too. Since the kernel and U-Boot never link glibc, there's no
+correctness requirement for the two toolchains to match — this is a
+confirmed-fine, deliberate split, not something that needs
+reconciling.
 
 Host packages needed:
 
@@ -242,14 +264,16 @@ RAM, no swap), static linking left them with no library pages shared
 with the rest of the system, the root cause of a real `kswapd0`
 page-thrashing crash (`ECONNRESET` killing live Android Auto
 sessions). The fix is dynamic linking, which needs a rootfs whose own
-glibc matches the build toolchain (2.25) — hence this repo's own,
-general-purpose Buildroot rootfs.
+glibc matches the build toolchain — hence this repo's own,
+general-purpose Buildroot rootfs, built with its own toolchain (see
+"Toolchain" above), independent of the kernel/U-Boot's Linaro one.
 
 | | |
 |---|---|
 | Config | `buildroot-external/configs/ark1668_ft_dyn_defconfig` (forked from `ark1668_ft_defconfig`) |
 | Overlay | `prado-firmware-reconstruction/firmware_overlay_dyn/` |
-| glibc | 2.25 (matches this repo's own toolchain) |
+| Toolchain | Bootlin `armv7-eabihf--glibc--stable-2020.02-1`, GCC 8.4.0 — see "Toolchain" above for why this differs from the kernel/U-Boot toolchain |
+| glibc | 2.30 (matches this rootfs's own toolchain, not the kernel/U-Boot one) |
 | Binaries | Base rootfs is dynamically linked throughout. `custom_ui`/`androidauto-sidecar` (its current workload) are dynamic ELF; BlueZ/`rtk_hciattach`/select `tools/*` stay static, carried in via the overlay rather than rebuilt as Buildroot packages — see each tool's own `tools/*/README.md` |
 | Build | `cd buildroot && make BR2_EXTERNAL=../buildroot-external` |
 | Deploy | `sudo prado-firmware-reconstruction/build_bootable_sdcard_dyn.sh --non-interactive` (thin wrapper around the stock repo's own `build_bootable_sdcard.sh`, which it never modifies), then `dd` the resulting image to an SD card or USB drive |
