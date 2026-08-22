@@ -136,17 +136,28 @@ BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_ARK_PATH)/patches"
 # per-package assessment.
 BR2_PACKAGE_OVERRIDE_FILE="$(BR2_EXTERNAL_ARK_PATH)/package-overrides.mk"
 
-# Rootfs target format: locked to ext4 (Phase 0 decision, 2026-08-21) --
-# deployment is dd/rsync onto an ext4 SD partition via
-# build_bootable_sdcard_dyn.sh, not NAND/UBI, and not a tar
-# extraction. This 2019.05-rc1 Buildroot tree has no standalone
-# BR2_TARGET_ROOTFS_EXT4 symbol -- ext4 is selected via
-# BR2_TARGET_ROOTFS_EXT2 + BR2_TARGET_ROOTFS_EXT2_4 (GEN=4), which
-# invokes real mkfs.ext4 and produces both rootfs.ext2 and a
-# rootfs.ext4 symlink to it (fs/ext2/ext2.mk) -- genuinely an ext4
-# filesystem image, not ext2 despite the Kconfig/output naming.
-# BR2_TARGET_ROOTFS_TAR is deliberately NOT set.
+# Rootfs target format: ext4 (Phase 0 decision, 2026-08-21) is the real
+# deploy artifact -- deployment is dd/rsync onto an ext4 SD partition
+# via build_bootable_sdcard_dyn.sh, not NAND/UBI. This 2019.05-rc1
+# Buildroot tree has no standalone BR2_TARGET_ROOTFS_EXT4 symbol --
+# ext4 is selected via BR2_TARGET_ROOTFS_EXT2 + BR2_TARGET_ROOTFS_EXT2_4
+# (GEN=4), which invokes real mkfs.ext4 and produces both rootfs.ext2
+# and a rootfs.ext4 symlink to it (fs/ext2/ext2.mk) -- genuinely an
+# ext4 filesystem image, not ext2 despite the Kconfig/output naming.
 BR2_TARGET_ROOTFS_EXT2=y
 BR2_TARGET_ROOTFS_EXT2_4=y
 BR2_TARGET_ROOTFS_EXT2_SIZE="256M"
-# BR2_TARGET_ROOTFS_TAR is not set
+# 2026-08-23: BR2_TARGET_ROOTFS_TAR enabled alongside the ext4 target
+# (not a replacement -- both coexist cleanly, each is an independent
+# rootfs-image instantiation with its own private target-dir copy and
+# fakeroot pass, confirmed by reading fs/common.mk's inner-rootfs
+# macro). build_bootable_sdcard_dyn.sh now extracts rootfs.tar instead
+# of rsyncing output/target/ directly -- Buildroot's own official
+# per-format target-dir population already excludes the
+# THIS_IS_NOT_YOUR_ROOT_FILESYSTEM placeholder, and its fakeroot pass
+# (chown -h -R 0:0, mkusers, makedevs -d against the real permission
+# table) applies real root:root ownership and permission-table
+# entries that a raw output/target/ rsync never got -- a real
+# correctness gap the tar path closes, not just a cleaner file list.
+BR2_TARGET_ROOTFS_TAR=y
+BR2_TARGET_ROOTFS_TAR_NONE=y
