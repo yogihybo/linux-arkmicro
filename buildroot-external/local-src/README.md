@@ -67,3 +67,18 @@ sed -i \
 All four build-verified (`make BR2_EXTERNAL=../buildroot-external <pkg>`)
 against `ark1668_ft_dyn_defconfig` — see `merry-snacking-wirth.md`'s
 version-currency-audit section for the full per-package assessment.
+
+# fakeroot (host-only, real bug fix, not a bump for its own sake)
+
+```sh
+curl -sL -o fakeroot-1.31.orig.tar.gz https://deb.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.31.orig.tar.gz
+tar xzf fakeroot-1.31.orig.tar.gz && rm fakeroot-1.31.orig.tar.gz
+```
+
+No customization needed — 1.31 already carries its own per-arch
+`_STAT_VER` fallback (`libfakeroot.c`), obsoleting
+`buildroot-external/patches/fakeroot/0001-*.patch` for this version
+(that patch is kept in place, unused, in case a future version
+regresses this again — `BR2_GLOBAL_PATCH_DIR` patches don't apply to
+`OVERRIDE_SRCDIR` packages anyway, see `package-overrides.mk`'s own
+note).

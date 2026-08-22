@@ -74,3 +74,37 @@ DBUS_OVERRIDE_SRCDIR = $(BR2_EXTERNAL_ARK_PATH)/local-src/dbus-1.12.20
 # version 2.10 via `strings`).
 HOSTAPD_OVERRIDE_SRCDIR = $(BR2_EXTERNAL_ARK_PATH)/local-src/hostapd-2.10
 WPA_SUPPLICANT_OVERRIDE_SRCDIR = $(BR2_EXTERNAL_ARK_PATH)/local-src/wpa_supplicant-2.10
+
+# host-fakeroot: 1.20.2 -> 1.31 -- real BUG fix, not just a version
+# refresh. 1.20.2's chown-faking is broken on this host: an isolated
+# test (fakeroot session: `chown -h -R 0:0 file`, then `stat` the SAME
+# file in the SAME fakeroot session) reports the real build-user
+# uid/gid unchanged, not 0:0 -- confirmed with and without
+# FAKEROOTDONTTRYCHOWN, confirmed chmod-faking (setuid bits etc.) DOES
+# work correctly via the same test, so this is specific to chown, not
+# a general fakeroot/LD_PRELOAD failure. The system's own installed
+# fakeroot (1.31) passes the identical test cleanly -- this bump
+# targets that same known-good version.
+#
+# This host-only bug directly affects fs/common.mk's real rootfs-image
+# generation (BR2_TARGET_ROOTFS_TAR and any other format): its
+# fakeroot pass's `chown -h -R 0:0 $(TARGET_DIR)` never actually took
+# effect, so every generated image (tar, ext2/ext4 via mke2fs -d, etc.)
+# shipped with the build user's own uid/gid baked in instead of real
+# root:root ownership -- confirmed via `tar -tvf` on a real built
+# rootfs.tar before this fix.
+#
+# Real, NOT just cosmetic: 1.31 upstream already carries its own
+# per-arch _STAT_VER fallback (libfakeroot.c, same x86_64 value the
+# 1.20.2 host-glibc compat patch in buildroot-external/patches/fakeroot/
+# used) -- confirmed by direct inspection of the 1.31 source, so that
+# patch is now OBSOLETE for this version, not reapplied. It's kept in
+# place (harmless, unused -- BR2_GLOBAL_PATCH_DIR patches never apply
+# to OVERRIDE_SRCDIR packages anyway, per this file's own header note)
+# rather than deleted, in case a future version regresses this again.
+#
+# Build-verified: the isolated chown/stat repro now passes (0:0
+# reported back correctly), and a real `make rootfs-tar` rebuild with
+# this fakeroot produced a rootfs.tar with genuine root:root ownership
+# throughout (`tar -tvf` confirms 0/0, not the build user's uid/gid).
+HOST_FAKEROOT_OVERRIDE_SRCDIR = $(BR2_EXTERNAL_ARK_PATH)/local-src/fakeroot-1.31
