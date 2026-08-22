@@ -4,17 +4,44 @@ BR2_ARM_ENABLE_NEON=y
 BR2_ARM_ENABLE_VFP=y
 BR2_ARM_FPU_NEON=y
 
-# Toolchain: reuse the exact preinstalled Linaro 7.3.1-2018.05 (glibc 2.25)
-# toolchain the kernel/U-Boot already build with (linux-arkmicro/env.source),
-# NOT BR2_TOOLCHAIN_EXTERNAL_LINARO_ARM (that package pins a different,
-# unextracted 7.4.1-2019.02 -- see plan Phase 0 / merry-snacking-wirth.md).
+# Toolchain (2026-08-22 migration, see merry-snacking-wirth.md's
+# "glibc 2.36 migration" section, now glibc 2.39): originally planned
+# to reuse Debian 12's system cross toolchain (gcc-arm-linux-gnueabihf,
+# glibc 2.36) -- REJECTED, real hard blocker: Buildroot's own
+# check_unusable_toolchain (toolchain/helpers.mk) unconditionally
+# refuses any external toolchain reporting `--with-sysroot=/`, which
+# is exactly how Debian's distro cross-gcc is configured (relies on
+# multiarch triplet paths, not an isolated sysroot). No Kconfig bypass
+# exists for this -- confirmed via a real failed build attempt
+# ("Distribution toolchains are unsuitable for use by Buildroot").
+#
+# Real fix: Bootlin's prebuilt relocatable toolchain
+# (toolchains.bootlin.com, armv7-eabihf--glibc--stable-2024.02-1) --
+# itself built by Buildroot's own toolchain-builder infra (confirmed:
+# `gcc -v` pkgversion string is literally "Buildroot 2021.11-...", and
+# it carries a real isolated --with-sysroot, passing the gate cleanly.
+# glibc 2.39 (newer than the originally-discussed 2.36 -- same goal,
+# a modern/security-current glibc, just a newer one), GCC 12.3.0,
+# kernel headers 4.19 (LINUX_VERSION_CODE 267263, confirmed via
+# arm-buildroot-linux-gnueabihf/sysroot/usr/include/linux/version.h).
+# Downloaded + relocated (relocate-sdk.sh) into
+# buildroot-external/toolchain/armv7-eabihf--glibc--stable-2024.02-1/
+# (gitignored, same convention as the pre-existing Linaro toolchain
+# dir). Real prefix is "arm-buildroot-linux-gnueabihf", NOT
+# "arm-linux-gnueabihf" -- Bootlin's own triplet, confirmed via
+# `ls bin/`.
 BR2_TOOLCHAIN_EXTERNAL=y
 BR2_TOOLCHAIN_EXTERNAL_CUSTOM=y
 BR2_TOOLCHAIN_EXTERNAL_PREINSTALLED=y
-BR2_TOOLCHAIN_EXTERNAL_PATH="$(BR2_EXTERNAL_ARK_PATH)/toolchain/gcc-linaro-7.3.1-2018.05-x86_64_arm-linux-gnueabihf"
-BR2_TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX="arm-linux-gnueabihf"
-BR2_TOOLCHAIN_EXTERNAL_GCC_7=y
-BR2_TOOLCHAIN_EXTERNAL_HEADERS_4_10=y
+BR2_TOOLCHAIN_EXTERNAL_PATH="$(BR2_EXTERNAL_ARK_PATH)/toolchain/armv7-eabihf--glibc--stable-2024.02-1"
+BR2_TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX="arm-buildroot-linux-gnueabihf"
+# GCC_8 is the highest floor this 2019.05-rc1 Buildroot tree's own
+# Config.in.options offers -- real GCC 12.3.0 satisfies "at least 8"
+# fine, this is a floor selection, not an exact-version match.
+BR2_TOOLCHAIN_EXTERNAL_GCC_8=y
+# HEADERS_4_19 matches the real kernel headers baked into this
+# toolchain's sysroot exactly (LINUX_VERSION_CODE 267263 = 4.19.255).
+BR2_TOOLCHAIN_EXTERNAL_HEADERS_4_19=y
 BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
 
 # BR2_TARGET_ENABLE_ROOT_LOGIN is not set
