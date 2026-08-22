@@ -5,43 +5,48 @@ BR2_ARM_ENABLE_VFP=y
 BR2_ARM_FPU_NEON=y
 
 # Toolchain (2026-08-22 migration, see merry-snacking-wirth.md's
-# "glibc 2.36 migration" section, now glibc 2.39): originally planned
-# to reuse Debian 12's system cross toolchain (gcc-arm-linux-gnueabihf,
-# glibc 2.36) -- REJECTED, real hard blocker: Buildroot's own
-# check_unusable_toolchain (toolchain/helpers.mk) unconditionally
-# refuses any external toolchain reporting `--with-sysroot=/`, which
-# is exactly how Debian's distro cross-gcc is configured (relies on
-# multiarch triplet paths, not an isolated sysroot). No Kconfig bypass
-# exists for this -- confirmed via a real failed build attempt
-# ("Distribution toolchains are unsuitable for use by Buildroot").
+# "glibc 2.36 migration" section -- real final result: glibc 2.30,
+# GCC 8.4.0). Two real, hard blockers found and worked through in
+# sequence, both documented in full in the plan file:
 #
-# Real fix: Bootlin's prebuilt relocatable toolchain
-# (toolchains.bootlin.com, armv7-eabihf--glibc--stable-2024.02-1) --
-# itself built by Buildroot's own toolchain-builder infra (confirmed:
-# `gcc -v` pkgversion string is literally "Buildroot 2021.11-...", and
-# it carries a real isolated --with-sysroot, passing the gate cleanly.
-# glibc 2.39 (newer than the originally-discussed 2.36 -- same goal,
-# a modern/security-current glibc, just a newer one), GCC 12.3.0,
-# kernel headers 4.19 (LINUX_VERSION_CODE 267263, confirmed via
-# arm-buildroot-linux-gnueabihf/sysroot/usr/include/linux/version.h).
-# Downloaded + relocated (relocate-sdk.sh) into
-# buildroot-external/toolchain/armv7-eabihf--glibc--stable-2024.02-1/
-# (gitignored, same convention as the pre-existing Linaro toolchain
-# dir). Real prefix is "arm-buildroot-linux-gnueabihf", NOT
-# "arm-linux-gnueabihf" -- Bootlin's own triplet, confirmed via
-# `ls bin/`.
+# 1. Debian 12's system cross toolchain (glibc 2.36) -- REJECTED.
+#    Buildroot's own check_unusable_toolchain (toolchain/helpers.mk)
+#    unconditionally refuses any external toolchain reporting
+#    `--with-sysroot=/`, which is exactly how Debian's distro cross-gcc
+#    is configured. No Kconfig bypass exists.
+#
+# 2. Bootlin's current stable toolchain (armv7-eabihf--glibc--
+#    stable-2024.02-1, GCC 12.3.0/glibc 2.39) -- ALSO REJECTED, a
+#    second, different gate: this Buildroot tree (2019.05-rc1) enforces
+#    an EXACT gcc-major-version match between the Kconfig selection and
+#    the toolchain's real `gcc -dumpversion` (check_gcc_version in the
+#    same helpers.mk), and its own Config.in.options tops out at
+#    GCC_8 -- there is no 9/10/11/12 choice at all. This Buildroot
+#    version's own ceiling, not fixable via toolchain choice alone (a
+#    Buildroot-tree upgrade would lift it -- real, available, explicitly
+#    OUT OF SCOPE for this pass, see plan file).
+#
+# Real final choice: Bootlin's older armv7-eabihf--glibc--
+# stable-2020.02-1 release -- GCC 8.4.0 (exact match, passes gate 2),
+# glibc 2.30 (still a real improvement over the previous 2.25, though
+# short of the originally-discussed 2.36/2.39), kernel headers 4.4.215.
+# Same provenance/relocatability properties as the 2024.02-1 toolchain
+# (built by Buildroot's own toolchain-builder infra, real isolated
+# --with-sysroot, passes gate 1 too). Downloaded + relocated
+# (relocate-sdk.sh) into buildroot-external/toolchain/
+# armv7-eabihf--glibc--stable-2020.02-1/ (gitignored, same convention
+# as the other toolchain dirs). Prefix is "arm-buildroot-linux-gnueabihf"
+# (Bootlin's own triplet, confirmed via `ls bin/`).
 BR2_TOOLCHAIN_EXTERNAL=y
 BR2_TOOLCHAIN_EXTERNAL_CUSTOM=y
 BR2_TOOLCHAIN_EXTERNAL_PREINSTALLED=y
-BR2_TOOLCHAIN_EXTERNAL_PATH="$(BR2_EXTERNAL_ARK_PATH)/toolchain/armv7-eabihf--glibc--stable-2024.02-1"
+BR2_TOOLCHAIN_EXTERNAL_PATH="$(BR2_EXTERNAL_ARK_PATH)/toolchain/armv7-eabihf--glibc--stable-2020.02-1"
 BR2_TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX="arm-buildroot-linux-gnueabihf"
-# GCC_8 is the highest floor this 2019.05-rc1 Buildroot tree's own
-# Config.in.options offers -- real GCC 12.3.0 satisfies "at least 8"
-# fine, this is a floor selection, not an exact-version match.
+# Exact match required (see note above) -- real toolchain is 8.4.0.
 BR2_TOOLCHAIN_EXTERNAL_GCC_8=y
-# HEADERS_4_19 matches the real kernel headers baked into this
-# toolchain's sysroot exactly (LINUX_VERSION_CODE 267263 = 4.19.255).
-BR2_TOOLCHAIN_EXTERNAL_HEADERS_4_19=y
+# HEADERS_4_4 matches the real kernel headers baked into this
+# toolchain's sysroot exactly (LINUX_VERSION_CODE 263383 = 4.4.215).
+BR2_TOOLCHAIN_EXTERNAL_HEADERS_4_4=y
 BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
 
 # BR2_TARGET_ENABLE_ROOT_LOGIN is not set
