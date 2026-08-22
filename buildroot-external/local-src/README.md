@@ -52,6 +52,16 @@ sed -i \
 # wpa_supplicant 2.10 (same tarball family as hostapd, same w1.fi release)
 curl -sL -o wpa_supplicant-2.10.tar.gz https://w1.fi/releases/wpa_supplicant-2.10.tar.gz
 tar xzf wpa_supplicant-2.10.tar.gz && rm wpa_supplicant-2.10.tar.gz
+#
+# Real customization, direct edit (2026-08-22, glibc 2.30 migration):
+# driver_macsec_linux.c needs linux/if_macsec.h, which doesn't exist in
+# the Bootlin armv7-eabihf--glibc--stable-2020.02-1 toolchain's kernel
+# headers (4.4.215, predates mainline MACsec support) -- real build
+# failure, not a config gap. This project doesn't use 802.1X/MACsec.
+sed -i \
+    -e 's/^CONFIG_DRIVER_MACSEC_LINUX=y/#CONFIG_DRIVER_MACSEC_LINUX=y/' \
+    -e 's/^CONFIG_MACSEC=y/#CONFIG_MACSEC=y/' \
+    wpa_supplicant-2.10/wpa_supplicant/defconfig
 ```
 
 All four build-verified (`make BR2_EXTERNAL=../buildroot-external <pkg>`)
