@@ -48,6 +48,20 @@ BR2_TOOLCHAIN_EXTERNAL_GCC_8=y
 # toolchain's sysroot exactly (LINUX_VERSION_CODE 263383 = 4.4.215).
 BR2_TOOLCHAIN_EXTERNAL_HEADERS_4_4=y
 BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
+# 2026-08-23: real, hardware-confirmed bug -- without this, Buildroot
+# never copies the toolchain's own libstdc++.so.6 into the target
+# rootfs at all (confirmed absent via `tar -tf` on a real-built
+# rootfs.tar -- libgcc_s.so.1 was present, libstdc++.so.6 wasn't).
+# custom_ui/androidauto-sidecar are C++ binaries with libstdc++.so.6 in
+# their own NEEDED list (confirmed via readelf -d) -- this was a real
+# "the file was never deployed at all" gap, not a search-path issue.
+# BR2_TOOLCHAIN_EXTERNAL_CXX (real Buildroot Kconfig, toolchain/
+# toolchain-external/toolchain-external-custom/Config.in.options)
+# selects BR2_INSTALL_LIBSTDCPP, telling Buildroot's toolchain-import
+# step this external toolchain has real C++ support and to copy its
+# runtime library accordingly. This toolchain (Bootlin GCC 8.4.0) has
+# full C++ support -- confirmed, this option was simply never enabled.
+BR2_TOOLCHAIN_EXTERNAL_CXX=y
 
 # BR2_TARGET_ENABLE_ROOT_LOGIN is not set
 # BR2_TARGET_GENERIC_GETTY is not set
