@@ -110,6 +110,18 @@ BR2_PACKAGE_NCURSES=y
 BR2_PACKAGE_DBUS=y
 BR2_PACKAGE_EXPAT=y
 
+# 2026-08-23: real, hardware-confirmed bug -- the hand-carried static
+# sshd binary in firmware_overlay_dyn/usr/bin/sshd has the WRONG ELF
+# interpreter for this toolchain (/lib/ld-linux.so.3, softfloat, vs
+# this project's real /lib/ld-linux-armhf.so.3 hardfloat ABI --
+# confirmed via readelf -d/file), so it can never actually run here.
+# Build sshd against this project's own current toolchain instead, the
+# same fix pattern as BR2_TOOLCHAIN_EXTERNAL_CXX above. Installs to
+# usr/sbin/sshd (confirmed via package/openssh/openssh.mk), not
+# usr/bin/sshd -- rcS updated to match. The project's own committed
+# host keys/sshd_config are reused as-is via `-f`.
+BR2_PACKAGE_OPENSSH=y
+
 # WiFi AP (replaces the static hostapd/wpa_supplicant path with dynamic
 # Buildroot-built ones)
 BR2_PACKAGE_OPENSSL=y
