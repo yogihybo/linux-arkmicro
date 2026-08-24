@@ -110,6 +110,16 @@ BR2_PACKAGE_NCURSES=y
 BR2_PACKAGE_DBUS=y
 BR2_PACKAGE_EXPAT=y
 
+# 2026-08-24: real dynamic-linking rebuild of tools/bluetoothctl (was
+# fully static, linked against a build-host-only glib/readline/dbus/
+# pcre2 cross-build). This Buildroot's own glib2 (2.56.4) uses system
+# PCRE1 (--with-pcre=system, see libglib2.mk), not PCRE2 -- the old
+# static build's -lpcre2-8 was only needed because ITS glib was built
+# against pcre2 on a different host; bluetoothctl's own source has no
+# direct pcre2 reference, so no separate pcre2 package is needed here.
+BR2_PACKAGE_LIBGLIB2=y
+BR2_PACKAGE_READLINE=y
+
 # 2026-08-23: real, hardware-confirmed bug -- the hand-carried static
 # sshd binary in firmware_overlay_dyn/usr/bin/sshd has the WRONG ELF
 # interpreter for this toolchain (/lib/ld-linux.so.3, softfloat, vs
