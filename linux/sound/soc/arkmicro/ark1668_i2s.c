@@ -297,6 +297,9 @@ static int ark_i2s_startup(
 		val |= ARK_I2SSDDAC_SACR0_RDMAENA;		 // enable rx dma
 		writel(val, i2s->base + ARK_I2SSDDAC_SACR0);
 
+		// SARADC analog front-end gain & mic enhance (ADCR0 @ 0x1C)
+		writel((0xF << 0) | (0xF << 4) | ARK_I2SSDDAC_ADCR0_MIC_ENH, i2s->base + ARK_I2SSDDAC_ADCR0);
+
 		val = readl(i2s->base + ARK_I2SSDDAC_SACR1);
 		val &= ~ARK_I2SSDDAC_SACR1_DIS_REC; 	//enable record
 		writel(val, i2s->base + ARK_I2SSDDAC_SACR1);
@@ -701,8 +704,31 @@ static int ark_pcm_prepare(struct snd_pcm_substream *substream)
 	enum dma_transfer_direction direction;
 	unsigned long flags;
 
-	if (prtd->prepared)
-		return 0;
+	/* 2026-08-21: was `if (prtd->prepared) return 0;` -- a silent no-op
+	 * on every restart within an already-open stream (ordinary
+	 * stop/prepare/start cycling, e.g. Android Auto pause/resume, never
+	 * calls .hw_free()/renegotiates hw_params -- the only other place
+	 * that clears prtd->prepared, see ark_pcm_hw_free() above). That
+	 * left every prepare() after the very first one reusing the exact
+	 * same cyclic DMA descriptor (prtd->cdesc) forever, across every
+	 * restart, with dw_dma_cyclic_stop()/dw_dma_cyclic_start() (from
+	 * .trigger()) as the only thing touching the DMA channel state in
+	 * between -- a cyclic descriptor is built to loop continuously, not
+	 * to be repeatedly stopped and resumed against the same never-
+	 * refreshed descriptor indefinitely. Real hardware symptom this
+	 * traced back to: userspace audio crashes specifically correlated
+	 * with start/stop/restart cycling ("restarts, then dies" after
+	 * enough cycles) -- consistent with DMA engine state drifting or
+	 * getting stuck after repeated stop/start against a stale
+	 * descriptor. Fixed to match what .hw_free() already does when this
+	 * path is reached with a stale prepared descriptor still around:
+	 * free it and fall through into a genuine re-prepare, so every
+	 * .prepare() call actually re-establishes a fresh DMA cyclic
+	 * transfer, first call or restart alike. Not yet hardware-tested. */
+	if (prtd->prepared) {
+		dw_dma_cyclic_free(prtd->chan);
+		prtd->prepared = false;
+	}
 
 	direction = substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
 			DMA_MEM_TO_DEV : DMA_DEV_TO_MEM;
