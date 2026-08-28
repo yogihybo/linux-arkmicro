@@ -1,7 +1,7 @@
 # linux-arkmicro — ARK1668/ARK1680 vendor SDK
 
 ArkMicro's vendor Linux/U-Boot/Buildroot SDK (`RD_Software/linux-arkmicro`),
-used by [`prado-firmware-reconstruction`](https://github.com/yogihybo/prado-firmware-reconstruction)
+used by [`prado-firmware-reconstruction`](https://github.com/yogihybo/Limcet-P305-Box-Android-Auto-Carplay)
 to build a Linux 4.19.192 kernel and U-Boot 2018.07 for the Toyota Prado
 Limcet P305/P306 dashboard head unit — plain **ARK1668** SoC, Cortex-A5,
 board target `ark1668_limcet_p305` (not "ARK1668E", a different,
