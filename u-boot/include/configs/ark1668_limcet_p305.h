@@ -347,32 +347,19 @@
 	 * through to the interactive prompt. Never touched at all if
 	 * autoboot is stopped manually, same as wdtarm above. */ \
 	"noctrlc; " \
-	/* 2026-08-01: uEnv.txt fatload removed from the automatic path --
-	 * diagnostic step while chasing an intermittent hang that only
-	 * shows up with the console not actively read (see checklist for
-	 * the full trail). This was the very first real SD I/O of the
-	 * whole automatic sequence, right after wdtarm/noctrlc, and the
-	 * user's own observation (neither bootusb's nor nandboot's splash
-	 * ever appears during the hang) localizes it to somewhere in this
-	 * exact window. Also functionally inert either way: sd_bootable/
-	 * uEnv.txt only sets a legacy bootcmd/bootargs override that
-	 * nothing downstream depends on, and CONFIG_ENV_IS_IN_NOWHERE means
-	 * an `env import` here wouldn't even persist to affect a future
-	 * boot's default bootcmd -- removing the attempt costs nothing
-	 * functionally, only removes one SD transaction per boot. Still
-	 * manually reachable if ever needed: `fatload mmc 0:1 ${loadaddr}
-	 * uEnv.txt && env import -t ${loadaddr} ${filesize}` at the
-	 * prompt. Revert if this doesn't change anything -- would mean the
-	 * hang is actually in bootcheck (env_save()) or later, not here. */ \
-	/* 2026-08-03: removed a "bootlogofile bootlogo_usb.raw" call that
-	 * used to sit right here -- do_bootusb() itself already calls this
-	 * unconditionally (ark1668_boot_cmds.c), so this outer copy was a
-	 * genuine duplicate: real hardware logs showed the exact same
-	 * fatload+OSD1-push sequence running twice back to back on every
-	 * automatic bootusb, costing ~527ms and a full splash repaint for
-	 * nothing. Removing it here (not do_bootusb()'s own call) keeps
-	 * manually typing `bootusb` at the prompt working identically --
-	 * that path never went through this string at all. */ \
+	/* 2026-09-07: restored uEnv.txt automatic loading -- the earlier
+	 * intermittent boot hang was traced to serial RX line electrical noise,
+	 * mitigated by restricting autoboot interrupt to the spacebar and
+	 * noctrlc. Allows overriding any env var and executing custom commands
+	 * via uenvcmd without recompiling U-Boot. */ \
+	"if fatload mmc 0:1 ${loadaddr} uEnv.txt; then " \
+		"echo [uEnv] Loaded environment from uEnv.txt; " \
+		"env import -t ${loadaddr} ${filesize}; " \
+	"fi; " \
+	"if test -n \"${uenvcmd}\"; then " \
+		"echo [uEnv] Running uenvcmd ...; " \
+		"run uenvcmd; " \
+	"fi; " \
 	"if bootcheck; then " \
 		"if bootusb; then true; else run nandboot; fi; " \
 	"else " \
